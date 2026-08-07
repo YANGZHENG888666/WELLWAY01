@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WELL WAY · 路线切换动效原型</title>
+  <style>
+    :root {
+      --bg: #F5F5F5;
+      --surface: #FFFFFF;
+      --surface-2: #FAFAFC;
+      --line: #E8E8EE;
+      --text: #17181C;
+      --text-2: #6E7278;
+      --text-3: #A0A4AA;
+      --primary: #4199FD;
+      --primary-strong: #2F86EB;
+      --primary-soft: #EAF3FF;
+      --success: #34C77B;
+      --warn: #F5A623;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .page { max-width: 1080px; margin: 0 auto; padding: 26px 22px 60px; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 26px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
+    .brand-mark { width: 30px; height: 30px; border-radius: 8px; background: var(--primary); color: #fff; display: grid; place-items: center; font-size: 15px; font-weight: 800; }
+    .tag { color: var(--text-2); font-size: 13px; }
+    .stage {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .panel-title { font-size: 15px; font-weight: 800; margin: 0 0 4px; }
+    .panel-sub { color: var(--text-3); font-size: 12px; margin-bottom: 14px; }
+    .route-list { display: flex; flex-direction: column; gap: 10px; }
+    .route-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: 13px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+      text-align: left;
+      color: inherit;
+      font: inherit;
+    }
+    .route-card:hover { border-color: #BFDEFF; }
+    .route-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(65, 153, 253, 0.18);
+    }
+    .route-name { font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .route-name .riders { font-size: 11px; color: var(--primary-strong); background: var(--primary-soft); border-radius: 6px; padding: 3px 7px; white-space: nowrap; }
+    .route-meta { color: var(--text-3); font-size: 12px; margin-top: 6px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .map-panel { position: relative; min-height: 420px; display: flex; flex-direction: column; }
+    .map-wrap {
+      flex: 1;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: linear-gradient(160deg, #EAF3FF 0%, #F7FBFF 55%, #EFF8F2 100%);
+      overflow: hidden;
+      position: relative;
+      min-height: 300px;
+    }
+    .map-wrap svg { display: block; width: 100%; height: 100%; }
+    .route-line {
+      fill: none;
+      stroke: var(--primary);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      transition: stroke-dashoffset 0.9s ease;
+    }
+    .route-line.drawn { stroke-dashoffset: 0; }
+    .pin {
+      fill: var(--primary);
+      stroke: #fff;
+      stroke-width: 2;
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .pin.start { fill: var(--success); }
+    .pin.end { fill: var(--warn); }
+    .pin.on { opacity: 1; transform: scale(1); }
+    .pin.pulse { animation: pulse 1.4s ease-out infinite; }
+    @keyframes pulse {
+      0% { opacity: 0.9; transform: scale(1); }
+      70% { opacity: 0.25; transform: scale(2.1); }
+      100% { opacity: 0.9; transform: scale(1); }
+    }
+    .bike {
+      transition: transform 0.9s ease;
+      transform-box: fill-box;
+    }
+    .bike g { transition: transform 0.9s ease; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat .num { font-size: 16px; font-weight: 800; }
+    .stat .lbl { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+    .note { color: var(--text-3); font-size: 12px; margin-top: 14px; line-height: 1.7; }
+    @media (max-width: 760px) {
+      .stage { grid-template-columns: 1fr; }
+      .map-panel { min-height: 380px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .route-line, .bike, .bike g, .pin { transition: none; animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">W</div>
+        WELL WAY
+      </div>
+      <div class="tag">路线切换动效原型</div>
+    </header>
+
+    <div class="stage">
+      <aside class="panel">
+        <h2 class="panel-title">选择路线</h2>
+        <div class="panel-sub">切换时自动重绘轨迹并点亮打卡点</div>
+        <div class="route-list" id="routeList"></div>
+      </aside>
+
+      <section class="panel map-panel">
+        <div class="map-wrap">
+          <svg id="map" viewBox="0 0 520 320" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path id="routePath" class="route-line" pathLength="1" d=""></path>
+            <circle id="pinStart" class="pin start" r="7"></circle>
+            <circle id="pinEnd" class="pin end" r="7"></circle>
+            <circle id="cp1" class="pin" r="6"></circle>
+            <circle id="cp2" class="pin" r="6"></circle>
+            <g id="bike" class="bike">
+              <g transform="translate(-14, -10)">
+                <rect x="0" y="8" width="16" height="4" rx="2" fill="#2F86EB"/>
+                <circle cx="4" cy="14" r="4" fill="#17181C"/>
+                <circle cx="12" cy="14" r="4" fill="#17181C"/>
+                <path d="M6 6 L10 6 L12 10 L4 10 Z" fill="#4199FD"/>
+                <path d="M2 8 L6 4 L9 4 L6 8 Z" fill="#E5484D"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <div class="stats" id="stats"></div>
+        <div class="note">原型说明：地图轨迹描线、打卡点亮起、小摩托沿路线移动，均为切换路线时的动效。</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const routes = [
+      {
+        name: "天荒坪山道",
+        riders: "今日 23 人",
+        meta: "38 km · 爬升 860m · 中等",
+        stats: [["38", "km"], ["2.5h", "预计"], ["860", "爬升 m"], ["中等", "难度"]],
+        path: "M36 272 C96 252 118 168 196 176 C268 184 286 240 356 226 C404 218 446 150 486 82",
+        cps: [
+          { x: 196, y: 176 },
+          { x: 286, y: 240 }
+        ],
+        start: { x: 36, y: 272 },
+        end: { x: 486, y: 82 }
+      },
+      {
+        name: "环湖观光线",
+        riders: "今日 8 人",
+        meta: "26 km · 爬升 210m · 简单",
+        stats: [["26", "km"], ["1.1h", "预计"], ["210", "爬升 m"], ["简单", "难度"]],
+        path: "M64 56 C112 84 124 148 186 156 C252 164 286 110 344 116 C400 122 404 190 452 246",
+        cps: [
+          { x: 186, y: 156 },
+          { x: 344, y: 116 }
+        ],
+        start: { x: 64, y: 56 },
+        end: { x: 452, y: 246 }
+      },
+      {
+        name: "皖南川藏线东段",
+        riders: "今日 41 人",
+        meta: "86 km · 爬升 1240m · 困难",
+        stats: [["86", "km"], ["4.5h", "预计"], ["1240", "爬升 m"], ["困难", "难度"]],
+        path: "M42 190 C108 172 128 250 204 246 C276 242 286 148 354 138 C420 128 448 208 494 194",
+        cps: [
+          { x: 204, y: 246 },
+          { x: 354, y: 138 }
+        ],
+        start: { x: 42, y: 190 },
+        end: { x: 494, y: 194 }
+      }
+    ];
+
+    const listEl = document.getElementById("routeList");
+    const pathEl = document.getElementById("routePath");
+    const pinStart = document.getElementById("pinStart");
+    const pinEnd = document.getElementById("pinEnd");
+    const cp1 = document.getElementById("cp1");
+    const cp2 = document.getElementById("cp2");
+    const bike = document.getElementById("bike");
+    const statsEl = document.getElementById("stats");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let current = 0;
+    let animId = 0;
+
+    function setPin(pin, x, y) {
+      pin.setAttribute("cx", x);
+      pin.setAttribute("cy", y);
+    }
+
+    function renderStats(route) {
+      statsEl.innerHTML = route.stats.map(([num, lbl]) =>
+        `<div class="stat"><div class="num">${num}</div><div class="lbl">${lbl}</div></div>`
+      ).join("");
+    }
+
+    function moveBikeAlong(path, t) {
+      const len = path.getTotalLength();
+      const pt = path.getPointAtLength(Math.max(0, Math.min(1, t)) * len);
+      const ang = Math.atan2(
+        path.getPointAtLength(Math.max(0, Math.min(1, t + 0.005)) * len).y - pt.y,
+        path.getPointAtLength(Math.max(0, Math.min(1, t + 0.005)) * len).x - pt.x
+      );
+      bike.setAttribute("transform", `translate(${pt.x}, ${pt.y}) rotate(${ang * 180 / Math.PI})`);
+    }
+
+    function drawRoute(route, instant) {
+      pathEl.setAttribute("d", route.path);
+      setPin(pinStart, route.start.x, route.start.y);
+      setPin(pinEnd, route.end.x, route.end.y);
+      setPin(cp1, route.cps[0].x, route.cps[0].y);
+      setPin(cp2, route.cps[1].x, route.cps[1].y);
+      renderStats(route);
+
+      if (instant || reduced) {
+        pathEl.classList.add("drawn");
+        pinStart.classList.add("on");
+        pinEnd.classList.add("on");
+        cp1.classList.add("on");
+        cp2.classList.add("on");
+        moveBikeAlong(pathEl, 1);
+        return;
+      }
+
+      cancelAnimationFrame(animId);
+      pinStart.classList.remove("on");
+      pinEnd.classList.remove("on");
+      cp1.classList.remove("on", "pulse");
+      cp2.classList.remove("on", "pulse");
+      pathEl.classList.remove("drawn");
+      void pathEl.getBoundingClientRect();
+
+      const duration = 1000;
+      const start = performance.now();
+      const draw = (now) => {
+        const t = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - t, 3);
+        pathEl.style.strokeDashoffset = String(1 - eased);
+        moveBikeAlong(pathEl, eased);
+        if (t >= 0.35) { cp1.classList.add("on"); if (t > 0.5) cp1.classList.add("pulse"); }
+        if (t >= 0.7) { cp2.classList.add("on"); if (t > 0.82) cp2.classList.add("pulse"); }
+        if (t >= 0.05) pinStart.classList.add("on");
+        if (t >= 0.92) pinEnd.classList.add("on");
+        if (t < 1) {
+          animId = requestAnimationFrame(draw);
+        } else {
+          pathEl.classList.add("drawn");
+          pathEl.style.strokeDashoffset = "";
+        }
+      };
+      animId = requestAnimationFrame(draw);
+    }
+
+    function renderList() {
+      listEl.innerHTML = routes.map((r, i) => `
+        <button class="route-card${i === current ? " active" : ""}" data-i="${i}" type="button">
+          <span class="route-name">${r.name}<span class="riders">${r.riders}</span></span>
+          <span class="route-meta">${r.meta}</span>
+        </button>
+      `).join("");
+      listEl.querySelectorAll(".route-card").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const i = Number(btn.dataset.i);
+          if (i === current) return;
+          current = i;
+          listEl.querySelectorAll(".route-card").forEach((b, j) => b.classList.toggle("active", j === i));
+          drawRoute(routes[i], false);
+        });
+      });
+    }
+
+    renderList();
+    drawRoute(routes[0], true);
+  </script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SPIDER MAN · 小蜘蛛交互网页</title>
+  <style>
+    :root {
+      --bg: #0A0A0E;
+      --panel: #101016;
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #F5F5F7;
+      --muted: #9A9AA3;
+      --red: #FF3B3B;
+      --red-deep: #C81E1E;
+      --blue: #4FA8FF;
+      --blue-soft: #7CC4FF;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    #scene {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .page { position: relative; z-index: 1; min-height: 100vh; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 28px;
+      position: sticky;
+      top: 0;
+      background: rgba(10, 10, 14, 0.72);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      z-index: 5;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; }
+    .brand-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); box-shadow: 0 0 12px rgba(255, 59, 59, 0.9); }
+    .brand small { color: var(--muted); font-weight: 600; }
+    .nav { display: flex; gap: 18px; font-size: 13px; color: var(--muted); }
+    .nav a { color: inherit; text-decoration: none; }
+    .nav a:hover { color: var(--text); }
+    .hero {
+      min-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 60px;
+      position: relative;
+    }
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--blue-soft);
+      border: 1px solid rgba(79, 168, 255, 0.35);
+      background: rgba(79, 168, 255, 0.08);
+      padding: 7px 12px;
+      border-radius: 999px;
+    }
+    .hero h1 {
+      margin: 22px 0 10px;
+      font-size: clamp(48px, 11vw, 128px);
+      line-height: 0.95;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .hero h1 span { color: var(--red); }
+    .hero .subtitle { font-size: 18px; color: var(--muted); font-weight: 600; }
+    .quote {
+      margin-top: 44px;
+      max-width: 620px;
+      font-size: 16px;
+      line-height: 1.8;
+      color: rgba(245, 245, 247, 0.82);
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .quote b { color: var(--text); font-weight: 800; }
+    .sections { max-width: 1080px; margin: 0 auto; padding: 0 24px 120px; display: flex; flex-direction: column; gap: 26px; }
+    .suit {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(16, 16, 22, 0.82);
+      padding: 22px;
+      display: grid;
+      grid-template-columns: 132px 1fr;
+      gap: 22px;
+      align-items: center;
+      backdrop-filter: blur(6px);
+    }
+    .suit:nth-child(2n) { grid-template-columns: 1fr 132px; }
+    .suit:nth-child(2n) .suit-visual { order: 2; }
+    .suit-index { font-size: 12px; font-weight: 800; color: var(--muted); }
+    .suit-name { font-size: 26px; font-weight: 900; margin: 6px 0 10px; }
+    .suit-desc { color: var(--muted); font-size: 14px; line-height: 1.8; }
+    .suit-visual {
+      width: 132px;
+      height: 132px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: radial-gradient(circle at 50% 42%, rgba(255, 59, 59, 0.16), rgba(10, 10, 14, 0) 68%);
+      display: grid;
+      place-items: center;
+      color: var(--red);
+    }
+    .suit:nth-child(2) .suit-visual { color: var(--blue); background: radial-gradient(circle at 50% 42%, rgba(79, 168, 255, 0.16), rgba(10, 10, 14, 0) 68%); }
+    .suit:nth-child(3) .suit-visual { color: #FF8A4C; background: radial-gradient(circle at 50% 42%, rgba(255, 138, 76, 0.14), rgba(10, 10, 14, 0) 68%); }
+    .suit:nth-child(4) .suit-visual { color: var(--red-deep); background: radial-gradient(circle at 50% 42%, rgba(200, 30, 30, 0.20), rgba(10, 10, 14, 0) 68%); }
+    .footer { border-top: 1px solid var(--line); padding: 26px 28px; color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    @media (max-width: 640px) {
+      .nav { display: none; }
+      .suit, .suit:nth-child(2n) { grid-template-columns: 1fr; }
+      .suit:nth-child(2n) .suit-visual { order: 0; }
+      .suit-visual { width: 100%; height: 150px; }
+      .hero { min-height: 88vh; padding-top: 96px; }
+      .hero h1 { font-size: 64px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand"><span class="brand-dot"></span>SPIDER MAN <small>小蜘蛛交互网页</small></div>
+      <nav class="nav">
+        <a href="#suit-1">自制战衣</a>
+        <a href="#suit-2">红蓝战衣</a>
+        <a href="#suit-3">钢铁战甲</a>
+        <a href="#suit-4">黑红战衣</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">VIBE CODING · SPIDER-MAN SHOWCASE</div>
+      <h1>SPIDER <span>MAN</span></h1>
+      <div class="subtitle">小蜘蛛交互网页</div>
+      <div class="quote">
+        <b>With great power comes great responsibility.</b><br>
+        能力越大，责任越大。一只小蜘蛛，从屏幕的一端，爬到另一端。
+      </div>
+    </section>
+
+    <section class="sections">
+      <article class="suit" id="suit-1">
+        <div class="suit-visual">
+          <svg width="84" height="84" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 21V12M12 12L6 15M12 12L18 15M12 9L8 5M12 9L16 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <ellipse cx="12" cy="11" rx="5.5" ry="6.5" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M7 7C8.5 8.5 9.5 9.5 12 9.5C14.5 9.5 15.5 8.5 17 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="suit-index">01 / SUIT</div>
+          <div class="suit-name">摔跤自制战衣</div>
+          <div class="suit-desc">一件自己缝出来的战衣。没有纳米科技，没有智能助手，只有布料、针脚和一颗想成为英雄的心。出自托比版《蜘蛛侠》。</div>
+        </div>
+      </article>
+
+      <article class="suit" id="suit-2">
+        <div class="suit-visual">
+          <svg width="84" height="84" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 21V12M12 12L6 15M12 12L18 15M12 9L8 5M12 9L16 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <ellipse cx="12" cy="11" rx="5.5" ry="6.5" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M7 7C8.5 8.5 9.5 9.5 12 9.5C14.5 9.5 15.5 8.5 17 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="suit-index">02 / SUIT</div>
+          <div class="suit-name">超凡初代红蓝战衣</div>
+          <div class="suit-desc">回归街头风格的红蓝配色，蛛网压印与细长眼睛。出自《超凡蜘蛛侠》，把蜘蛛侠重新带回地面。</div>
+        </div>
+      </article>
+
+      <article class="suit" id="suit-3">
+        <div class="suit-visual">
+          <svg width="84" height="84" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 21V12M12 12L6 15M12 12L18 15M12 9L8 5M12 9L16 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <ellipse cx="12" cy="11" rx="5.5" ry="6.5" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M7 7C8.5 8.5 9.5 9.5 12 9.5C14.5 9.5 15.5 8.5 17 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="suit-index">03 / SUIT</div>
+          <div class="suit-name">钢铁蜘蛛战甲</div>
+          <div class="suit-desc">由托尼·斯塔克打造的纳米战甲，金红配色与机械蜘蛛爪，出自《复仇者联盟3：无限战争》与《复仇者联盟4：终局之战》。</div>
+        </div>
+      </article>
+
+      <article class="suit" id="suit-4">
+        <div class="suit-visual">
+          <svg width="84" height="84" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 21V12M12 12L6 15M12 12L18 15M12 9L8 5M12 9L16 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <ellipse cx="12" cy="11" rx="5.5" ry="6.5" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M7 7C8.5 8.5 9.5 9.5 12 9.5C14.5 9.5 15.5 8.5 17 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="suit-index">04 / SUIT</div>
+          <div class="suit-name">黑红改良战衣</div>
+          <div class="suit-desc">黑色打底、红色主体，看起来更酷也更低调。出自《蜘蛛侠：英雄远征》，带着全新蜘蛛丝与更强的战衣系统。</div>
+        </div>
+      </article>
+    </section>
+
+    <footer class="footer">
+      <span>SPIDER MAN · 小蜘蛛交互网页</span>
+      <span>Canvas · Vibe Coding</span>
+    </footer>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const mouse = { x: 0, y: 0, active: false };
+    const spider = { x: 0, y: 0, tx: 0, ty: 0, vx: 0, vy: 0, sway: 0, jump: 0 };
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W * DPR;
+      canvas.height = H * DPR;
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      if (!mouse.active) {
+        spider.tx = W * 0.5;
+        spider.ty = H * 0.42;
+        spider.x = spider.tx;
+        spider.y = spider.ty;
+      }
+    }
+
+    function onPointer(e) {
+      mouse.active = true;
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      spider.tx = mouse.x;
+      spider.ty = mouse.y;
+    }
+
+    function onDown(e) {
+      spider.jump = 1;
+      spider.tx = e.clientX;
+      spider.ty = e.clientY;
+    }
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('pointermove', onPointer, { passive: true });
+    window.addEventListener('pointerdown', onDown, { passive: true });
+
+    function drawWeb(t) {
+      ctx.strokeStyle = 'rgba(120, 130, 150, 0.16)';
+      ctx.lineWidth = 1;
+      const cx = W * 0.5, cy = -40;
+      for (let i = 0; i < 8; i++) {
+        const a = Math.PI * (0.5 + i / 8);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(a) * (W + H), cy + Math.sin(a) * (W + H));
+        ctx.stroke();
+      }
+      for (let r = 70; r < W + H; r += 70) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, Math.PI * 0.06, Math.PI * 0.94);
+        ctx.stroke();
+      }
+    }
+
+    function drawSparkles(t) {
+      for (let i = 0; i < 26; i++) {
+        const seed = i * 137.5;
+        const x = (Math.sin(t * 0.0003 + seed) * 0.5 + 0.5) * W;
+        const y = (Math.cos(t * 0.0004 + seed * 1.7) * 0.5 + 0.5) * H;
+        const r = 1 + Math.sin(t * 0.002 + seed) * 0.8;
+        ctx.beginPath();
+        ctx.fillStyle = i % 3 === 0 ? 'rgba(255, 59, 59, 0.5)' : 'rgba(124, 196, 255, 0.35)';
+        ctx.arc(x, y, Math.max(0.4, r), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawSpider(t) {
+      const x = spider.x;
+      const y = spider.y;
+      const s = 1 + Math.sin(t * 0.002) * 0.04 + spider.jump * 0.12;
+      const lean = (spider.vx * 0.0004) + Math.sin(t * 0.001 + spider.sway) * 0.12;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(s, s);
+      ctx.rotate(lean);
+
+      // web thread from top
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(210, 220, 235, 0.55)';
+      ctx.lineWidth = 1;
+      ctx.moveTo(0, -400);
+      ctx.quadraticCurveTo(x * 0.1, -60, 0, -26);
+      ctx.stroke();
+
+      // legs
+      ctx.strokeStyle = '#FF5A5A';
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = 'round';
+      const legPhase = t * 0.006;
+      for (let i = 0; i < 4; i++) {
+        const side = i % 2 === 0 ? -1 : 1;
+        const off = (i < 2 ? -4 : 2) + side * 2;
+        const lift = Math.sin(legPhase + i * 1.7) * 5;
+        ctx.beginPath();
+        ctx.moveTo(off * 4, -2);
+        ctx.quadraticCurveTo(off * 16, 6 + lift, off * 24, 18 + lift * 1.6);
+        ctx.stroke();
+      }
+
+      // body
+      const grad = ctx.createLinearGradient(0, -18, 0, 16);
+      grad.addColorStop(0, '#FF4A4A');
+      grad.addColorStop(1, '#B60F0F');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 13, 17, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // abdomen markings
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-7, 2 + i * 5);
+        ctx.lineTo(7, 2 + i * 5);
+        ctx.stroke();
+      }
+
+      // head
+      ctx.fillStyle = '#D91F1F';
+      ctx.beginPath();
+      ctx.ellipse(0, -17, 9, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // eyes
+      ctx.fillStyle = '#8FE3FF';
+      ctx.beginPath();
+      ctx.ellipse(-5, -19, 3.4, 5.4, -0.18, 0, Math.PI * 2);
+      ctx.ellipse(5, -19, 3.4, 5.4, 0.18, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function loop(t) {
+      ctx.clearRect(0, 0, W, H);
+
+      if (mouse.active) {
+        const k = 0.045;
+        spider.vx += (spider.tx - spider.x) * k;
+        spider.vy += (spider.ty - spider.y) * k;
+        spider.vx *= 0.82;
+        spider.vy *= 0.82;
+        spider.x += spider.vx;
+        spider.y += spider.vy;
+      } else {
+        spider.sway += 1;
+        spider.x = W * 0.5 + Math.sin(spider.sway * 0.01) * 18;
+        spider.y = H * 0.42 + Math.sin(spider.sway * 0.014) * 12;
+      }
+      spider.jump *= 0.9;
+
+      drawWeb(t);
+      drawSparkles(t);
+      drawSpider(t);
+      requestAnimationFrame(loop);
+    }
+
+    resize();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

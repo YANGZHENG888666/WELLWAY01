@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SPIDER MAN · 流线蒙版切换</title>
+  <style>
+    :root {
+      --bg: #0A0A0E;
+      --line: rgba(255, 255, 255, 0.14);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: #F5F5F7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 18px; }
+    .demo { width: 100%; max-width: 1000px; }
+    .hero {
+      position: relative;
+      width: 100%;
+      height: min(82vh, 760px);
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+    .layer.reveal, .layer.reveal-tail {
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+    .layer.reveal {
+      clip-path: ellipse(150px 100px at var(--mx, -200px) var(--my, -200px));
+    }
+    .layer.reveal-tail {
+      clip-path: ellipse(88px 58px at var(--tx, -200px) var(--ty, -200px));
+    }
+    .hero.is-active .layer.reveal,
+    .hero.is-active .layer.reveal-tail { opacity: 1; }
+    .hero.leaving .layer.reveal,
+    .hero.leaving .layer.reveal-tail {
+      opacity: 0;
+      transition: opacity 0.7s ease 0.25s;
+    }
+    .hint {
+      color: rgba(245, 245, 247, 0.5);
+      font-size: 13px;
+      margin-top: 18px;
+      text-align: center;
+      line-height: 1.7;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .layer.reveal, .hero.leaving .layer.reveal { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="demo">
+      <div class="hero" id="hero">
+        <img class="layer front" src="title.png" alt="">
+      <img class="layer reveal" src="holland.png" alt="">
+      <img class="layer reveal-tail" src="holland.png" alt="">
+      </div>
+      <div class="hint">鼠标滑过时，第二张海报会以流线拖尾的形态从第一张里显现；离开后延迟恢复。</div>
+    </div>
+  </div>
+
+  <script>
+    const hero = document.getElementById("hero");
+    const reveal = document.querySelector(".layer.reveal");
+    const tail = document.querySelector(".layer.reveal-tail");
+
+    let active = false;
+    let tx = 0, ty = 0;
+    let tailX = -200, tailY = -200;
+    let leaveTimer = null;
+
+    function frame() {
+      tailX += (tx - tailX) * 0.13;
+      tailY += (ty - tailY) * 0.13;
+      reveal.style.setProperty("--mx", tx + "px");
+      reveal.style.setProperty("--my", ty + "px");
+      tail.style.setProperty("--tx", tailX + "px");
+      tail.style.setProperty("--ty", tailY + "px");
+      requestAnimationFrame(frame);
+    }
+
+    hero.addEventListener("pointermove", (e) => {
+      clearTimeout(leaveTimer);
+      hero.classList.remove("leaving");
+      const r = hero.getBoundingClientRect();
+      tx = e.clientX - r.left;
+      ty = e.clientY - r.top;
+      if (!active) {
+        active = true;
+        tailX = tx;
+        tailY = ty;
+      }
+      hero.classList.add("is-active");
+    });
+
+    hero.addEventListener("pointerleave", () => {
+      active = false;
+      hero.classList.add("leaving");
+      leaveTimer = setTimeout(() => {
+        hero.classList.remove("is-active", "leaving");
+      }, 1050);
+    });
+
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

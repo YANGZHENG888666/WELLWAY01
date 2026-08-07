@@ -1,0 +1,21 @@
+# scratch / intermediate
+work/
+
+# secrets
+.env
+.env.local
+.env.*.local
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# build / deps
+node_modules/
+dist/
+build/
+
+# logs
+*.log

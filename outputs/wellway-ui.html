@@ -1,0 +1,1403 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WELL WAY App · 页面设计 v0.1</title>
+  <style>
+    :root {
+      --bg: #F5F5F5;
+      --surface: #FFFFFF;
+      --surface-2: #FAFAFC;
+      --line: #E8E8EE;
+      --text: #17181C;
+      --text-2: #6E7278;
+      --text-3: #A0A4AA;
+      --primary: #4199FD;
+      --primary-strong: #2F86EB;
+      --primary-soft: #EAF3FF;
+      --danger: #E5484D;
+      --danger-soft: #FFF0F0;
+      --success: #34C77B;
+      --success-soft: #EAF9F1;
+      --warn: #F5A623;
+      --radius: 8px;
+      --shadow: 0 18px 40px rgba(23, 24, 28, 0.10), 0 2px 8px rgba(23, 24, 28, 0.06);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .page { min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .top-note { color: var(--text-2); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); display: inline-block; }
+    .group-label {
+      padding: 22px 32px 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .group-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+    .flow {
+      flex: 1;
+      display: flex;
+      gap: 28px;
+      padding: 22px 32px 44px;
+      overflow-x: auto;
+      align-items: flex-start;
+      scroll-snap-type: x proximity;
+    }
+    .stage {
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+    .stage-label { font-size: 12px; font-weight: 600; color: var(--text-2); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+    .stage-label b { color: var(--primary); font-weight: 800; }
+    .phone {
+      width: 360px;
+      min-width: 360px;
+      height: 720px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .statusbar {
+      height: 46px;
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .status-icons { display: flex; align-items: center; gap: 6px; color: var(--text); }
+    .screen { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; background: var(--surface); }
+    .scroll { flex: 1; overflow-y: auto; padding: 4px 22px 26px; display: flex; flex-direction: column; }
+    .scroll::-webkit-scrollbar { width: 0; height: 0; }
+    .h1 { font-size: 24px; line-height: 1.35; font-weight: 800; margin: 8px 0 6px; }
+    .sub { color: var(--text-2); font-size: 14px; line-height: 1.6; margin: 0 0 16px; }
+    .btn {
+      height: 50px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-strong); }
+    .btn-ghost { background: var(--surface); color: var(--text); border-color: var(--line); }
+    .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-sm { height: 40px; font-size: 14px; }
+    .field {
+      height: 48px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-3);
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .field input { border: 0; outline: 0; background: transparent; flex: 1; color: var(--text); font: inherit; }
+    .field input::placeholder { color: var(--text-3); }
+    .chip-row { display: flex; gap: 8px; align-items: center; margin: 4px 0 16px; flex-wrap: wrap; }
+    .chip {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      color: var(--text-2);
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .section-label {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 18px 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .section-label small { font-weight: 600; color: var(--text-3); font-size: 12px; }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .row:last-child { border-bottom: 0; }
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      color: var(--primary-strong);
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .row-main { min-width: 0; flex: 1; }
+    .row-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .row-meta { color: var(--text-3); font-size: 12px; margin-top: 2px; }
+    .row-preview { color: var(--text-2); font-size: 13px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .badge {
+      font-size: 11px;
+      color: var(--text-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 2px 7px;
+      white-space: nowrap;
+      background: var(--surface);
+    }
+    .badge-blue { color: var(--primary-strong); border-color: #C9E2FF; background: var(--primary-soft); }
+    .badge-green { color: #1F9D5B; border-color: #BFEBD3; background: var(--success-soft); }
+    .badge-red { color: var(--danger); border-color: #F6C8CA; background: var(--danger-soft); }
+    .badge-gold { color: #B77800; border-color: #F3DDB4; background: #FFF7E8; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      color: var(--text-2);
+      flex-shrink: 0;
+    }
+    .link { color: var(--primary-strong); font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; }
+    .checkbox {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .checkbox.checked { background: var(--primary); border-color: var(--primary); }
+    .agreement { display: flex; gap: 10px; align-items: flex-start; font-size: 12px; color: var(--text-2); line-height: 1.7; margin: 14px 0; }
+    .agreement a { color: var(--text); text-decoration: none; font-weight: 600; }
+    .center-block { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .wordmark { font-size: 28px; font-weight: 800; letter-spacing: 0; display: flex; align-items: center; gap: 8px; }
+    .wordmark span { color: var(--primary); }
+    .tagline { color: var(--text-2); font-size: 14px; margin: 6px 0 26px; }
+    .spacer { flex: 1; }
+    .composer {
+      margin: 6px 0 14px;
+      height: 44px;
+      border-radius: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      color: var(--text-3);
+      font-size: 14px;
+      gap: 8px;
+    }
+    .map {
+      position: relative;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: linear-gradient(160deg, #EAF3FF 0%, #F7FBFF 55%, #EFF8F2 100%);
+      flex-shrink: 0;
+    }
+    .map svg { display: block; width: 100%; height: 100%; }
+    .tabbar {
+      height: 58px;
+      min-height: 58px;
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+      display: flex;
+      align-items: stretch;
+      padding: 0 8px;
+    }
+    .tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 11px;
+      color: var(--text-3);
+      cursor: pointer;
+    }
+    .tab.active { color: var(--primary); font-weight: 700; }
+    .switch {
+      width: 42px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--primary);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .switch.off { background: #D8DAE0; }
+    .switch.off::after { left: 3px; right: auto; }
+    .perm-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      background: var(--surface);
+    }
+    .perm-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      display: grid;
+      place-items: center;
+      color: var(--text-2);
+      flex-shrink: 0;
+    }
+    .perm-main { flex: 1; min-width: 0; }
+    .perm-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .perm-desc { color: var(--text-3); font-size: 12px; margin-top: 3px; line-height: 1.5; }
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 4px; }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat .num { font-size: 18px; font-weight: 800; }
+    .stat .lbl { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+    .stat-4 { grid-template-columns: repeat(4, 1fr); }
+    .progress-track { height: 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; background: var(--primary); }
+    .badge-tile {
+      aspect-ratio: 1 / 1;
+      border-radius: var(--radius);
+      background: linear-gradient(160deg, #FFF7E8, #FFFDF7);
+      border: 1px solid #F3DDB4;
+      display: grid;
+      place-items: center;
+      color: #B77800;
+      position: relative;
+    }
+    .badge-tile.locked { background: var(--surface-2); border-color: var(--line); color: var(--text-3); }
+    .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 2px;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+    }
+    .menu-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius);
+      background: var(--primary-soft);
+      color: var(--primary-strong);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .menu-icon.gray { background: var(--surface-2); color: var(--text-2); }
+    .record-row {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 13px;
+      margin-bottom: 10px;
+      background: var(--surface);
+    }
+    .record-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .record-name { font-size: 15px; font-weight: 700; }
+    .record-meta { color: var(--text-3); font-size: 12px; margin-top: 6px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .banner {
+      border-radius: var(--radius);
+      border: 1px dashed #C9E2FF;
+      background: var(--primary-soft);
+      color: var(--primary-strong);
+      font-size: 13px;
+      padding: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 14px 0;
+    }
+    .header-row { display: flex; align-items: center; gap: 10px; margin: 8px 0 10px; }
+    .header-row .h1 { margin: 0; flex: 1; }
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .avatar-lg {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(160deg, var(--primary), #6CB5FF);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .map-pin {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      background: var(--primary);
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(23, 24, 28, 0.25);
+    }
+    .map-pin.done { background: var(--success); }
+    .map-pin.current { background: var(--danger); }
+    .overlay-card {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 24px rgba(23, 24, 28, 0.12);
+      padding: 12px;
+    }
+    .notify-pill {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(23, 24, 28, 0.88);
+      color: #fff;
+      font-size: 12px;
+      border-radius: 999px;
+      padding: 7px 13px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    @media (max-width: 860px) {
+      .flow { padding: 18px 18px 36px; gap: 20px; }
+      .group-label { padding: 16px 18px 0; }
+      .phone { width: 330px; min-width: 330px; height: 700px; }
+      .topbar { padding: 14px 18px; }
+      .top-note { display: none; }
+    }
+    @media (max-width: 480px) {
+      .flow { overflow-x: auto; }
+      .phone { width: 300px; min-width: 300px; height: 660px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">W</div>
+        WELL WAY · 页面设计 v0.1
+      </div>
+      <div class="top-note">
+        <span class="dot"></span>
+        风格与色调沿用 Figma `wellway` 设计稿
+      </div>
+    </header>
+
+    <div class="group-label">账号 / 车库</div>
+    <main class="flow">
+
+      <section class="stage">
+        <div class="phone" data-tab="none">
+          <div class="screen">
+            <div class="scroll">
+              <div class="center-block">
+                <div class="wordmark">WELL <span>WAY</span></div>
+                <div class="tagline">让擦肩不放过</div>
+                <div class="agreement">
+                  <div class="checkbox checked">
+                    <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden="true"><path d="M1.5 4.5L4 7L9.5 1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <span>我已阅读并同意<a href="#">《用户协议》</a>及<a href="#">《隐私政策》</a></span>
+                </div>
+                <button class="btn btn-primary" type="button">随便看看</button>
+                <button class="btn btn-ghost" type="button" style="margin-top: 12px;">使用邮箱登录</button>
+                <a class="link" href="#" style="align-self:center; margin: 16px 0 6px;">忘记密码</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>01</b> 登录 / 欢迎</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="me">
+          <div class="screen">
+            <div class="scroll">
+              <div class="header-row">
+                <div class="h1" style="font-size: 22px;">我的P房</div>
+                <div class="icon-btn">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 3V15M3 9H15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </div>
+              </div>
+              <div class="card" style="margin-bottom: 10px;">
+                <div class="card-icon" style="width: 56px; height: 56px; color: var(--primary-strong); background: var(--primary-soft); border-color: #C9E2FF;">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 16L8.5 8H15.5L19 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 12H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="row-title">春风动力 450SR <span class="badge badge-blue">默认</span></div>
+                  <div class="row-meta">450SR · 450cc · 小橙</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="card">
+                <div class="card-icon" style="width: 56px; height: 56px;">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 16L8.5 8H15.5L19 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 12H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="row-title">阿普利亚 RS 457</div>
+                  <div class="row-meta">RS 457 · 457cc · 未命名</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="section-label">车辆管理 <small>点击卡片切换默认</small></div>
+              <div class="card" style="border-style: dashed; justify-content: center; color: var(--text-3);">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 3V15M3 9H15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                添加车辆
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-primary" type="button">管理默认车辆</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>02</b> 我的P房</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="none">
+          <div class="screen">
+            <div class="scroll">
+              <div class="header-row">
+                <div class="icon-btn">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M9.5 3.5L5 8L9.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="h1" style="font-size: 22px;">选择品牌</div>
+              </div>
+              <div class="field">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <input placeholder="搜索品牌车型（支持拼音）" aria-label="搜索品牌车型">
+              </div>
+              <div class="section-label">热门品牌 <small>全部</small></div>
+              <div class="row">
+                <div class="avatar">春</div>
+                <div class="row-main">
+                  <div class="row-title">春风动力 <span class="badge">CFMOTO</span></div>
+                  <div class="row-meta">跑车 · 街车 · ADV</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="row">
+                <div class="avatar">阿</div>
+                <div class="row-main">
+                  <div class="row-title">阿普利亚 <span class="badge">Aprilia</span></div>
+                  <div class="row-meta">跑车 · 街车</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="row">
+                <div class="avatar">川</div>
+                <div class="row-main">
+                  <div class="row-title">川崎 <span class="badge">Kawasaki</span></div>
+                  <div class="row-meta">跑车 · 街车 · 越野</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="row">
+                <div class="avatar">本</div>
+                <div class="row-main">
+                  <div class="row-title">本田 <span class="badge">Honda</span></div>
+                  <div class="row-meta">踏板 · 街车 · 巡航</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-primary" type="button">下一步：选择车型</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>03</b> 选择品牌</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="none">
+          <div class="screen">
+            <div class="scroll">
+              <div class="header-row">
+                <div class="icon-btn">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M9.5 3.5L5 8L9.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="h1" style="font-size: 22px;">选择车型</div>
+              </div>
+              <div class="chip-row">
+                <button class="chip active" type="button">跑车系列</button>
+                <button class="chip" type="button">街车系列</button>
+                <button class="chip" type="button">ADV</button>
+                <button class="chip" type="button">复古</button>
+                <button class="chip" type="button">踏板</button>
+              </div>
+              <div class="chip-row" style="margin-top: -8px;">
+                <button class="chip" type="button">排量</button>
+                <button class="chip" type="button">价格</button>
+              </div>
+              <div class="section-label">阿普利亚 · 跑车 <small>2 款</small></div>
+              <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 10px;">
+                <div style="width: 92px; height: 104px; background: linear-gradient(160deg, var(--primary-soft), #F8FBFF); display: grid; place-items: center; color: var(--primary-strong);">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 16L8.5 8H15.5L19 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 12H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <div style="flex: 1; padding: 12px 12px 12px 0;">
+                  <div class="row-title" style="margin-bottom: 4px;">阿普利亚 RS 457 <span class="badge badge-gold">4.8</span></div>
+                  <div class="row-meta">RS 457 · 457cc · 跑车</div>
+                  <div style="margin-top: 8px; font-weight: 700; font-size: 14px;">¥41,800</div>
+                </div>
+              </div>
+              <div class="card" style="padding: 0; overflow: hidden;">
+                <div style="width: 92px; height: 104px; background: linear-gradient(160deg, #F5F5F7, #FBFBFD); display: grid; place-items: center; color: var(--text-2);">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 16L8.5 8H15.5L19 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 12H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <div style="flex: 1; padding: 12px 12px 12px 0;">
+                  <div class="row-title" style="margin-bottom: 4px;">阿普利亚 Tuono 457 <span class="badge badge-gold">4.7</span></div>
+                  <div class="row-meta">Tuono 457 · 457cc · 街车</div>
+                  <div style="margin-top: 8px; font-weight: 700; font-size: 14px;">¥40,800</div>
+                </div>
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-primary" type="button">添加车辆</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>04</b> 选择车型</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="none">
+          <div class="screen">
+            <div class="scroll">
+              <div class="header-row">
+                <div class="icon-btn">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M9.5 3.5L5 8L9.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="h1" style="font-size: 22px;">车辆确认</div>
+              </div>
+              <div class="card" style="margin-bottom: 14px;">
+                <div class="card-icon" style="color: var(--primary-strong); background: var(--primary-soft); border-color: #C9E2FF;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 16L8.5 8H15.5L19 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 12H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="row-title">春风动力 CFMOTO 450SR</div>
+                  <div class="row-meta">450SR · 450cc · 跑车</div>
+                </div>
+              </div>
+              <div class="section-label">车辆信息 <small>选填</small></div>
+              <div class="card" style="justify-content: center; border-style: dashed; color: var(--text-3); margin-bottom: 12px;">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 3V15M3 9H15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                上传车辆照片
+              </div>
+              <div class="field"><input placeholder="车牌号（可选，仅自己可见）" aria-label="车牌号"></div>
+              <div class="field"><input placeholder="车辆昵称（如：小橙）" aria-label="车辆昵称"></div>
+              <div class="chip-row" style="margin-bottom: 6px;">
+                <button class="chip active" type="button">橙色</button>
+                <button class="chip" type="button">黑色</button>
+                <button class="chip" type="button">白色</button>
+                <button class="chip" type="button">蓝色</button>
+              </div>
+              <div class="row" style="border-bottom: 0;">
+                <div style="flex: 1; font-size: 15px; font-weight: 700;">设为默认车辆</div>
+                <div class="switch"></div>
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-primary" type="button">保存到车库</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>05</b> 车辆确认 / 编辑</div>
+      </section>
+
+    </main>
+
+    <div class="group-label">路线 / 骑行</div>
+    <main class="flow">
+
+      <section class="stage">
+        <div class="phone" data-tab="home">
+          <div class="screen">
+            <div class="scroll">
+              <div class="card" style="margin-bottom: 14px;">
+                <div class="card-icon" style="color: var(--primary-strong); background: var(--primary-soft); border-color: #C9E2FF;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 16L8.5 8H15.5L19 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/></svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="row-meta" style="margin: 0 0 2px;">当前默认车辆</div>
+                  <div class="row-title">春风动力 450SR</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="section-label">推荐路线 <small>为你挑选</small></div>
+              <div class="card" style="padding: 0; overflow: hidden; flex-direction: column; align-items: stretch;">
+                <div class="map" style="height: 128px;">
+                  <svg viewBox="0 0 320 128" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M10 112 C70 96, 84 40, 148 46 C210 52, 226 96, 310 24" stroke="#4199FD" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="1 0"/>
+                    <circle cx="148" cy="46" r="5" fill="#34C77B" stroke="#fff" stroke-width="2"/>
+                    <circle cx="310" cy="24" r="5" fill="#E5484D" stroke="#fff" stroke-width="2"/>
+                  </svg>
+                  <div class="map-pin" style="left: 44%; top: 32%;"></div>
+                  <div class="map-pin done" style="left: 88%; top: 16%;"></div>
+                </div>
+                <div style="padding: 13px;">
+                  <div class="row-title" style="margin-bottom: 6px;">天荒坪山道</div>
+                  <div class="row-meta">38 km · 中等 · 累计爬升 860m</div>
+                  <div class="row-meta" style="color: var(--primary-strong); margin-top: 8px;">今天有 23 位骑友骑行</div>
+                </div>
+              </div>
+              <div class="banner">
+                <span>平台活动即将上线</span>
+                <span class="badge badge-gold">后置</span>
+              </div>
+              <div class="section-label">附近路线 <small>2 条</small></div>
+              <div class="card" style="margin-bottom: 10px;">
+                <div class="card-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 18L10 7M10 7L13 12M10 7H7M21 18L14 7M14 7L17 12M14 7H17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="row-title" style="font-size: 14px;">环湖观光线</div>
+                  <div class="row-meta">26 km · 简单</div>
+                </div>
+                <span class="badge">今日 8 人</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>06</b> 首页 / 路线入口</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="routes">
+          <div class="screen">
+            <div class="scroll">
+              <div class="h1" style="font-size: 22px;">路线</div>
+              <div class="chip-row">
+                <button class="chip active" type="button">全部</button>
+                <button class="chip" type="button">跑山</button>
+                <button class="chip" type="button">短途</button>
+                <button class="chip" type="button">长途</button>
+              </div>
+              <div class="chip-row" style="margin-top: -8px;">
+                <button class="chip" type="button">城市</button>
+                <button class="chip" type="button">难度</button>
+                <button class="chip" type="button">里程</button>
+                <span class="link" style="margin-left: auto;">热度</span>
+              </div>
+              <div class="record-row">
+                <div class="record-top">
+                  <div class="record-name">天荒坪山道</div>
+                  <span class="badge badge-blue">今日 23 人</span>
+                </div>
+                <div class="record-meta">安吉 天荒坪 · 38 km · 爬升 860m · 中等</div>
+                <div class="record-meta" style="color: var(--primary-strong);">可获徽章 2 枚</div>
+              </div>
+              <div class="record-row">
+                <div class="record-top">
+                  <div class="record-name">环湖观光线</div>
+                  <span class="badge badge-blue">今日 8 人</span>
+                </div>
+                <div class="record-meta">千岛湖 · 26 km · 爬升 210m · 简单</div>
+                <div class="record-meta" style="color: var(--primary-strong);">可获徽章 1 枚</div>
+              </div>
+              <div class="record-row">
+                <div class="record-top">
+                  <div class="record-name">皖南川藏线东段</div>
+                  <span class="badge badge-blue">今日 41 人</span>
+                </div>
+                <div class="record-meta">宁国 · 86 km · 爬升 1240m · 困难</div>
+                <div class="record-meta" style="color: var(--primary-strong);">可获徽章 3 枚</div>
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-ghost" type="button">加载更多</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>07</b> 路线列表</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="routes">
+          <div class="screen">
+            <div class="scroll">
+              <div class="header-row">
+                <div class="icon-btn">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M9.5 3.5L5 8L9.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="h1" style="font-size: 22px;">路线详情</div>
+              </div>
+              <div class="map" style="height: 170px; margin-bottom: 12px;">
+                <svg viewBox="0 0 320 170" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M12 158 C66 140, 70 62, 132 62 C196 62, 200 118, 308 30" stroke="#4199FD" stroke-width="4" fill="none" stroke-linecap="round"/>
+                  <path d="M12 158 C66 140, 70 62, 132 62 C196 62, 200 118, 308 30" stroke="#fff" stroke-width="1" stroke-dasharray="6 8" opacity="0.7"/>
+                </svg>
+                <div class="map-pin" style="left: 4%; top: 86%;"></div>
+                <div class="map-pin done" style="left: 40%; top: 33%;"></div>
+                <div class="map-pin done" style="left: 74%; top: 44%;"></div>
+                <div class="map-pin current" style="left: 94%; top: 12%;"></div>
+              </div>
+              <div class="h1" style="font-size: 20px;">天荒坪山道</div>
+              <div class="row-meta" style="margin-bottom: 8px;">安吉 天荒坪 · 适合跑车 / 街车</div>
+              <div class="stat-grid stat-4">
+                <div class="stat"><div class="num">38</div><div class="lbl">里程 km</div></div>
+                <div class="stat"><div class="num">2.5h</div><div class="lbl">预计时长</div></div>
+                <div class="stat"><div class="num">860</div><div class="lbl">爬升 m</div></div>
+                <div class="stat"><div class="num">中等</div><div class="lbl">难度</div></div>
+              </div>
+              <div class="banner">
+                <span>今天有 23 位骑友骑行</span>
+                <span class="badge badge-green">实时</span>
+              </div>
+              <div class="section-label">打卡点 <small>3 个</small></div>
+              <div class="row">
+                <div class="avatar" style="background: var(--success-soft); color: #1F9D5B;">1</div>
+                <div class="row-main"><div class="row-title">山顶观景台</div><div class="row-meta">已完成</div></div>
+                <span class="badge badge-green">完成</span>
+              </div>
+              <div class="row">
+                <div class="avatar">2</div>
+                <div class="row-main"><div class="row-title">林场弯</div><div class="row-meta">距起点 12 km</div></div>
+              </div>
+              <div class="row">
+                <div class="avatar">3</div>
+                <div class="row-main"><div class="row-title">天池驿站</div><div class="row-meta">距起点 26 km</div></div>
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-primary" type="button">开始骑行</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>08</b> 路线详情</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="none">
+          <div class="screen" style="background: #E9F3FF;">
+            <div class="map" style="position: absolute; inset: 0; border: 0; border-radius: 0; background: linear-gradient(160deg, #DDEFFF, #EAF7F0);">
+              <svg viewBox="0 0 360 720" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M-10 650 C60 620, 80 480, 150 470 C230 458, 250 300, 180 230 C120 168, 200 90, 330 20" stroke="#4199FD" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="8 8"/>
+                <circle cx="180" cy="230" r="7" fill="#E5484D" stroke="#fff" stroke-width="3"/>
+              </svg>
+            </div>
+            <div class="notify-pill">
+              <span class="dot" style="background: var(--success);"></span>
+              WELL WAY 正在记录骑行
+            </div>
+            <div class="overlay-card" style="top: 74px;">
+              <div class="row-title" style="font-size: 15px;">天荒坪山道</div>
+              <div class="row-meta">当前车辆 · 春风动力 450SR</div>
+            </div>
+            <div class="overlay-card" style="bottom: 138px;">
+              <div class="row-title" style="font-size: 14px; color: var(--primary-strong);">该路段当前有 4 名骑士</div>
+              <div class="row-meta" style="margin-top: 6px;">开启伴行后可显示距离与方向（匿名）</div>
+            </div>
+            <div class="overlay-card" style="bottom: 14px; display: flex; flex-direction: column; gap: 10px;">
+              <div class="stat-grid stat-4" style="margin: 0;">
+                <div class="stat"><div class="num">62</div><div class="lbl">km/h 当前</div></div>
+                <div class="stat"><div class="num">18.6</div><div class="lbl">km 里程</div></div>
+                <div class="stat"><div class="num">42:18</div><div class="lbl">时长</div></div>
+                <div class="stat"><div class="num">2</div><div class="lbl">打卡</div></div>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn btn-ghost btn-sm" type="button" style="flex: 1;">暂停</button>
+                <button class="btn btn-danger btn-sm" type="button" style="flex: 1;">结束骑行</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>09</b> 骑行中</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="none">
+          <div class="screen">
+            <div class="scroll">
+              <div class="header-row">
+                <div class="h1" style="font-size: 22px;">骑行总结</div>
+                <span class="badge badge-blue">已保存</span>
+              </div>
+              <div class="map" style="height: 160px; margin-bottom: 12px;">
+                <svg viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M10 150 C70 136, 74 54, 138 54 C204 54, 208 116, 310 26" stroke="#4199FD" stroke-width="4" fill="none" stroke-linecap="round"/>
+                </svg>
+                <div class="map-pin done" style="left: 12%; top: 78%;"></div>
+                <div class="map-pin done" style="left: 44%; top: 30%;"></div>
+                <div class="map-pin" style="left: 92%; top: 10%;"></div>
+              </div>
+              <div class="h1" style="font-size: 20px;">天荒坪山道</div>
+              <div class="row-meta" style="margin-bottom: 8px;">2026-08-06 08:12 出发</div>
+              <div class="stat-grid stat-4">
+                <div class="stat"><div class="num">86.4</div><div class="lbl">km 总里程</div></div>
+                <div class="stat"><div class="num">2:18:42</div><div class="lbl">总时长</div></div>
+                <div class="stat"><div class="num">43</div><div class="lbl">均速 km/h</div></div>
+                <div class="stat"><div class="num">118</div><div class="lbl">最高 km/h</div></div>
+              </div>
+              <div class="section-label">打卡判定 <small>2 / 3 完成</small></div>
+              <div class="row">
+                <div class="avatar" style="background: var(--success-soft); color: #1F9D5B;">1</div>
+                <div class="row-main"><div class="row-title">山顶观景台</div><div class="row-meta">重合度 96%</div></div>
+                <span class="badge badge-green">已完成</span>
+              </div>
+              <div class="row">
+                <div class="avatar" style="background: var(--success-soft); color: #1F9D5B;">2</div>
+                <div class="row-main"><div class="row-title">林场弯</div><div class="row-meta">重合度 88%</div></div>
+                <span class="badge badge-green">已完成</span>
+              </div>
+              <div class="row">
+                <div class="avatar">3</div>
+                <div class="row-main"><div class="row-title">天池驿站</div><div class="row-meta">未经过打卡点</div></div>
+                <span class="badge badge-red">未完成</span>
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-primary" type="button">查看徽章</button>
+              <button class="btn btn-ghost" type="button" style="margin-top: 10px;">保存轨迹</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>10</b> 骑行结束 / 轨迹总结</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="none">
+          <div class="screen">
+            <div class="scroll">
+              <div style="margin: 18px auto 14px; width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(160deg, #FFF1C9, #FFD98A); border: 6px solid #F3C85C; display: grid; place-items: center; color: #B77800;">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="9" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M5 21C5.8 17.8 8.4 16 12 16C15.6 16 18.2 17.8 19 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M9 9L11 11L15 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div style="text-align: center;">
+                <div class="h1" style="margin: 0 0 4px;">山路征服者</div>
+                <div class="row-meta">完成天荒坪山道全部打卡点</div>
+                <div class="row-meta" style="margin-top: 4px;">获得时间 2026-08-06</div>
+              </div>
+              <div class="section-label">路线进度 <small>2 / 5</small></div>
+              <div class="progress-track"><div class="progress-fill" style="width: 40%;"></div></div>
+              <div class="row-meta" style="margin-top: 8px;">本路线已打卡 2/5，还差 3 个路段集齐全套徽章</div>
+              <div class="section-label">分享卡片</div>
+              <div class="card" style="background: linear-gradient(160deg, #FFF7E8, #FFFDF7); border-color: #F3DDB4;">
+                <div class="badge-tile" style="width: 52px; height: 52px;">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="9" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M5 21C5.8 17.8 8.4 16 12 16C15.6 16 18.2 17.8 19 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="row-title" style="font-size: 14px;">WELL WAY 骑行打卡</div>
+                  <div class="row-meta">天荒坪山道 · 2/5</div>
+                </div>
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-primary" type="button">保存图片到相册</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>11</b> 打卡完成 / 徽章</div>
+      </section>
+
+    </main>
+
+    <div class="group-label">成就 / 记录</div>
+    <main class="flow">
+
+      <section class="stage">
+        <div class="phone" data-tab="me">
+          <div class="screen">
+            <div class="scroll">
+              <div class="h1" style="font-size: 22px;">我的徽章</div>
+              <div class="card" style="flex-direction: column; align-items: stretch; margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-weight: 800;">已获得 6 / 18</span>
+                  <span class="badge badge-gold">继续加油</span>
+                </div>
+                <div class="progress-track" style="margin-top: 12px;"><div class="progress-fill" style="width: 33%;"></div></div>
+              </div>
+              <div class="section-label">天荒坪山道 <small>2 / 3</small></div>
+              <div class="badge-grid">
+                <div class="badge-tile">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="9" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M5 21C5.8 17.8 8.4 16 12 16C15.6 16 18.2 17.8 19 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
+                <div class="badge-tile">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20L12 4L20 20" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 20H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
+                <div class="badge-tile locked">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7V10" stroke="currentColor" stroke-width="1.6"/></svg>
+                </div>
+              </div>
+              <div class="section-label">环湖观光线 <small>1 / 2</small></div>
+              <div class="badge-grid">
+                <div class="badge-tile" style="background: linear-gradient(160deg, #EAF9F1, #F5FDF8); border-color: #BFEBD3; color: #1F9D5B;">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3L14.5 9.5H21L15.8 13.5L18 20L12 16L6 20L8.2 13.5L3 9.5H9.5L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="badge-tile locked">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7V10" stroke="currentColor" stroke-width="1.6"/></svg>
+                </div>
+                <div style="display: grid; place-items: center; color: var(--text-3); font-size: 12px;">查看条件</div>
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-ghost" type="button">查看全部徽章条件</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>12</b> 我的徽章</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="records">
+          <div class="screen">
+            <div class="scroll">
+              <div class="h1" style="font-size: 22px;">骑行记录</div>
+              <div class="chip-row">
+                <button class="chip active" type="button">全部</button>
+                <button class="chip" type="button">已完成</button>
+                <button class="chip" type="button">未完成</button>
+              </div>
+              <div class="record-row">
+                <div class="record-top">
+                  <div class="record-name">天荒坪山道</div>
+                  <span class="badge badge-green">已完成</span>
+                </div>
+                <div class="record-meta">2026-08-06 08:12 · 86.4 km · 2:18:42</div>
+                <div class="record-meta" style="color: var(--primary-strong);">打卡 2/3 · 获得 1 枚徽章</div>
+              </div>
+              <div class="record-row">
+                <div class="record-top">
+                  <div class="record-name">环湖观光线</div>
+                  <span class="badge badge-red">未完成</span>
+                </div>
+                <div class="record-meta">2026-08-03 16:40 · 18.2 km · 0:52:11</div>
+                <div class="record-meta" style="color: var(--text-3);">偏离路线，未经过打卡点</div>
+              </div>
+              <div class="record-row">
+                <div class="record-top">
+                  <div class="record-name">皖南川藏线东段</div>
+                  <span class="badge badge-green">已完成</span>
+                </div>
+                <div class="record-meta">2026-07-28 09:00 · 86.4 km · 3:05:20</div>
+                <div class="record-meta" style="color: var(--primary-strong);">打卡 3/3 · 获得 2 枚徽章</div>
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-ghost" type="button">加载更多</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>13</b> 我的骑行记录</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="records">
+          <div class="screen">
+            <div class="scroll">
+              <div class="header-row">
+                <div class="icon-btn">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M9.5 3.5L5 8L9.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="h1" style="font-size: 22px;">骑行详情</div>
+              </div>
+              <div class="map" style="height: 160px; margin-bottom: 12px;">
+                <svg viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M10 150 C70 136, 74 54, 138 54 C204 54, 208 116, 310 26" stroke="#4199FD" stroke-width="4" fill="none" stroke-linecap="round"/>
+                </svg>
+                <div class="map-pin done" style="left: 12%; top: 78%;"></div>
+                <div class="map-pin done" style="left: 44%; top: 30%;"></div>
+                <div class="map-pin" style="left: 92%; top: 10%;"></div>
+              </div>
+              <div class="h1" style="font-size: 20px;">天荒坪山道</div>
+              <div class="row-meta" style="margin-bottom: 8px;">2026-08-06 08:12 · 春风动力 450SR</div>
+              <div class="stat-grid stat-4">
+                <div class="stat"><div class="num">86.4</div><div class="lbl">km</div></div>
+                <div class="stat"><div class="num">2:18:42</div><div class="lbl">时长</div></div>
+                <div class="stat"><div class="num">43</div><div class="lbl">均速</div></div>
+                <div class="stat"><div class="num">118</div><div class="lbl">最高</div></div>
+              </div>
+              <div class="section-label">打卡明细</div>
+              <div class="row">
+                <div class="avatar" style="background: var(--success-soft); color: #1F9D5B;">1</div>
+                <div class="row-main"><div class="row-title">山顶观景台</div><div class="row-meta">已获得徽章</div></div>
+                <span class="badge badge-gold">山路征服者</span>
+              </div>
+              <div class="row">
+                <div class="avatar" style="background: var(--success-soft); color: #1F9D5B;">2</div>
+                <div class="row-main"><div class="row-title">林场弯</div><div class="row-meta">已获得徽章</div></div>
+                <span class="badge badge-gold">弯道猎人</span>
+              </div>
+              <div class="row">
+                <div class="avatar">3</div>
+                <div class="row-main"><div class="row-title">天池驿站</div><div class="row-meta">未完成</div></div>
+                <span class="badge badge-red">未完成</span>
+              </div>
+              <div class="spacer"></div>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn btn-ghost btn-sm" type="button" style="flex: 1;">重命名</button>
+                <button class="btn btn-ghost btn-sm" type="button" style="flex: 1; color: var(--danger); border-color: #F6C8CA;">删除</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>14</b> 骑行记录详情</div>
+      </section>
+
+    </main>
+
+    <div class="group-label">个人 / 设置</div>
+    <main class="flow">
+
+      <section class="stage">
+        <div class="phone" data-tab="me">
+          <div class="screen">
+            <div class="scroll">
+              <div style="display: flex; align-items: center; gap: 14px; margin: 12px 0 14px;">
+                <div class="avatar-lg">骑</div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="row-title" style="font-size: 18px;">骑友 <span class="badge">匿名账号</span></div>
+                  <div class="row-meta">未绑定邮箱 · 数据保存在本机</div>
+                </div>
+              </div>
+              <div class="banner" style="border-color: #F3DDB4; background: #FFF7E8; color: #B77800;">
+                <span>绑定邮箱，换设备不丢数据</span>
+                <span class="link" style="color: #B77800;">绑定</span>
+              </div>
+              <div class="menu-item">
+                <div class="menu-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 16L8.5 8H15.5L19 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16.5" r="2.4" stroke="currentColor" stroke-width="1.5"/></svg>
+                </div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700;">我的车辆</div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="menu-item">
+                <div class="menu-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="9" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M5 21C5.8 17.8 8.4 16 12 16C15.6 16 18.2 17.8 19 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700;">我的徽章</div>
+                <span class="badge badge-gold">6 / 18</span>
+              </div>
+              <div class="menu-item">
+                <div class="menu-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 18L10 7M10 7L13 12M10 7H7M21 18L14 7M14 7L17 12M14 7H17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700;">我的骑行记录</div>
+                <span class="badge">8 次</span>
+              </div>
+              <div class="menu-item">
+                <div class="menu-icon gray">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M19 12H21M3 12H5M12 5V3M12 21V19M17.5 6.5L19 5M5 19L6.5 17.5M17.5 17.5L19 19M5 5L6.5 6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700;">设置</div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>15</b> 个人中心</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="me">
+          <div class="screen">
+            <div class="scroll">
+              <div class="h1" style="font-size: 22px;">设置</div>
+              <div class="section-label">账号与安全</div>
+              <div class="perm-card">
+                <div class="perm-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
+                <div class="perm-main">
+                  <div class="perm-title">绑定邮箱</div>
+                  <div class="perm-desc">换设备不丢骑行数据</div>
+                </div>
+                <span class="link">去绑定</span>
+              </div>
+              <div class="section-label">后台运行与权限</div>
+              <div class="perm-card">
+                <div class="perm-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21C16.4 21 20 17.4 20 13C20 8.6 12 3 12 3C12 3 4 8.6 4 13C4 17.4 7.6 21 12 21Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="2.5" stroke="currentColor" stroke-width="1.6"/></svg>
+                </div>
+                <div class="perm-main">
+                  <div class="perm-title">定位权限（后台可用）</div>
+                  <div class="perm-desc">骑行轨迹与打卡判定</div>
+                </div>
+                <span class="badge badge-red">去设置</span>
+              </div>
+              <div class="perm-card">
+                <div class="perm-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 8C18 4.7 15.3 2 12 2C8.7 2 6 4.7 6 8V11H5V17H19V11H18V8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="perm-main">
+                  <div class="perm-title">通知权限</div>
+                  <div class="perm-desc">同路提示与打卡完成</div>
+                </div>
+                <span class="badge badge-red">去设置</span>
+              </div>
+              <div class="perm-card">
+                <div class="perm-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="7" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M9 7V5C9 3.9 9.9 3 11 3H13C14.1 3 15 3.9 15 5V7" stroke="currentColor" stroke-width="1.6"/></svg>
+                </div>
+                <div class="perm-main">
+                  <div class="perm-title">电池白名单</div>
+                  <div class="perm-desc">后台持续记录定位</div>
+                </div>
+                <span class="badge badge-red">去设置</span>
+              </div>
+              <div class="perm-card">
+                <div class="perm-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 4L18 12L6 20V4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="perm-main">
+                  <div class="perm-title">自启动 / 后台活动</div>
+                  <div class="perm-desc">国产 ROM 需单独允许</div>
+                </div>
+                <span class="badge badge-red">去设置</span>
+              </div>
+              <div class="section-label">通知开关</div>
+              <div class="row" style="border-bottom: 1px solid var(--line);">
+                <div style="flex: 1;"><div style="font-size: 15px; font-weight: 700;">同路提示</div><div class="row-meta">路段有骑士时提醒</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="row" style="border-bottom: 1px solid var(--line);">
+                <div style="flex: 1;"><div style="font-size: 15px; font-weight: 700;">打卡完成</div><div class="row-meta">完成打卡点后提醒</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="row" style="border-bottom: 0;">
+                <div style="flex: 1;"><div style="font-size: 15px; font-weight: 700;">低功耗模式</div><div class="row-meta">后台定位降频至 30-60 秒</div></div>
+                <div class="switch off"></div>
+              </div>
+              <div class="section-label">其他</div>
+              <div class="menu-item" style="border-bottom: 1px solid var(--line);">
+                <div class="menu-icon gray">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4L20 8V16L12 20L4 16V8L12 4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                </div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700;">隐私说明</div>
+                <span class="badge">位置 · 轨迹 · 车辆</span>
+              </div>
+              <div class="menu-item" style="border-bottom: 0;">
+                <div class="menu-icon gray">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 8V12L15 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
+                <div style="flex: 1; font-size: 15px; font-weight: 700;">关于与反馈</div>
+                <span class="badge">v0.1</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>16</b> 设置</div>
+      </section>
+
+    </main>
+
+    <div class="group-label">活动（P2 预留）</div>
+    <main class="flow">
+
+      <section class="stage">
+        <div class="phone" data-tab="home">
+          <div class="screen">
+            <div class="scroll">
+              <div class="h1" style="font-size: 22px;">活动</div>
+              <div class="chip-row">
+                <button class="chip active" type="button">进行中</button>
+                <button class="chip" type="button">即将开始</button>
+              </div>
+              <div class="record-row">
+                <div class="record-top">
+                  <div class="record-name">盛夏跑山季</div>
+                  <span class="badge badge-blue">剩余 12 名额</span>
+                </div>
+                <div class="record-meta">天荒坪山道 · 08-10 至 08-20</div>
+                <div class="record-meta" style="color: var(--primary-strong);">奖励：路线徽章 ×2 + 盲盒</div>
+                <div style="margin-top: 10px;"><button class="btn btn-ghost btn-sm" type="button">查看活动</button></div>
+              </div>
+              <div class="record-row">
+                <div class="record-top">
+                  <div class="record-name">周末环湖打卡</div>
+                  <span class="badge badge-blue">剩余 45 名额</span>
+                </div>
+                <div class="record-meta">环湖观光线 · 08-15</div>
+                <div class="record-meta" style="color: var(--primary-strong);">奖励：限定徽章 ×1</div>
+                <div style="margin-top: 10px;"><button class="btn btn-ghost btn-sm" type="button">查看活动</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>17</b> 活动列表（预留）</div>
+      </section>
+
+      <section class="stage">
+        <div class="phone" data-tab="home">
+          <div class="screen">
+            <div class="scroll">
+              <div class="header-row">
+                <div class="icon-btn">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M9.5 3.5L5 8L9.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="h1" style="font-size: 22px;">活动详情</div>
+              </div>
+              <div class="map" style="height: 140px; margin-bottom: 12px;">
+                <svg viewBox="0 0 320 140" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M10 130 C80 116, 96 40, 170 46 C240 52, 240 100, 310 24" stroke="#F5A623" stroke-width="4" fill="none" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="h1" style="font-size: 20px;">盛夏跑山季</div>
+              <div class="row-meta" style="margin-bottom: 8px;">2026-08-10 至 08-20 · 安吉天荒坪</div>
+              <div class="section-label">活动介绍</div>
+              <div class="row-meta" style="line-height: 1.7;">完成天荒坪山道路线并打卡全部路段，可获得限定徽章与盲盒奖励。</div>
+              <div class="section-label">奖励说明</div>
+              <div class="banner" style="border-color: #F3DDB4; background: #FFF7E8; color: #B77800;">
+                <span>路线徽章 ×2 + 盲盒</span>
+                <span class="badge badge-gold">P2 预留</span>
+              </div>
+              <div class="spacer"></div>
+              <button class="btn btn-primary" type="button">立即报名</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-label"><b>18</b> 活动详情（预留）</div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    const statusIcons = `
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="none" aria-hidden="true"><path d="M1 8.5L4.5 5L7 7.5L10.5 3.5L15 8.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 10H15" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <svg width="15" height="11" viewBox="0 0 15 11" fill="none" aria-hidden="true"><rect x="0.5" y="0.5" width="11" height="10" rx="2.5" stroke="currentColor"/><rect x="12" y="3.5" width="2.5" height="4" rx="1" fill="currentColor"/></svg>
+      <svg width="23" height="11" viewBox="0 0 23 11" fill="none" aria-hidden="true"><rect x="0.5" y="0.5" width="20" height="10" rx="3" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="currentColor"/></svg>`;
+
+    const tabDefs = {
+      home: { active: 0, label: "首页" },
+      routes: { active: 1, label: "路线" },
+      records: { active: 2, label: "记录" },
+      me: { active: 3, label: "我的" }
+    };
+
+    const tabIcon = (name, active) => {
+      const paths = {
+        home: '<path d="M4 11L12 4L20 11V20H14V14H10V20H4V11Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+        routes: '<path d="M3 18L10 7M10 7L13 12M10 7H7M21 18L14 7M14 7L17 12M14 7H17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+        records: '<path d="M6 4H18V20L12 16L6 20V4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+        me: '<circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 20C5.5 16.5 8.2 14.5 12 14.5C15.8 14.5 18.5 16.5 19.5 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
+      };
+      return `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">${paths[name]}</svg>`;
+    };
+
+    document.querySelectorAll(".phone").forEach(phone => {
+      const status = document.createElement("div");
+      status.className = "statusbar";
+      status.innerHTML = `<span>9:41</span><span class="status-icons">${statusIcons}</span>`;
+      phone.insertBefore(status, phone.firstChild);
+
+      const tab = phone.dataset.tab;
+      if (tab && tab !== "none" && tabDefs[tab]) {
+        const bar = document.createElement("div");
+        bar.className = "tabbar";
+        bar.innerHTML = Object.entries(tabDefs).map(([key, def]) => {
+          const active = key === tab;
+          return `<div class="tab${active ? " active" : ""}">${tabIcon(key, active)}<span>${def.label}</span></div>`;
+        }).join("");
+        phone.appendChild(bar);
+      }
+    });
+  </script>
+</body>
+</html>
