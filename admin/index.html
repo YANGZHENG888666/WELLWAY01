@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WELL WAY 管理后台</title>
+  <style>
+    :root {
+      --ink:#111; --bg:#F4F4F2; --card:#fff; --text:#17181A; --sub:#8A8F98;
+      --line:#E9EAEC; --danger:#D84040; --success:#1E8A5A; --warn:#B7791F;
+      --nav-w:232px; --radius:14px;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,"PingFang SC",sans-serif; background:var(--bg); color:var(--text); }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 1px 3px rgba(17,17,17,.04); }
+    input, select, textarea { width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:10px; font-size:14px; background:#fff; color:var(--text); outline:none; transition:border-color .15s; }
+    input:focus, select:focus, textarea:focus { border-color:var(--ink); }
+    label { font-size:12px; color:var(--sub); display:block; margin:10px 0 4px; letter-spacing:.02em; }
+    label .req { color:var(--danger); margin-left:3px; }
+    label .opt { color:#B6BEC9; font-size:11px; margin-left:6px; }
+    button { cursor:pointer; border:none; border-radius:10px; font-size:14px; padding:8px 15px; font-weight:600; transition:all .15s; }
+    .btn-primary { background:var(--ink); color:#fff; }
+    .btn-primary:hover { background:#333; }
+    .btn-ghost { background:#F0F1F3; color:var(--text); }
+    .btn-ghost:hover { background:#E4E6E9; }
+    .btn-danger { background:#FBECEC; color:var(--danger); }
+    .btn-danger:hover { background:#F7DCDC; }
+    .btn-sm { padding:5px 10px; font-size:12px; border-radius:8px; }
+    .legal-links { margin-top:18px; text-align:center; font-size:12px; color:var(--sub); }
+    .legal-links a { color:var(--sub); text-decoration:underline; margin:0 6px; }
+    .legal-doc { max-width:720px; margin:0 auto; padding:40px 24px 80px; color:#17181c; font:15px/1.9 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+    .legal-doc h1 { font-size:24px; margin:0 0 4px; }
+    .legal-doc .meta { color:#8a8a8e; font-size:13px; margin-bottom:32px; }
+    .legal-doc h2 { font-size:17px; margin:28px 0 8px; }
+    .legal-doc p { margin:8px 0; }
+    .legal-doc ul { margin:8px 0; padding-left:20px; }
+    .legal-doc li { margin:4px 0; }
+    .legal-doc a { color:#17181c; }
+    .legal-doc .back { display:inline-block; margin-bottom:24px; font-size:13px; color:var(--sub); text-decoration:none; }
+    .legal-doc .back:hover { color:var(--ink); }
+    .legal-page #login, .legal-page #app, .legal-page #resetpw { display:none !important; }
+
+    /* ---------- 登录 ---------- */
+    #login { max-width:400px; margin:12vh auto; padding:38px 34px; }
+    #login .brand { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+    #login .brand svg { height:26px; width:auto; }
+    #login h1 { font-size:24px; letter-spacing:.01em; }
+    #login p { color:var(--sub); font-size:13px; margin:8px 0 20px; }
+    .err { color:var(--danger); font-size:13px; margin-top:8px; min-height:18px; }
+    #forgot { display:inline-block; margin-top:12px; font-size:13px; color:var(--sub); cursor:pointer; text-decoration:underline; }
+    #forgot:hover { color:var(--ink); }
+    #resetpw { display:none; max-width:400px; margin:12vh auto; padding:38px 34px; }
+    #resetpw .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:22px; }
+
+    /* ---------- 弹窗 ---------- */
+    #modal, #pwmodal, #forgotmodal { display:none; position:fixed; inset:0; background:rgba(17,17,17,.42); z-index:30; overflow-y:auto; }
+    #modal .box, #pwmodal .box, #forgotmodal .box { max-width:620px; margin:5vh auto; padding:24px 26px; }
+    #pwmodal .box, #forgotmodal .box { max-width:420px; }
+    #modal h3, #pwmodal h3, #forgotmodal h3 { font-size:17px; margin-bottom:14px; font-weight:700; }
+    #modal .actions, #pwmodal .actions, #forgotmodal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+    .fgroup { border-top:1px solid var(--line); margin-top:14px; padding-top:4px; }
+    .fgroup:first-of-type { border-top:none; margin-top:0; padding-top:0; }
+    .fgroup h4 { font-size:12px; color:var(--sub); font-weight:700; letter-spacing:.06em; margin:12px 0 2px; display:flex; align-items:center; gap:6px; }
+    .fgroup h4::before { content:''; width:3px; height:12px; background:var(--ink); border-radius:2px; }
+    .frow { display:grid; grid-template-columns:1fr 1fr; gap:0 14px; }
+    .frow .full { grid-column:1 / -1; }
+    .chk { display:flex; align-items:center; gap:8px; margin-top:14px; }
+    .chk input { width:auto; }
+    .chk label { margin:0; font-size:13px; color:var(--text); }
+    .imgprev { width:72px; height:72px; object-fit:cover; border-radius:10px; margin-top:6px; background:#F4F4F2; border:1px solid var(--line); }
+    .hint { font-size:11px; color:var(--sub); margin-top:4px; line-height:1.5; }
+
+    /* ---------- 布局 ---------- */
+    #app { display:none; }
+    .shell { display:flex; min-height:100vh; }
+    .sidebar { width:var(--nav-w); background:var(--card); border-right:1px solid var(--line); padding:18px 14px; position:sticky; top:0; height:100vh; overflow-y:auto; display:flex; flex-direction:column; gap:4px; }
+    .sidebar .brand { display:flex; align-items:center; gap:9px; padding:2px 8px 16px; }
+    .sidebar .brand svg { height:22px; width:auto; flex-shrink:0; }
+    .sidebar .brand-name { font-size:15px; font-weight:700; letter-spacing:.02em; }
+    .nav-group { font-size:11px; color:var(--sub); font-weight:600; letter-spacing:.08em; padding:14px 10px 4px; }
+    .nav-item { display:flex; align-items:center; gap:9px; padding:9px 11px; border-radius:10px; font-size:13.5px; font-weight:500; color:var(--text); cursor:pointer; border:none; background:transparent; text-align:left; width:100%; }
+    .nav-item:hover { background:#F0F1F3; }
+    .nav-item.active { background:var(--ink); color:#fff; }
+    .nav-item .ico { font-size:15px; width:20px; text-align:center; }
+    .side-foot { margin-top:auto; padding-top:14px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:8px; }
+    .side-foot .who { font-size:12px; color:var(--sub); padding:0 4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .side-foot .btns { display:flex; gap:8px; }
+    .side-foot .btns button { flex:1; }
+
+    .main { flex:1; padding:22px 28px 60px; max-width:1280px; }
+    .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+    .toolbar h2 { font-size:19px; font-weight:700; }
+    .toolbar .tools { display:flex; gap:8px; align-items:center; }
+    .toolbar input[type=search] { width:200px; }
+
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th, td { padding:11px 13px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; }
+    th { color:var(--sub); font-weight:600; white-space:nowrap; background:#FAFAF9; font-size:12px; }
+    thead th:first-child { border-top-left-radius:14px; }
+    thead th:last-child { border-top-right-radius:14px; }
+    tbody tr:hover { background:#F7F7F6; }
+    tbody tr:last-child td:first-child { border-bottom-left-radius:14px; }
+    tbody tr:last-child td:last-child { border-bottom-right-radius:14px; }
+    td img { width:44px; height:44px; object-fit:cover; border-radius:9px; border:1px solid var(--line); }
+    .tag { display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600; }
+    .tag.on { background:#E7F5EE; color:var(--success); }
+    .tag.off { background:#F0F1F3; color:var(--sub); }
+    .tag.warn { background:#FDF3E3; color:var(--warn); }
+    .row-actions { display:flex; gap:6px; }
+    .empty { text-align:center; color:var(--sub); padding:52px 0; }
+    .pager { display:flex; gap:6px; justify-content:flex-end; align-items:center; margin-top:14px; font-size:13px; color:var(--sub); }
+    .pager button { padding:5px 11px; }
+
+    /* ---------- 仪表盘 ---------- */
+    .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:14px; margin-bottom:20px; }
+    .stat-card { padding:16px 18px; }
+    .stat-card .num { font-size:26px; font-weight:800; letter-spacing:.01em; }
+    .stat-card .lbl { font-size:12px; color:var(--sub); margin-top:4px; font-weight:500; }
+    .stat-card .extra { font-size:11px; color:#B6BEC9; margin-top:2px; }
+    .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:980px) { .dash-grid { grid-template-columns:1fr; } }
+    .panel { padding:18px 20px; }
+    .panel h3 { font-size:15px; font-weight:700; margin-bottom:14px; }
+    .bars { display:flex; align-items:flex-end; gap:10px; height:150px; padding-top:6px; }
+    .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+    .bar { width:100%; max-width:44px; background:var(--ink); border-radius:7px 7px 3px 3px; min-height:3px; transition:height .5s cubic-bezier(.2,.8,.2,1); }
+    .bar-cnt { font-size:11px; font-weight:700; }
+    .bar-day { font-size:11px; color:var(--sub); }
+    .rank-row { display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); font-size:13px; }
+    .rank-row:last-child { border-bottom:none; }
+    .rank-idx { width:22px; height:22px; border-radius:7px; background:#F0F1F3; color:var(--sub); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+    .rank-row .nm { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .rank-row .cnt { color:var(--sub); font-size:12px; }
+    .notice { background:#FDF6EC; border:1px solid #F0DFC0; color:#8A6116; font-size:12.5px; padding:10px 14px; border-radius:10px; margin-bottom:16px; line-height:1.6; }
+
+    /* ---------- 日志 ---------- */
+    .filters { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+    .filters select { width:auto; min-width:130px; }
+    .readonly-badge { display:inline-flex; align-items:center; gap:5px; background:#EFF3F8; color:#3B5B8C; border:1px solid #D6E0EC; font-size:12px; padding:5px 11px; border-radius:20px; font-weight:600; }
+
+    /* ---------- 管理员 ---------- */
+    .admins-card { padding:20px 22px; max-width:640px; }
+    .admin-row { display:flex; align-items:center; gap:12px; padding:11px 2px; border-bottom:1px solid var(--line); }
+    .admin-row:last-child { border-bottom:none; }
+    .admin-ava { width:34px; height:34px; border-radius:50%; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
+    .admin-meta { flex:1; min-width:0; }
+    .admin-meta .em { font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .admin-meta .sub { font-size:11.5px; color:var(--sub); }
+    .add-admin { display:flex; gap:8px; margin-top:18px; }
+    .add-admin input { flex:1; }
+
+    /* ---------- toast ---------- */
+    #toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-80px); z-index:99; background:#1C1D1F; color:#fff; font-size:13.5px; padding:10px 20px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.18); transition:transform .3s ease; max-width:82vw; }
+    #toast.show { transform:translateX(-50%) translateY(0); }
+    #toast.ok { background:#176B4B; }
+    #toast.bad { background:#A93636; }
+  </style>
+</head>
+<body>
+  <!-- 法务页面(?page=privacy / ?page=terms),与 legal/ 下 HTML 内容保持一致 -->
+  <div id="legal" style="display:none"></div>
+  <script>
+    window.LEGAL_PAGE = (function () {
+      var p = new URLSearchParams(location.search).get('page');
+      return (p === 'privacy' || p === 'terms') ? p : '';
+    })();
+    if (window.LEGAL_PAGE) {
+      document.documentElement.className = 'legal-page';
+      var LEGAL_CONTENT = {
+        privacy: `
+          <h1>WELL WAY 隐私政策</h1>
+          <p class="meta">版本：v2.0　生效日期：2026-08-25</p>
+          <p>欢迎使用 WELL WAY（以下简称"本应用"）。我们深知个人信息对您的重要性，将尽全力保护您的个人信息安全。本政策说明我们如何收集、使用、存储与共享您的信息。您注册、登录或使用本应用，即视为已阅读并同意本政策。</p>
+          <h2>一、我们收集的信息</h2>
+          <ul>
+            <li><b>账号信息</b>：您可匿名使用本应用；若您选择绑定邮箱，我们会保存您的邮箱地址，用于换设备恢复数据与账号安全。</li>
+            <li><b>位置信息</b>：仅在您主动开始骑行并选择"WELL WAY 骑行模式"时，在骑行过程中记录位置以生成骑行轨迹、里程与打卡数据。骑行结束后不再持续获取位置。您可随时在系统设置中关闭定位权限。</li>
+            <li><b>车辆信息</b>：您自行录入的车辆品牌、车型、昵称、车牌、颜色与照片，用于车库展示与骑行关联。</li>
+            <li><b>骑行数据</b>：骑行轨迹、里程、时长、打卡点、徽章与路线收藏，用于记录与成就功能。</li>
+            <li><b>设备与网络信息</b>：为保障功能正常运行，应用会读取必要的设备信息（如系统版本）与网络状态。</li>
+          </ul>
+          <h2>二、我们如何使用信息</h2>
+          <ul>
+            <li>提供骑行路线、轨迹记录、打卡徽章、同路提示、车辆管理等功能；</li>
+            <li>保障账号安全与数据同步；</li>
+            <li>改进产品体验（仅使用脱敏后的统计信息）。</li>
+          </ul>
+          <p>我们不会将您的个人信息出售给任何第三方，不会用于个性化广告。</p>
+          <h2>三、信息存储与跨境传输</h2>
+          <p>数据托管于云服务商 Supabase（位于国际标准数据中心），可能传输并存储于境外服务器。传输过程采用 HTTPS 加密，并采取访问控制（RLS）、身份认证等安全措施。继续使用本应用即视为您同意上述跨境存储。</p>
+          <h2>四、第三方共享</h2>
+          <p>为提供服务，我们仅与以下第三方共享必要信息：</p>
+          <ul>
+            <li><b>云服务商 Supabase</b>：账号、骑行、车辆等数据存储与同步；</li>
+            <li><b>地图应用</b>：当您选择跳转高德地图或苹果地图导航时，将把路线终点名称或坐标传递给对应地图应用（仅本次跳转使用，不存储于我方服务器）。</li>
+          </ul>
+          <p>除上述情形及法律法规要求外，我们不会向任何第三方提供您的个人信息。</p>
+          <h2>五、权限说明</h2>
+          <ul>
+            <li><b>定位（使用期间/后台）</b>：骑行轨迹记录必需；未骑行时不获取。</li>
+            <li><b>通知</b>：用于同路提示与打卡完成提醒。</li>
+            <li><b>相册</b>：仅用于您主动上传车辆照片或保存骑行分享卡。</li>
+            <li><b>蓝牙/本地网络</b>：用于后续车机连接功能（当前未使用）。</li>
+          </ul>
+          <p>我们仅在功能直接相关时请求权限，您可拒绝或随时在系统设置中关闭。</p>
+          <h2>六、注销与删除</h2>
+          <p>您可随时在应用内「个人中心 → 注销账号」永久删除您的账号及全部数据（包括骑行记录、徽章、车辆、收藏等），删除后不可恢复。您也可通过下方联系方式联系我们协助处理数据删除、导出或更正。</p>
+          <h2>七、未成年人保护</h2>
+          <p>本应用面向成年摩托车爱好者。若您未满 18 周岁，请在监护人指导下使用。</p>
+          <h2>八、政策更新</h2>
+          <p>我们可能适时更新本政策，更新后会通过本页面或应用内公告发布，重大变更会显著提示。</p>
+          <h2>九、联系我们</h2>
+          <p>应用内路径：个人中心 → 设置 → 关于与反馈</p>
+          <p>联系邮箱：<a href="mailto:contact@wellway.app">contact@wellway.app</a>（请替换为您的真实邮箱）</p>`,
+        terms: `
+          <h1>WELL WAY 用户协议</h1>
+          <p class="meta">版本：v2.0　生效日期：2026-08-25</p>
+          <p>欢迎使用 WELL WAY（以下简称"本应用"或"我们"）。本协议是您与本应用运营方之间就使用本应用服务订立的协议。您注册、登录或使用本应用，即视为已阅读并同意本协议全部条款。</p>
+          <h2>一、服务内容</h2>
+          <p>本应用为摩托车骑行爱好者提供：路线浏览与收藏、骑行轨迹记录、打卡与徽章、车辆管理等服务。您无需注册即可浏览大部分内容；骑行记录、收藏等功能在匿名账号或绑定邮箱后可用。</p>
+          <h2>二、账号与行为规范</h2>
+          <ul>
+            <li>您应对账号下的所有行为负责，不得转借、出租或出售账号。</li>
+            <li>您承诺不利用本应用从事任何违法违规活动，包括但不限于发布违法信息、骚扰他人、侵犯他人隐私或知识产权、干扰服务正常运行。</li>
+            <li>我们有权对违反本协议或法律法规的账号采取警告、限制功能、封禁等处理。</li>
+          </ul>
+          <h2>三、骑行安全</h2>
+          <p>骑行活动存在固有风险。您应自行确认具备相应驾驶资质，遵守《道路交通安全法》等法律法规，佩戴安全装备，并在确保安全的前提下使用本应用。请勿在骑行过程中操作手机或阅读弹窗。</p>
+          <h2>四、内容与知识产权</h2>
+          <ul>
+            <li>本应用的品牌、界面设计、文字、图片、商标等归运营方或其权利人所有，未经许可不得复制、修改或商用。</li>
+            <li>路线、打卡点、徽章等运营内容由运营方提供与维护，可能随时调整或下线。</li>
+          </ul>
+          <h2>五、数据与隐私</h2>
+          <p>我们处理您的个人信息遵循《<a href="./?page=privacy">WELL WAY 隐私政策</a>》。骑行轨迹、位置等敏感信息仅在您主动开启骑行时采集，用途限于生成轨迹与打卡记录。您可在「个人中心 → 注销账号」永久删除账号及全部数据。</p>
+          <h2>六、免责声明</h2>
+          <ul>
+            <li>本应用按"现状"提供，不对服务的持续可用性、无中断、无错误作绝对保证。</li>
+            <li>路线信息、路况、打卡点坐标可能存在偏差，不构成道路安全指引；实际驾驶请以现场交通状况为准。</li>
+            <li>因不可抗力、网络故障、第三方服务（如地图与云服务供应商）导致的数据丢失或服务中断，我们在法律允许范围内不承担责任。</li>
+            <li>您因使用本应用产生的人身、财产损失，如非我方故意或重大过失所致，我们不承担赔偿责任。</li>
+          </ul>
+          <h2>七、未成年人</h2>
+          <p>本应用面向成年摩托车爱好者。若您未满 18 周岁，请在监护人指导下使用。</p>
+          <h2>八、协议变更与联系我们</h2>
+          <p>我们可能适时更新本协议，更新后通过本页面或应用内公告发布，重大变更会显著提示。如对本协议有疑问，可通过应用内「个人中心 → 设置 → 关于与反馈」或邮箱 <a href="mailto:contact@wellway.app">contact@wellway.app</a>（请替换为您的真实邮箱）与我们联系。</p>`
+      };
+      var el = document.getElementById('legal');
+      el.innerHTML = '<article class="legal-doc"><a class="back" href="./">&larr; 返回管理后台</a>' + LEGAL_CONTENT[window.LEGAL_PAGE] + '</article>';
+      el.style.display = 'block';
+      document.title = window.LEGAL_PAGE === 'privacy' ? 'WELL WAY 隐私政策' : 'WELL WAY 用户协议';
+    }
+  </script>
+  <!-- 登录 -->
+  <div id="login" class="card">
+    <div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 560"><defs><style>.cls-1{fill:url(#g53);}.cls-2{fill:url(#g12);}</style><linearGradient id="g53" x1="450.23" y1="738.62" x2="450.23" y2="230.93" gradientTransform="matrix(0.87, 0.5, -0.5, 0.87, 190.13, -421.75)" gradientUnits="userSpaceOnUse"><stop offset="0"/><stop offset="0.34" stop-color="#030303"/><stop offset="0.59" stop-color="#0c0c0c"/><stop offset="0.8" stop-color="#1b1b1b"/><stop offset="0.99" stop-color="#313131"/><stop offset="1" stop-color="#333"/></linearGradient><linearGradient id="g12" x1="450" y1="739.08" x2="450" y2="457.16" gradientTransform="matrix(0.87, 0.5, -0.5, 0.87, 190.13, -421.75)" gradientUnits="userSpaceOnUse"><stop offset="0.2"/><stop offset="0.28" stop-color="#121212"/><stop offset="0.45" stop-color="#414141"/><stop offset="0.68" stop-color="#8d8d8d"/><stop offset="0.97" stop-color="#f4f4f4"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><path class="cls-1" d="M11.12,286.38,438.59,4.14c17-11.23,39.55,1.78,38.33,22.14L446.23,537.5c-1.32,22-28.51,31.42-43.16,15-46.51-52.16-122.62-133.73-163.89-157.59-41.49-24-150.81-49.34-219.46-63.66C-1.83,326.76-7.24,298.5,11.12,286.38Z"/><path class="cls-2" d="M137.7,378.36l195.71-177.3c11-9.94,28.25,0,25.13,14.51L302.87,473.65a15.24,15.24,0,0,1-27.58,5.23c-15.5-23.28-36.69-52.42-50.43-60.36S175,406.68,146.94,404.86A15.24,15.24,0,0,1,137.7,378.36Z"/></svg><span>WELL WAY</span></div>
+    <h1>管理后台</h1>
+    <p>用管理员邮箱登录后管理车型库、路线与内容</p>
+    <label>邮箱</label><input id="email" type="email" autocomplete="username">
+    <label>密码</label><input id="password" type="password" autocomplete="current-password">
+    <div class="err" id="loginErr"></div>
+    <button class="btn-primary" style="width:100%;margin-top:6px" onclick="login()">登 录</button>
+    <a id="forgot" onclick="openForgotModal()">忘记密码？</a>
+    <div class="legal-links"><a href="./?page=privacy" target="_blank">隐私政策</a><span>·</span><a href="./?page=terms" target="_blank">用户协议</a></div>
+  </div>
+
+  <!-- 忘记密码弹窗 -->
+  <div id="forgotmodal"><div class="card box">
+    <h3>重置密码</h3>
+    <label>邮箱</label><input id="forgotEmail" type="email" autocomplete="email">
+    <div class="err" id="forgotErr"></div>
+    <div class="actions">
+      <button class="btn-ghost" onclick="closeForgotModal()">取消</button>
+      <button class="btn-primary" onclick="sendResetEmail()">发送重置邮件</button>
+    </div>
+  </div></div>
+
+  <!-- 邮件链接回跳后的设置新密码面板 -->
+  <div id="resetpw" class="card">
+    <div class="brand"><span>WELL WAY</span></div>
+    <h1>设置新密码</h1>
+    <p>输入你的新密码，然后重新登录</p>
+    <label>新密码</label><input id="rpw1" type="password" autocomplete="new-password" placeholder="至少 8 位">
+    <label>确认新密码</label><input id="rpw2" type="password" autocomplete="new-password">
+    <div class="err" id="rpwErr"></div>
+    <div class="actions"><button class="btn-primary" style="width:100%" onclick="submitNewPassword()">保存并重新登录</button></div>
+  </div>
+
+  <!-- 后台 -->
+  <div id="app">
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 560"><defs><style>.cls-1{fill:url(#g53);}.cls-2{fill:url(#g12);}</style><linearGradient id="g53" x1="450.23" y1="738.62" x2="450.23" y2="230.93" gradientTransform="matrix(0.87, 0.5, -0.5, 0.87, 190.13, -421.75)" gradientUnits="userSpaceOnUse"><stop offset="0"/><stop offset="0.34" stop-color="#030303"/><stop offset="0.59" stop-color="#0c0c0c"/><stop offset="0.8" stop-color="#1b1b1b"/><stop offset="0.99" stop-color="#313131"/><stop offset="1" stop-color="#333"/></linearGradient><linearGradient id="g12" x1="450" y1="739.08" x2="450" y2="457.16" gradientTransform="matrix(0.87, 0.5, -0.5, 0.87, 190.13, -421.75)" gradientUnits="userSpaceOnUse"><stop offset="0.2"/><stop offset="0.28" stop-color="#121212"/><stop offset="0.45" stop-color="#414141"/><stop offset="0.68" stop-color="#8d8d8d"/><stop offset="0.97" stop-color="#f4f4f4"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><path class="cls-1" d="M11.12,286.38,438.59,4.14c17-11.23,39.55,1.78,38.33,22.14L446.23,537.5c-1.32,22-28.51,31.42-43.16,15-46.51-52.16-122.62-133.73-163.89-157.59-41.49-24-150.81-49.34-219.46-63.66C-1.83,326.76-7.24,298.5,11.12,286.38Z"/><path class="cls-2" d="M137.7,378.36l195.71-177.3c11-9.94,28.25,0,25.13,14.51L302.87,473.65a15.24,15.24,0,0,1-27.58,5.23c-15.5-23.28-36.69-52.42-50.43-60.36S175,406.68,146.94,404.86A15.24,15.24,0,0,1,137.7,378.36Z"/></svg><span class="brand-name">WELL WAY</span></div>
+        <div id="nav"></div>
+        <div class="side-foot">
+          <div class="who" id="whoami"></div>
+          <div class="btns">
+            <button class="btn-ghost btn-sm" onclick="openPwModal()">改密</button>
+            <button class="btn-ghost btn-sm" onclick="logout()">退出</button>
+          </div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="toolbar">
+          <h2 id="tabTitle"></h2>
+          <div class="tools" id="tools"></div>
+        </div>
+        <div id="view"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- 编辑弹窗 -->
+  <div id="modal"><div class="card box" id="modalBox"></div></div>
+
+  <!-- 修改密码弹窗 -->
+  <div id="pwmodal"><div class="card box">
+    <h3>修改密码</h3>
+    <label>新密码</label><input id="pw1" type="password" autocomplete="new-password" placeholder="至少 8 位">
+    <label>确认新密码</label><input id="pw2" type="password" autocomplete="new-password">
+    <div class="err" id="pwErr"></div>
+    <div class="actions">
+      <button class="btn-ghost" onclick="closePwModal()">取消</button>
+      <button class="btn-primary" onclick="changePassword()">保存</button>
+    </div>
+  </div></div>
+
+  <div id="toast"></div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+
+    const SUPABASE_URL = 'https://hyfxpcwbhfgmtwjhcxdn.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_wUdbrbEFBtWcLO86nk_nwA_vRyXnfp4';
+    window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ============ 内容模型(模块化配置) ============
+    const GROUPS = [
+      { key: 'base', label: '基本信息' },
+      { key: 'media', label: '图片素材' },
+      { key: 'detail', label: '详细参数' },
+      { key: 'display', label: '展示设置' },
+    ];
+
+    const TABLES = {
+      brands: { label: '品牌', icon: '🏷️', order: 'sort', cols: [
+        { k: 'name', l: '名称', req: true, g: 'base' },
+        { k: 'name_en', l: '英文名', g: 'base' },
+        { k: 'logo_url', l: 'Logo 图片', type: 'image', bucket: 'catalog-images', g: 'media' },
+        { k: 'sort', l: '排序', type: 'number', hint: '数字越小越靠前', g: 'display' },
+        { k: 'is_hot', l: '热门品牌', type: 'bool', g: 'display' },
+        { k: 'is_active', l: '启用', type: 'bool', g: 'display' },
+      ]},
+      models: { label: '车型', icon: '🏍️', order: 'sort', cols: [
+        { k: 'brand_id', l: '品牌', type: 'select', ref: 'brands', refLabel: 'name', req: true, g: 'base' },
+        { k: 'name', l: '名称', req: true, g: 'base' },
+        { k: 'series', l: '系列', g: 'base' },
+        { k: 'model_type', l: '类型', type: 'select', options: ['跑车','街车','ADV','复古','踏板'], req: true, g: 'base' },
+        { k: 'image_url', l: '图片', type: 'image', bucket: 'catalog-images', g: 'media' },
+        { k: 'displacement_cc', l: '排量(cc)', type: 'number', g: 'detail' },
+        { k: 'price_min', l: '价格下限 ¥', type: 'number', g: 'detail' },
+        { k: 'price_max', l: '价格上限 ¥', type: 'number', g: 'detail' },
+        { k: 'rating', l: '评分', type: 'number', step: 0.1, g: 'detail' },
+        { k: 'sort', l: '排序', type: 'number', g: 'display' },
+        { k: 'is_new', l: '新款', type: 'bool', g: 'display' },
+        { k: 'is_active', l: '启用', type: 'bool', g: 'display' },
+      ]},
+      routes: { label: '路线', icon: '🛣️', order: 'id', cols: [
+        { k: 'name', l: '名称', req: true, g: 'base' },
+        { k: 'map_url', l: '路线图', type: 'image', bucket: 'route-images', g: 'media', hint: 'SVG 或 ≥2048px 高清图;支持透明背景;SVG 自动转 4096px 高清 PNG,放大更清晰' },
+        { k: 'start_name', l: '起点', g: 'base' },
+        { k: 'end_name', l: '终点', g: 'base' },
+        { k: 'distance_m', l: '里程(米)', type: 'number', g: 'detail' },
+        { k: 'elevation_m', l: '爬升(米)', type: 'number', g: 'detail' },
+        { k: 'difficulty', l: '难度', type: 'select', options: ['简单','中等','困难'], g: 'detail' },
+        { k: 'duration_min', l: '耗时(分钟)', type: 'number', g: 'detail' },
+        { k: 'is_active', l: '启用', type: 'bool', g: 'display' },
+      ]},
+      checkpoints: { label: '打卡点', icon: '📍', order: 'seq', cols: [
+        { k: 'route_id', l: '路线', type: 'select', ref: 'routes', refLabel: 'name', req: true, g: 'base' },
+        { k: 'name', l: '名称', req: true, g: 'base' },
+        { k: 'seq', l: '序号', type: 'number', req: true, g: 'base' },
+        { k: 'lat', l: '纬度', type: 'number', step: 0.000001, g: 'detail' },
+        { k: 'lng', l: '经度', type: 'number', step: 0.000001, g: 'detail' },
+        { k: 'radius_m', l: '半径(米)', type: 'number', g: 'detail' },
+      ]},
+      badges: { label: '徽章', icon: '🎖️', order: 'seq', cols: [
+        { k: 'name', l: '名称', req: true, g: 'base' },
+        { k: 'route_id', l: '关联路线', type: 'select', ref: 'routes', refLabel: 'name', optional: true, g: 'base' },
+        { k: 'image_url', l: '图片', type: 'image', bucket: 'catalog-images', g: 'media' },
+        { k: 'condition_desc', l: '获得条件', g: 'detail' },
+        { k: 'seq', l: '排序', type: 'number', g: 'display' },
+      ]},
+    };
+
+    const MODULES = [
+      { key: 'dashboard', label: '数据监测', icon: '📊', group: '概览' },
+      { key: 'logs', label: '操作日志', icon: '🧾', group: '概览' },
+      { key: 'admins', label: '管理员', icon: '👥', group: '系统' },
+    ];
+
+    let current = 'dashboard';
+    let currentRows = [];
+    let currentFiltered = [];
+    let page = 1;
+    const PAGE_SIZE = 15;
+    const refCache = {};
+
+    // ============ 通用工具 ============
+    function esc(s) {
+      return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function toast(msg, type) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = type ? 'show ' + type : 'show';
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = '', 2800);
+    }
+    function fmt(v) {
+      if (v === null || v === undefined || v === '') return '<span style="color:#B6BEC9">—</span>';
+      if (typeof v === 'boolean') return v ? '<span class="tag on">是</span>' : '<span class="tag off">否</span>';
+      if (typeof v === 'string' && /^https?:\/\//.test(v)) return `<img src="${v}" onerror="this.style.display='none'">`;
+      if (typeof v === 'string' && v.length > 28) return v.slice(0, 28) + '…';
+      return v;
+    }
+    function shortVal(v) {
+      if (v === null || v === undefined) return '空';
+      if (typeof v === 'boolean') return v ? '是' : '否';
+      const s = String(v);
+      return s.length > 18 ? s.slice(0, 18) + '…' : s;
+    }
+
+    // ============ 认证 ============
+    window.login = async () => {
+      const email = document.getElementById('email').value.trim();
+      const pass = document.getElementById('password').value;
+      const err = document.getElementById('loginErr');
+      err.textContent = '';
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) { err.textContent = error.message; return; }
+      await checkAdmin();
+    };
+    window.logout = async () => { await supabase.auth.signOut(); location.reload(); };
+
+    window.openPwModal = () => {
+      document.getElementById('pw1').value = '';
+      document.getElementById('pw2').value = '';
+      document.getElementById('pwErr').textContent = '';
+      document.getElementById('pwmodal').style.display = 'block';
+      document.getElementById('pw1').focus();
+    };
+    window.closePwModal = () => { document.getElementById('pwmodal').style.display = 'none'; };
+    window.changePassword = async () => {
+      const p1 = document.getElementById('pw1').value;
+      const p2 = document.getElementById('pw2').value;
+      const err = document.getElementById('pwErr');
+      err.textContent = '';
+      if (p1.length < 8) { err.textContent = '密码至少 8 位'; return; }
+      if (p1 !== p2) { err.textContent = '两次输入的密码不一致'; return; }
+      const { error } = await supabase.auth.updateUser({ password: p1 });
+      if (error) { err.textContent = error.message; return; }
+      closePwModal();
+      toast('密码已修改，请重新登录', 'ok');
+      await supabase.auth.signOut();
+      location.reload();
+    };
+    window.openForgotModal = () => {
+      document.getElementById('forgotEmail').value = '';
+      document.getElementById('forgotErr').textContent = '';
+      document.getElementById('forgotmodal').style.display = 'block';
+      document.getElementById('forgotEmail').focus();
+    };
+    window.closeForgotModal = () => { document.getElementById('forgotmodal').style.display = 'none'; };
+    window.sendResetEmail = async () => {
+      const email = document.getElementById('forgotEmail').value.trim();
+      const err = document.getElementById('forgotErr');
+      err.textContent = '';
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = '请输入有效的邮箱'; return; }
+      const redirectTo = location.origin + location.pathname;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) { err.textContent = error.message; return; }
+      closeForgotModal();
+      toast('重置邮件已发送，请到 ' + email + ' 查收');
+    };
+    window.submitNewPassword = async () => {
+      const p1 = document.getElementById('rpw1').value;
+      const p2 = document.getElementById('rpw2').value;
+      const err = document.getElementById('rpwErr');
+      err.textContent = '';
+      if (p1.length < 8) { err.textContent = '密码至少 8 位'; return; }
+      if (p1 !== p2) { err.textContent = '两次输入的密码不一致'; return; }
+      const { error } = await supabase.auth.updateUser({ password: p1 });
+      if (error) { err.textContent = error.message; return; }
+      toast('密码已重置，请重新登录', 'ok');
+      await supabase.auth.signOut();
+      location.href = location.origin + location.pathname;
+    };
+
+    // ============ 导航 ============
+    function renderNav() {
+      const overview = MODULES.filter(m => m.group === '概览').map(m => navItem(m.key, m.icon, m.label)).join('');
+      const system = MODULES.filter(m => m.group === '系统').map(m => navItem(m.key, m.icon, m.label)).join('');
+      const content = Object.entries(TABLES).map(([k, t]) => navItem(k, t.icon, t.label)).join('');
+      const html = `
+        <div class="nav-group">概览</div>${overview}
+        <div class="nav-group">内容管理</div>${content}
+        <div class="nav-group">系统</div>${system}`;
+      document.getElementById('nav').innerHTML = html;
+      document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.key === current);
+      });
+    }
+    function navItem(key, icon, label) {
+      return `<button class="nav-item" data-key="${key}" onclick="switchView('${key}')"><span class="ico">${icon}</span>${label}</button>`;
+    }
+    window.switchView = async (key) => {
+      current = key;
+      page = 1;
+      renderNav();
+      const t = TABLES[key];
+      document.getElementById('tabTitle').textContent = t ? `${t.icon} ${t.label}`
+        : key === 'dashboard' ? '📊 数据监测'
+        : key === 'logs' ? '🧾 操作日志'
+        : key === 'admins' ? '👥 管理员' : '';
+      if (key === 'dashboard') { await loadDashboard(); return; }
+      if (key === 'logs') { await loadLogs(); return; }
+      if (key === 'admins') { await loadAdmins(); return; }
+      await loadTable();
+    };
+
+    // ============ 仪表盘 ============
+    async function loadDashboard() {
+      document.getElementById('tools').innerHTML = '<button class="btn-ghost btn-sm" onclick="refreshDashboard()">刷新</button>';
+      const { data, error } = await supabase.rpc('admin_dashboard_stats');
+      const view = document.getElementById('view');
+      if (error || !data) {
+        view.innerHTML = `<div class="notice">⚠️ 数据监测暂不可用（${esc(error?.message || '无数据')}）。<br>请先在 Supabase SQL Editor 执行后台升级脚本：<code>backend/supabase/migrations/0013_admin_dashboard.sql</code></div>`;
+        return;
+      }
+      const d = data;
+      const cards = [
+        { n: d.users_total ?? 0, l: '注册用户', e: '今日 +' + (d.users_today ?? 0) },
+        { n: d.riders_today ?? 0, l: '今日骑行人数', e: '共 ' + (d.rides_today ?? 0) + ' 次骑行' },
+        { n: d.routes_total ?? 0, l: '路线总数', e: (d.routes_active ?? 0) + ' 条启用中' },
+        { n: d.models_total ?? 0, l: '车型库', e: (d.brands_total ?? 0) + ' 个品牌' },
+        { n: d.checkpoints_total ?? 0, l: '打卡点', e: '—' },
+        { n: d.badges_total ?? 0, l: '徽章', e: '—' },
+        { n: d.favorites_total ?? 0, l: '路线收藏', e: '—' },
+      ];
+      const statHtml = cards.map(c =>
+        `<div class="stat-card card"><div class="num">${c.n}</div><div class="lbl">${c.l}</div><div class="extra">${c.e}</div></div>`
+      ).join('');
+
+      // 7 日趋势
+      const bars = (d.rides_7d || []).map(r => {
+        const h = Math.max(3, Math.round((r.cnt / Math.max(1, ...[...(d.rides_7d || []).map(x => x.cnt)])) * 120));
+        return `<div class="bar-col"><div class="bar-cnt">${r.cnt}</div><div class="bar" style="height:${h}px"></div><div class="bar-day">${r.day}</div></div>`;
+      }).join('');
+
+      // 今日路线榜
+      const rank = (d.routes_today || []);
+      const rankHtml = rank.length
+        ? rank.map((r, i) => {
+            const nm = (refCache.routes || []).find(x => x.id === r.route_id)?.name || ('路线 #' + r.route_id);
+            return `<div class="rank-row"><span class="rank-idx">${i + 1}</span><span class="nm">${esc(nm)}</span><span class="cnt">${r.rider_count} 人</span></div>`;
+          }).join('')
+        : '<div class="empty" style="padding:26px 0">今天还没有人骑行</div>';
+
+      view.innerHTML = `
+        <div class="stat-grid">${statHtml}</div>
+        <div class="dash-grid">
+          <div class="panel card">
+            <h3>近 7 日骑行趋势</h3>
+            <div class="bars">${bars || '<div class="empty" style="width:100%">暂无数据</div>'}</div>
+          </div>
+          <div class="panel card">
+            <h3>今日各路线骑行人数</h3>
+            ${rankHtml}
+          </div>
+        </div>`;
+    }
+    window.refreshDashboard = () => loadDashboard();
+
+    // ============ 内容列表 ============
+    async function loadTable() {
+      const t = TABLES[current];
+      document.getElementById('tools').innerHTML = `
+        <input type="search" id="searchInput" placeholder="搜索…" oninput="onSearch()">
+        <button class="btn-ghost btn-sm" onclick="exportCsv()">导出 CSV</button>
+        <button class="btn-primary btn-sm" onclick="openForm()">＋ 新增</button>`;
+      const { data, error } = await supabase.from(current).select('*').order(t.order);
+      if (error) { document.getElementById('view').innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
+      currentRows = data || [];
+      renderTable();
+    }
+    window.onSearch = () => { page = 1; renderTable(); };
+    window.exportCsv = () => {
+      const t = TABLES[current];
+      const rows = currentFiltered.length ? currentFiltered : currentRows;
+      if (!rows.length) { toast('没有可导出的数据'); return; }
+      const head = t.cols.map(c => c.l).join(',');
+      const body = rows.map(r => t.cols.map(c => {
+        let v = r[c.k];
+        if (c.ref) v = refCache[c.ref]?.find(x => x.id === v)?.[c.refLabel] ?? v;
+        if (v === null || v === undefined) return '';
+        if (typeof v === 'string') return '"' + v.replace(/"/g, '""') + '"';
+        return v;
+      }).join(',')).join('\n');
+      const blob = new Blob(['\ufeff' + head + '\n' + body], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = current + '.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast('已导出 CSV', 'ok');
+    };
+
+    function renderTable() {
+      const t = TABLES[current];
+      const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+      const searchable = t.cols.filter(c => !c.ref || c.ref === 'brands' || c.ref === 'routes');
+      currentFiltered = q
+        ? currentRows.filter(r => searchable.some(c => {
+            let v = r[c.k];
+            if (c.ref) v = refCache[c.ref]?.find(x => x.id === v)?.[c.refLabel] ?? v;
+            return String(v ?? '').toLowerCase().includes(q);
+          }))
+        : currentRows;
+      const total = currentFiltered.length;
+      const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      if (page > pages) page = pages;
+      const slice = currentFiltered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+      const view = document.getElementById('view');
+      if (!slice.length) {
+        view.innerHTML = `<div class="empty">${q ? '没有匹配「' + esc(q) + '」的记录' : '暂无数据，点右上角"＋ 新增"添加'}</div>`;
+        return;
+      }
+      const keys = t.cols.map(c => c.k);
+      const head = keys.map(k => `<th>${t.cols.find(c => c.k === k).l}</th>`).join('') + '<th>操作</th>';
+      const rows = slice.map(row => {
+        const tds = keys.map(k => {
+          let v = row[k];
+          const col = t.cols.find(c => c.k === k);
+          if (col.ref) v = refCache[col.ref]?.find(r => r.id === v)?.[col.refLabel] ?? v;
+          return `<td>${fmt(v)}</td>`;
+        }).join('');
+        return `<tr>${tds}<td><div class="row-actions">
+          <button class="btn-ghost btn-sm" onclick="openForm(${row.id})">编辑</button>
+          <button class="btn-danger btn-sm" onclick="delRow(${row.id})">删除</button></div></td></tr>`;
+      }).join('');
+      view.innerHTML = `<div class="card" style="overflow-x:auto"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+        <div class="pager">
+          <span>共 ${total} 条</span>
+          <button class="btn-ghost btn-sm" ${page <= 1 ? 'disabled' : ''} onclick="goPage(${page - 1})">上一页</button>
+          <span>${page} / ${pages}</span>
+          <button class="btn-ghost btn-sm" ${page >= pages ? 'disabled' : ''} onclick="goPage(${page + 1})">下一页</button>
+        </div>`;
+    }
+    window.goPage = (p) => { page = p; renderTable(); };
+
+    // ============ 表单 ============
+    window.openForm = (id) => {
+      const t = TABLES[current];
+      const row = currentRows.find(r => r.id === id) || {};
+      const groupHtml = GROUPS.map(g => {
+        const cols = t.cols.filter(c => c.g === g.key);
+        if (!cols.length) return '';
+        const fields = cols.map(c => {
+          const val = row[c.k] ?? '';
+          const reqMark = c.req ? '<span class="req">*</span>' : '<span class="opt">选填</span>';
+          if (c.type === 'bool') return `<div class="chk"><input type="checkbox" id="f_${c.k}" ${val ? 'checked' : ''}><label>${c.l}</label></div>`;
+          let field;
+          if (c.type === 'select') {
+            let optHtml = (c.optional ? '<option value="">— 不关联 —</option>' : '');
+            if (c.ref) {
+              optHtml += (refCache[c.ref] || []).map(r =>
+                `<option value="${r.id}" ${String(val) === String(r.id) ? 'selected' : ''}>${r[c.refLabel]}</option>`).join('');
+            } else {
+              optHtml += (c.options || []).map(o =>
+                `<option value="${o}" ${String(val) === String(o) ? 'selected' : ''}>${o}</option>`).join('');
+            }
+            field = `<select id="f_${c.k}">${optHtml}</select>`;
+          } else {
+            const input = c.type === 'number' ? `type="number" step="${c.step || 1}"` :
+              (c.type === 'datetime' ? 'type="datetime-local"' : 'type="text"');
+            field = `<input ${input} id="f_${c.k}" value="${String(val ?? '').replace(/"/g, '&quot;')}">`;
+            if (c.type === 'image') {
+              field += val ? `<img class="imgprev" src="${val}" onerror="this.style.display='none'">` : '';
+              field += `<input type="file" id="up_${c.k}" accept="image/*" style="margin-top:6px" onchange="uploadImage('${c.k}')">`;
+              if (c.hint) field += `<div class="hint">${c.hint}</div>`;
+            }
+          }
+          return `<div class="${c.type === 'image' ? 'full' : ''}"><label>${c.l}${reqMark}</label>${field}</div>`;
+        }).join('');
+        return `<div class="fgroup"><h4>${g.label}</h4><div class="frow">${fields}</div></div>`;
+      }).join('');
+      document.getElementById('modalBox').innerHTML = `<h3>${id ? '编辑' : '新增'}${t.label}</h3>${groupHtml}
+        <div class="actions"><button class="btn-ghost" onclick="closeModal()">取消</button>
+        <button class="btn-primary" onclick="saveForm(${id ?? 'null'})">保存</button></div>`;
+      document.getElementById('modal').style.display = 'block';
+    };
+    window.closeModal = () => { document.getElementById('modal').style.display = 'none'; };
+
+    window.uploadImage = async (k) => {
+      const t = TABLES[current];
+      const col = t.cols.find(c => c.k === k);
+      const input = document.getElementById(`up_${k}`);
+      const file = input.files[0];
+      if (!file) return;
+      let uploadFile = file;
+      let uploadName = file.name;
+      if (file.type === 'image/svg+xml' || /\.svg$/i.test(file.name)) {
+        try {
+          uploadFile = await svgToHighResPng(file);
+          uploadName = file.name.replace(/\.svg$/i, '.png');
+        } catch (e) {
+          alert('SVG 转换失败: ' + e.message + '\n也可直接上传高分辨率 PNG/JPG');
+          input.value = '';
+          return;
+        }
+      }
+      const safeBase = uploadName
+        .replace(/\.[^.]+$/, '')
+        .replace(/[^a-zA-Z0-9_-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'route';
+      const ext = (uploadName.match(/\.[^.]+$/) || ['.png'])[0].toLowerCase();
+      const path = `${Date.now()}-${safeBase}${ext}`;
+      const { error } = await supabase.storage.from(col.bucket).upload(path, uploadFile, { upsert: true });
+      if (error) { toast('上传失败: ' + error.message, 'bad'); return; }
+      const { data } = supabase.storage.from(col.bucket).getPublicUrl(path);
+      document.getElementById(`f_${k}`).value = data.publicUrl;
+      const prev = document.querySelector(`#f_${k}`).closest('.full')?.querySelector('.imgprev');
+      if (prev) { prev.src = data.publicUrl; prev.style.display = ''; }
+      toast('图片上传成功', 'ok');
+    };
+
+    async function svgToHighResPng(file) {
+      const text = await file.text();
+      const size = parseSvgSize(text, 800);
+      const scale = Math.max(1, Math.ceil(4096 / Math.max(size.w, size.h)));
+      const blob = new Blob([text], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('无法解析该 SVG'));
+        img.src = url;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(size.w * scale));
+      canvas.height = Math.max(1, Math.round(size.h * scale));
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      const probe = document.createElement('canvas');
+      probe.width = 64;
+      probe.height = 64;
+      const pctx = probe.getContext('2d', { willReadFrequently: true });
+      pctx.drawImage(canvas, 0, 0, 64, 64);
+      const pd = pctx.getImageData(0, 0, 64, 64).data;
+      const r0 = pd[0], g0 = pd[1], b0 = pd[2], a0 = pd[3];
+      let blank = true;
+      for (let i = 4; i < pd.length; i += 4) {
+        if (Math.abs(pd[i] - r0) > 24 || Math.abs(pd[i + 1] - g0) > 24 ||
+            Math.abs(pd[i + 2] - b0) > 24 || Math.abs(pd[i + 3] - a0) > 24) {
+          blank = false;
+          break;
+        }
+      }
+      if (blank) throw new Error('转换结果全白/全透明(SVG 内没有可见内容),请检查源文件');
+      return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    }
+
+    function parseSvgSize(text, fallback) {
+      const m = /<svg[^>]*\swidth="([\d.]+)(?:px)?"[^>]*\sheight="([\d.]+)(?:px)?"/.exec(text)
+        || /<svg[^>]*\sheight="([\d.]+)(?:px)?"[^>]*\swidth="([\d.]+)(?:px)?"/.exec(text);
+      if (m && m[1] && m[2]) return { w: parseFloat(m[1]), h: parseFloat(m[2]) };
+      const vb = /<svg[^>]*\sviewBox="([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)"/.exec(text);
+      if (vb) {
+        const w = parseFloat(vb[3]), h = parseFloat(vb[4]);
+        if (w > 0 && h > 0) return { w, h };
+      }
+      const mm = /<svg[^>]*\swidth="([\d.]+)(mm|cm|pt|in)"[^>]*\sheight="([\d.]+)(mm|cm|pt|in)"/.exec(text)
+        || /<svg[^>]*\sheight="([\d.]+)(mm|cm|pt|in)"[^>]*\swidth="([\d.]+)(mm|cm|pt|in)"/.exec(text);
+      if (mm && mm[1] && mm[3]) {
+        const ratio = { mm: 96 / 25.4, cm: 96 / 2.54, pt: 96 / 72, in: 96 };
+        return { w: parseFloat(mm[1]) * ratio[mm[2]], h: parseFloat(mm[3]) * ratio[mm[4]] };
+      }
+      return { w: fallback, h: fallback };
+    }
+
+    window.saveForm = async (id) => {
+      const t = TABLES[current];
+      const payload = {};
+      for (const c of t.cols) {
+        const el = document.getElementById(`f_${c.k}`);
+        if (!el) continue;
+        if (c.type === 'bool') { payload[c.k] = el.checked; continue; }
+        let v = el.value.trim();
+        if (c.type === 'select' && c.ref) {
+          v = Number(v);
+          if (!v && c.optional) v = null;
+          if (c.req && !v) { toast('请选择「' + c.l + '」', 'bad'); return; }
+          payload[c.k] = v;
+          continue;
+        }
+        if (c.type === 'select') {
+          if (v === '') {
+            if (c.req) { toast('请选择「' + c.l + '」', 'bad'); return; }
+            delete payload[c.k];
+            continue;
+          }
+          payload[c.k] = v;
+          continue;
+        }
+        if (c.type === 'number') {
+          if (v === '') {
+            if (c.req) { toast('请填写「' + c.l + '」', 'bad'); return; }
+            delete payload[c.k];
+            continue;
+          }
+          v = Number(v);
+        }
+        if (c.type === 'datetime') {
+          if (v === '') {
+            if (c.req) { toast('请填写「' + c.l + '」', 'bad'); return; }
+            delete payload[c.k];
+            continue;
+          }
+          v = new Date(v).toISOString();
+        }
+        if (c.req && (v === '' || v === null || v === undefined)) { toast('请填写「' + c.l + '」', 'bad'); return; }
+        payload[c.k] = v;
+      }
+      const { error } = id
+        ? await supabase.from(current).update(payload).eq('id', id)
+        : await supabase.from(current).insert(payload);
+      if (error) { toast('保存失败: ' + error.message, 'bad'); return; }
+      closeModal();
+      toast('保存成功', 'ok');
+      await loadTable();
+    };
+
+    window.delRow = async (id) => {
+      if (!confirm('确认删除这条记录?')) return;
+      const { error } = await supabase.from(current).delete().eq('id', id);
+      if (error) { toast('删除失败: ' + error.message, 'bad'); return; }
+      toast('已删除', 'ok');
+      await loadTable();
+    };
+
+    // ============ 操作日志(只读, 防篡改) ============
+    const LOG_TABLE_LABELS = { brands: '品牌', models: '车型', routes: '路线', checkpoints: '打卡点', badges: '徽章' };
+    let logState = { table: '', action: '', page: 1 };
+
+    async function loadLogs() {
+      document.getElementById('tools').innerHTML = '<span class="readonly-badge">🔒 只读 · 由数据库触发器自动记录,不可修改/删除</span>';
+      let query = supabase.from('admin_logs').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+      if (logState.table) query = query.eq('table_name', logState.table);
+      if (logState.action) query = query.eq('action', logState.action);
+      query = query.range((logState.page - 1) * PAGE_SIZE, logState.page * PAGE_SIZE - 1);
+      const { data, error, count } = await query;
+      const view = document.getElementById('view');
+      if (error) { view.innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
+      const filterHtml = `<div class="filters">
+        <select onchange="logFilterTable(this.value)">
+          <option value="">全部内容表</option>
+          ${Object.entries(LOG_TABLE_LABELS).map(([k, l]) => `<option value="${k}" ${logState.table === k ? 'selected' : ''}>${l}</option>`).join('')}
+        </select>
+        <select onchange="logFilterAction(this.value)">
+          <option value="">全部动作</option>
+          <option value="INSERT" ${logState.action === 'INSERT' ? 'selected' : ''}>新增</option>
+          <option value="UPDATE" ${logState.action === 'UPDATE' ? 'selected' : ''}>修改</option>
+          <option value="DELETE" ${logState.action === 'DELETE' ? 'selected' : ''}>删除</option>
+        </select>
+      </div>`;
+      const rows = (data || []).map(logRow).join('')
+        || `<tr><td colspan="6"><div class="empty">还没有操作记录</div></td></tr>`;
+      const pages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
+      view.innerHTML = filterHtml + `<div class="card" style="overflow-x:auto"><table><thead><tr>
+        <th>时间</th><th>操作人</th><th>内容表</th><th>动作</th><th>记录 ID</th><th>变更摘要</th>
+      </tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="pager">
+        <span>共 ${count || 0} 条</span>
+        <button class="btn-ghost btn-sm" ${logState.page <= 1 ? 'disabled' : ''} onclick="logGoPage(${logState.page - 1})">上一页</button>
+        <span>${logState.page} / ${pages}</span>
+        <button class="btn-ghost btn-sm" ${logState.page >= pages ? 'disabled' : ''} onclick="logGoPage(${logState.page + 1})">下一页</button>
+      </div>`;
+    }
+    window.logFilterTable = (v) => { logState.table = v; logState.page = 1; loadLogs(); };
+    window.logFilterAction = (v) => { logState.action = v; logState.page = 1; loadLogs(); };
+    window.logGoPage = (p) => { logState.page = p; loadLogs(); };
+
+    function logRow(r) {
+      const actionTag = r.action === 'INSERT' ? '<span class="tag on">新增</span>'
+        : r.action === 'DELETE' ? '<span class="tag off">删除</span>'
+        : '<span class="tag warn">修改</span>';
+      const t = new Date(r.created_at).toLocaleString('zh-CN', { hour12: false });
+      const table = LOG_TABLE_LABELS[r.table_name] || r.table_name;
+      let summary = '';
+      if (r.action === 'INSERT') summary = summarizeData(r.new_data);
+      else if (r.action === 'DELETE') summary = '删除:' + summarizeData(r.old_data);
+      else summary = summarizeDiff(r.old_data, r.new_data);
+      return `<tr><td style="white-space:nowrap">${esc(t)}</td><td>${esc(r.actor_email || '—')}</td>
+        <td>${esc(table)}</td><td>${actionTag}</td><td>${esc(r.row_id || '—')}</td>
+        <td style="max-width:420px;color:var(--sub)">${summary}</td></tr>`;
+    }
+    function summarizeData(d) {
+      if (!d || typeof d !== 'object') return '—';
+      return Object.entries(d).filter(([k]) => k !== 'id').map(([k, v]) =>
+        `${k}=${esc(shortVal(v))}`).join(', ').slice(0, 220) || '—';
+    }
+    function summarizeDiff(oldD, newD) {
+      if (!oldD || !newD) return '—';
+      const parts = [];
+      for (const k of Object.keys(newD)) {
+        if (k === 'id') continue;
+        const o = oldD[k], n = newD[k];
+        if (JSON.stringify(o) !== JSON.stringify(n)) {
+          parts.push(`${k}: ${esc(shortVal(o))} → ${esc(shortVal(n))}`);
+        }
+      }
+      return parts.join(', ').slice(0, 220) || '—';
+    }
+
+    // ============ 管理员管理 ============
+    async function loadAdmins() {
+      document.getElementById('tools').innerHTML = '<button class="btn-ghost btn-sm" onclick="loadAdmins()">刷新</button>';
+      const view = document.getElementById('view');
+      const { data, error } = await supabase.rpc('admin_list');
+      if (error) {
+        view.innerHTML = `<div class="notice">⚠️ 管理员管理暂不可用（${esc(error.message)}）。<br>请先执行 <code>backend/supabase/migrations/0013_admin_dashboard.sql</code></div>`;
+        return;
+      }
+      const me = (await supabase.auth.getUser()).data.user;
+      const rows = (data || []).map(a => {
+        const initial = (a.email || '?')[0].toUpperCase();
+        const isMe = me && a.id === me.id;
+        return `<div class="admin-row">
+          <div class="admin-ava">${initial}</div>
+          <div class="admin-meta">
+            <div class="em">${esc(a.email)} ${isMe ? '<span class="tag on">我</span>' : ''} <span class="tag ${a.is_admin ? 'on' : 'off'}">${a.is_admin ? '管理员' : '普通用户'}</span></div>
+            <div class="sub">${a.nickname || '—'} · 加入于 ${new Date(a.created_at).toLocaleDateString('zh-CN')}</div>
+          </div>
+          ${!a.is_admin ? '' : (isMe || String(a.email).toLowerCase() === '421975135@qq.com' ? '' : `<button class="btn-danger btn-sm" onclick="revokeAdmin('${esc(a.email)}')">移除</button>`)}
+        </div>`;
+      }).join('') || '<div class="empty">暂无用户</div>';
+      view.innerHTML = `<div class="admins-card card">
+        <h3>管理员列表</h3>
+        ${rows}
+        <div class="add-admin">
+          <input id="newAdminEmail" type="email" placeholder="输入邮箱，授予管理员权限">
+          <button class="btn-primary btn-sm" onclick="grantAdmin()">授予</button>
+        </div>
+      </div>`;
+    }
+    window.grantAdmin = async () => {
+      const email = document.getElementById('newAdminEmail').value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('请输入有效邮箱', 'bad'); return; }
+      const { data, error } = await supabase.rpc('admin_grant', { p_email: email });
+      if (error) { toast('授予失败: ' + error.message, 'bad'); return; }
+      toast('已授予管理员: ' + email, 'ok');
+      document.getElementById('newAdminEmail').value = '';
+      loadAdmins();
+    };
+    window.revokeAdmin = async (email) => {
+      if (!confirm('确认移除管理员 ' + email + '?')) return;
+      const { data, error } = await supabase.rpc('admin_revoke', { p_email: email });
+      if (error) { toast('移除失败: ' + error.message, 'bad'); return; }
+      toast('已移除: ' + email, 'ok');
+      loadAdmins();
+    };
+
+    // ============ 启动 ============
+    async function checkAdmin() {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from('profiles')
+        .select('nickname, is_admin').eq('id', user.id).maybeSingle();
+      if (!profile?.is_admin) {
+        document.getElementById('whoami').textContent = user.email || user.id;
+        alert('该账号不是管理员。请先在 Supabase SQL Editor 执行:\nupdate profiles set is_admin = true where id = \'' + user.id + '\';');
+        await supabase.auth.signOut();
+        location.reload();
+        return;
+      }
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('resetpw').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('whoami').textContent = (profile.nickname || '管理员') + ' · ' + (user.email || '');
+      renderNav();
+      await loadRefs();
+      // 概览只显示数据监测 + 日志, 管理员入口放侧栏
+      await switchView('dashboard');
+    }
+
+    async function loadRefs() {
+      for (const [key, t] of Object.entries(TABLES)) {
+        if (t.cols.some(c => c.ref)) {
+          const { data } = await supabase.from(key).select('*');
+          refCache[key] = data || [];
+        }
+      }
+    }
+
+    if (!window.LEGAL_PAGE) {
+      supabase.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          document.getElementById('login').style.display = 'none';
+          document.getElementById('app').style.display = 'none';
+          document.getElementById('resetpw').style.display = 'block';
+        }
+      });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) { await checkAdmin(); }
+    }
+  </script>
+</body>
+</html>
