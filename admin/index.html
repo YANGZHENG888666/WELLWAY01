@@ -69,6 +69,19 @@
     .chk label { margin:0; font-size:13px; color:var(--text); }
     .imgprev { width:72px; height:72px; object-fit:cover; border-radius:10px; margin-top:6px; background:#F4F4F2; border:1px solid var(--line); }
     .hint { font-size:11px; color:var(--sub); margin-top:4px; line-height:1.5; }
+    .form-hint { background:#F5F7F9; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:12px; color:var(--sub); line-height:1.7; margin-bottom:8px; }
+    .form-hint b { color:var(--warn); font-weight:700; }
+    .geo-row { display:flex; gap:8px; margin:2px 0 8px; }
+    .geo-row input { flex:1; }
+    .geo-res { margin:0 0 4px; }
+    .geo-item { display:flex; flex-direction:column; gap:2px; width:100%; text-align:left; background:#F5F7F9; border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:6px; }
+    .geo-item:hover { border-color:var(--ink); background:#EFF2F4; }
+    .geo-nm { font-size:13px; font-weight:600; color:var(--text); }
+    .geo-sub { font-size:11px; color:var(--sub); line-height:1.5; }
+    .geo-loading, .geo-empty { font-size:12px; color:var(--sub); padding:6px 2px 10px; }
+    .geo-picked { font-size:12px; color:var(--success); background:#E7F5EE; border-radius:8px; padding:8px 10px; margin-bottom:4px; }
+    .cp-hint { font-size:11px; color:var(--warn); margin-top:3px; line-height:1.4; }
+    .tag.bad { background:#FBECEC; color:var(--danger); }
 
     /* ---------- 布局 ---------- */
     #app { display:none; }
@@ -380,8 +393,8 @@
         { k: 'route_id', l: '路线', type: 'select', ref: 'routes', refLabel: 'name', req: true, g: 'base' },
         { k: 'name', l: '名称', req: true, g: 'base' },
         { k: 'seq', l: '序号', type: 'number', req: true, g: 'base' },
-        { k: 'lat', l: '纬度', type: 'number', step: 0.000001, g: 'detail' },
-        { k: 'lng', l: '经度', type: 'number', step: 0.000001, g: 'detail' },
+        { k: 'lat', l: '纬度', type: 'number', step: 0.000001, g: 'detail', hint: '用于天气与导航计算；可用上方「搜索坐标」自动填充' },
+        { k: 'lng', l: '经度', type: 'number', step: 0.000001, g: 'detail', hint: '起点 = 序号最小的带坐标点，终点 = 序号最大的带坐标点' },
         { k: 'radius_m', l: '半径(米)', type: 'number', g: 'detail' },
       ]},
       badges: { label: '徽章', icon: '🎖️', order: 'seq', cols: [
@@ -396,6 +409,7 @@
     const MODULES = [
       { key: 'dashboard', label: '数据监测', icon: '📊', group: '概览' },
       { key: 'logs', label: '操作日志', icon: '🧾', group: '概览' },
+      { key: 'feedback', label: '用户反馈', icon: '💬', group: '概览' },
       { key: 'admins', label: '管理员', icon: '👥', group: '系统' },
     ];
 
@@ -405,6 +419,7 @@
     let page = 1;
     const PAGE_SIZE = 15;
     const refCache = {};
+    let cpSummary = {}; // route_id -> { count, start:{...}, end:{...} }
 
     // ============ 通用工具 ============
     function esc(s) {
@@ -522,9 +537,11 @@
       document.getElementById('tabTitle').textContent = t ? `${t.icon} ${t.label}`
         : key === 'dashboard' ? '📊 数据监测'
         : key === 'logs' ? '🧾 操作日志'
+        : key === 'feedback' ? '💬 用户反馈'
         : key === 'admins' ? '👥 管理员' : '';
       if (key === 'dashboard') { await loadDashboard(); return; }
       if (key === 'logs') { await loadLogs(); return; }
+      if (key === 'feedback') { await loadFeedback(); return; }
       if (key === 'admins') { await loadAdmins(); return; }
       await loadTable();
     };
@@ -592,7 +609,22 @@
       const { data, error } = await supabase.from(current).select('*').order(t.order);
       if (error) { document.getElementById('view').innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
       currentRows = data || [];
+      if (current === 'routes' || current === 'checkpoints') await loadCheckpointSummary();
       renderTable();
+    }
+    async function loadCheckpointSummary() {
+      const { data } = await supabase.from('checkpoints').select('id, route_id, seq, name, lat, lng');
+      const map = {};
+      for (const cp of data || []) {
+        if (!map[cp.route_id]) map[cp.route_id] = { count: 0, start: null, end: null };
+        const g = map[cp.route_id];
+        g.count++;
+        if (cp.lat != null && cp.lng != null) {
+          if (!g.start || cp.seq < g.start.seq) g.start = cp;
+          if (!g.end || cp.seq > g.end.seq) g.end = cp;
+        }
+      }
+      cpSummary = map;
     }
     window.onSearch = () => { page = 1; renderTable(); };
     window.exportCsv = () => {
@@ -637,7 +669,10 @@
         return;
       }
       const keys = t.cols.map(c => c.k);
-      const head = keys.map(k => `<th>${t.cols.find(c => c.k === k).l}</th>`).join('') + '<th>操作</th>';
+      const head = keys.map(k => `<th>${t.cols.find(c => c.k === k).l}</th>`).join('')
+        + (current === 'routes' ? '<th>打卡点</th>' : '')
+        + (current === 'checkpoints' ? '<th>角色</th>' : '')
+        + '<th>操作</th>';
       const rows = slice.map(row => {
         const tds = keys.map(k => {
           let v = row[k];
@@ -645,7 +680,9 @@
           if (col.ref) v = refCache[col.ref]?.find(r => r.id === v)?.[col.refLabel] ?? v;
           return `<td>${fmt(v)}</td>`;
         }).join('');
-        return `<tr>${tds}<td><div class="row-actions">
+        const extra = current === 'routes' ? `<td>${cpCell(row)}</td>`
+          : (current === 'checkpoints' ? `<td>${cpRole(row)}</td>` : '');
+        return `<tr>${tds}${extra}<td><div class="row-actions">
           <button class="btn-ghost btn-sm" onclick="openForm(${row.id})">编辑</button>
           <button class="btn-danger btn-sm" onclick="delRow(${row.id})">删除</button></div></td></tr>`;
       }).join('');
@@ -658,6 +695,25 @@
         </div>`;
     }
     window.goPage = (p) => { page = p; renderTable(); };
+
+    function cpCell(row) {
+      const s = cpSummary[row.id];
+      if (!s || !s.count) return '<span class="tag warn">⚠️ 无打卡点</span><div class="cp-hint">天气/导航不可用</div>';
+      const ok = s.start && s.end;
+      const status = `${s.count} 个 · 起点${s.start ? '✓' : '✗'} · 终点${s.end ? '✓' : '✗'}`;
+      return `<span class="tag ${ok ? 'on' : 'warn'}">${status}</span>`
+        + (ok ? '' : '<div class="cp-hint">缺坐标请到「打卡点」补充</div>');
+    }
+    function cpRole(row) {
+      const s = cpSummary[row.route_id];
+      if (!s) return '<span class="tag off">—</span>';
+      const isStart = s.start && s.start.id === row.id;
+      const isEnd = s.end && s.end.id === row.id;
+      if (isStart && isEnd) return '<span class="tag warn">起点/终点</span>';
+      if (isStart) return '<span class="tag on">起点</span>';
+      if (isEnd) return '<span class="tag on">终点</span>';
+      return row.lat == null || row.lng == null ? '<span class="tag bad">缺坐标</span>' : '<span class="tag off">途经</span>';
+    }
 
     // ============ 表单 ============
     window.openForm = (id) => {
@@ -688,19 +744,78 @@
             if (c.type === 'image') {
               field += val ? `<img class="imgprev" src="${val}" onerror="this.style.display='none'">` : '';
               field += `<input type="file" id="up_${c.k}" accept="image/*" style="margin-top:6px" onchange="uploadImage('${c.k}')">`;
-              if (c.hint) field += `<div class="hint">${c.hint}</div>`;
             }
+            if (c.hint) field += `<div class="hint">${c.hint}</div>`;
           }
           return `<div class="${c.type === 'image' ? 'full' : ''}"><label>${c.l}${reqMark}</label>${field}</div>`;
         }).join('');
         return `<div class="fgroup"><h4>${g.label}</h4><div class="frow">${fields}</div></div>`;
       }).join('');
-      document.getElementById('modalBox').innerHTML = `<h3>${id ? '编辑' : '新增'}${t.label}</h3>${groupHtml}
+      const routeHint = current === 'routes' ? routeCpHint(id) : '';
+      const geoBlock = current === 'checkpoints'
+        ? `<div class="geo"><div class="geo-row">
+             <input id="geoQ" placeholder="输入地名，如：芹峪口、高崖口，回车搜索" onkeydown="if(event.key==='Enter'){event.preventDefault();geoSearch();}">
+             <button class="btn-ghost btn-sm" onclick="geoSearch()">🔍 搜索坐标</button>
+           </div><div class="geo-res" id="geoRes"></div></div>`
+        : '';
+      document.getElementById('modalBox').innerHTML = `<h3>${id ? '编辑' : '新增'}${t.label}</h3>${geoBlock}${routeHint}${groupHtml}
         <div class="actions"><button class="btn-ghost" onclick="closeModal()">取消</button>
         <button class="btn-primary" onclick="saveForm(${id ?? 'null'})">保存</button></div>`;
       document.getElementById('modal').style.display = 'block';
     };
     window.closeModal = () => { document.getElementById('modal').style.display = 'none'; };
+
+    function routeCpHint(id) {
+      const s = id ? cpSummary[id] : null;
+      if (!s || !s.count) {
+        return `<div class="form-hint">🌤️ 目的地天气、🧭 导航起终点均由「打卡点」推算：<b>起点 = 序号最小且有坐标的打卡点，终点 = 序号最大且有坐标的打卡点</b>。当前<b>尚无打卡点</b>，请先到「打卡点」为该路线添加带经纬度的起点/终点。</div>`;
+      }
+      const ok = s.start && s.end;
+      const startTxt = s.start ? `${esc(s.start.name)}(${Number(s.start.lat).toFixed(5)}, ${Number(s.start.lng).toFixed(5)})` : '<b style="color:var(--danger)">缺起点坐标</b>';
+      const endTxt = s.end ? `${esc(s.end.name)}(${Number(s.end.lat).toFixed(5)}, ${Number(s.end.lng).toFixed(5)})` : '<b style="color:var(--danger)">缺终点坐标</b>';
+      return `<div class="form-hint">🌤️ 天气与 🧭 导航由打卡点推算：起点 = ${startTxt}，终点 = ${endTxt}。${ok ? '✅ 坐标齐全' : '⚠️ 请到「打卡点」补充缺失坐标'}</div>`;
+    }
+
+    let geoAbort = null;
+    window.geoSearch = async () => {
+      const q = (document.getElementById('geoQ')?.value || '').trim();
+      const box = document.getElementById('geoRes');
+      if (!box) return;
+      if (!q) { box.innerHTML = '<div class="geo-empty">请输入地名</div>'; return; }
+      if (geoAbort) geoAbort.abort();
+      geoAbort = new AbortController();
+      box.innerHTML = '<div class="geo-loading">搜索中…</div>';
+      try {
+        const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language=zh&limit=8&q=' + encodeURIComponent(q);
+        const res = await fetch(url, { signal: geoAbort.signal });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const list = await res.json();
+        window._geoResults = list;
+        if (!list.length) { box.innerHTML = '<div class="geo-empty">未找到该地名。可换更精确的名称（如镇/村名），或手动填写坐标。</div>'; return; }
+        box.innerHTML = list.map((p, i) => {
+          const disp = p.display_name || p.name || '';
+          return `<button class="geo-item" onclick="geoPick(${i})">
+            <span class="geo-nm">${esc(p.name || disp)}</span>
+            <span class="geo-sub">${esc(disp.slice(0, 60))} · ${Number(p.lat).toFixed(5)}, ${Number(p.lon).toFixed(5)}</span>
+          </button>`;
+        }).join('');
+      } catch (e) {
+        if (e.name !== 'AbortError') box.innerHTML = '<div class="geo-empty">搜索失败：' + esc(e.message) + '。请手动填写坐标。</div>';
+      }
+    };
+    window.geoPick = (i) => {
+      const list = window._geoResults || [];
+      const p = list[i];
+      if (!p) return;
+      const nameEl = document.getElementById('f_name');
+      if (nameEl && !nameEl.value.trim()) nameEl.value = p.name || '';
+      const latEl = document.getElementById('f_lat');
+      const lngEl = document.getElementById('f_lng');
+      if (latEl) latEl.value = Number(p.lat).toFixed(6);
+      if (lngEl) lngEl.value = Number(p.lon).toFixed(6);
+      const box = document.getElementById('geoRes');
+      if (box) box.innerHTML = `<div class="geo-picked">已填入：${esc(p.display_name || p.name || '')}（${Number(p.lat).toFixed(5)}, ${Number(p.lon).toFixed(5)}）</div>`;
+    };
 
     window.uploadImage = async (k) => {
       const t = TABLES[current];
@@ -924,6 +1039,53 @@
       }
       return parts.join(', ').slice(0, 220) || '—';
     }
+
+    // ============ 用户反馈(只读) ============
+    let fbState = { q: '', page: 1 };
+    let fbEmailMap = {};
+
+    async function loadFeedback() {
+      document.getElementById('tools').innerHTML = `
+        <input type="search" id="fbSearch" placeholder="搜索内容/联系方式…" value="${esc(fbState.q)}" oninput="fbSearch(this.value)">
+        <button class="btn-ghost btn-sm" onclick="loadFeedback()">刷新</button>`;
+      const view = document.getElementById('view');
+      const { data: users } = await supabase.rpc('admin_list');
+      if (users) fbEmailMap = Object.fromEntries(users.map(u => [u.id, u.email]));
+      let query = supabase.from('feedback').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+      if (fbState.q) {
+        const q = fbState.q.replace(/[%,()']/g, '');
+        query = query.or(`content.ilike.%${q}%,contact.ilike.%${q}%,app_version.ilike.%${q}%`);
+      }
+      query = query.range((fbState.page - 1) * PAGE_SIZE, fbState.page * PAGE_SIZE - 1);
+      const { data, error, count } = await query;
+      if (error) { view.innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
+      const rows = (data || []).map(fb => {
+        const email = fb.user_id ? (fbEmailMap[fb.user_id] || '') : '';
+        const userTxt = email ? esc(email)
+          : (fb.user_id ? `<span style="color:#B6BEC9">${String(fb.user_id).slice(0, 8)}…</span>`
+            : '<span class="tag off">匿名</span>');
+        return `<tr>
+          <td style="white-space:nowrap">${new Date(fb.created_at).toLocaleString('zh-CN', { hour12: false })}</td>
+          <td>${userTxt}</td>
+          <td style="max-width:420px">${esc(fb.content)}</td>
+          <td>${esc(fb.contact || '—')}</td>
+          <td>${esc(fb.app_version || '—')}</td>
+        </tr>`;
+      }).join('') || `<tr><td colspan="5"><div class="empty">还没有用户反馈</div></td></tr>`;
+      const pages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
+      view.innerHTML = `<div class="filters"><span class="readonly-badge">🔒 只读 · 用户提交的意见反馈与品牌添加请求，不可修改/删除</span></div>
+        <div class="card" style="overflow-x:auto"><table><thead><tr>
+          <th>时间</th><th>用户</th><th>内容</th><th>联系方式</th><th>版本</th>
+        </tr></thead><tbody>${rows}</tbody></table></div>
+        <div class="pager">
+          <span>共 ${count || 0} 条</span>
+          <button class="btn-ghost btn-sm" ${fbState.page <= 1 ? 'disabled' : ''} onclick="fbGoPage(${fbState.page - 1})">上一页</button>
+          <span>${fbState.page} / ${pages}</span>
+          <button class="btn-ghost btn-sm" ${fbState.page >= pages ? 'disabled' : ''} onclick="fbGoPage(${fbState.page + 1})">下一页</button>
+        </div>`;
+    }
+    window.fbSearch = (v) => { fbState.q = v.trim(); fbState.page = 1; loadFeedback(); };
+    window.fbGoPage = (p) => { fbState.page = p; loadFeedback(); };
 
     // ============ 管理员管理 ============
     async function loadAdmins() {
