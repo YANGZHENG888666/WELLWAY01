@@ -425,6 +425,7 @@ struct RoutesView: View {
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .bold))
+                    .accessibilityHidden(true)
             }
             .foregroundStyle(provinceFilter != "全部" ? Theme.textPrimary : Theme.textSecondary)
             .frame(height: 44)
@@ -486,6 +487,7 @@ struct RoutesView: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(active ? Theme.textPrimary : Theme.textSecondary)
+                    .accessibilityHidden(true)
             }
             .frame(height: 44)
             .contentShape(Rectangle())

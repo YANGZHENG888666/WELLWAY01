@@ -3654,3 +3654,131 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - 动态字体仍是已知限制：当前页面大量使用固定 `.system(size:)`，没有 `@ScaledMetric` 或动态字体映射；无全局改造计划前不改，避免破坏 v6 的固定比例。
 - accessibility XXXL 下，系统分享面板会横向裁切自身内容，属于系统面板；页面本身不缩减字号来迁就它。
 - 真机待验证：后台骑行计时、后台定位、中断骑行冷启动恢复、推送到达、高德 / 苹果地图跳转、分享卡导出。
+
+## 逐页巡检（第三十五轮）：骑行中断恢复与弱网收尾
+
+### 冷启动恢复页（新增）
+
+- 入口：真实强杀后冷启动；调试用 `-riderecovery`（未结束）、`-riderecoveryended`（已结束待补存）。
+- 版式按 v6：`DesignPageHeader` + 路线名 26pt、里程 / 时长双列数据、上下发丝线、正文 14pt 灰字；
+  没有卡片盒子、装饰英文或第二个主行动色块。
+- 未结束态只有「继续记录」一个黑色主行动，「结束并保存」降为文字按钮；已结束态主行动改为
+  「补存记录」，不提供“继续骑”这种会把终态改回去的入口。
+- 时长口径：冷启动不把进程被杀期间算进骑行时长，从快照里的累计秒数继续计时，沿用原 `rideId`，
+  不重复建记录。
+
+### 恢复保存 + 弱网兜底（已修）
+
+- 现象：恢复页「结束并保存」直接等待 Supabase 请求，弱网下旧包转圈超过 48 秒仍无法返回。
+- 改法：新增 `Core/AsyncDeadline`，到点取消底层任务并立即返回；HUD 结束保存用 4.5 秒，
+  恢复页补存用 8 秒。恢复页点击保存时先把快照 `phase` 落为 `ended`，超时或失败只显示说明并保留本机
+  快照，页面切到「补存记录 / 完成」，可以重试，不会无限转圈。
+- 成功路径：只有云端确认完成且没有缺轨迹时才清快照；部分轨迹上传失败会保留 `ended` 快照供下次补传。
+
+### 验证矩阵（iPhone 17 Pro，正常网络 + 不可达端口）
+
+- 正常结束并保存：快照 9 秒 → 保存成功，`RideSessions` 目录清空；云端 `624A0550-…` 为
+  `completed`、`duration_s=9`、`distance_m=0`。
+- 继续记录：强杀后冷启动显示 16 秒快照，点「继续记录」进入 HUD，无白屏，沿用原 `rideId`，
+  从 17 秒继续；结束后总结 34 秒，云端 `5BA1A8BD-…` 为 `completed`、`duration_s=34`，无重复记录。
+- 弱网保存：新建 8 秒骑行强杀，把已安装包的 `SUPABASE_URL` 临时指向同域 `:444`（不可达）后冷启动；
+  点「结束并保存」在限时内返回「网络较慢…」错误态，按钮变为「补存记录」，快照保留且
+  `phase=ended`、`durationS=8`。
+- 恢复网络补存：还原地址后冷启动显示「上次骑行尚未保存」，点「补存记录」成功；快照清空，
+  云端 `E14FFCDD-…` 为 `completed`、`duration_s=8`、`distance_m=0`。
+- 证据：`outputs/r35/recovery-real.png`、`outputs/r35/resumed-hud.png`、`outputs/r35/recovery-duration.jpg`、
+  `outputs/r35/recovery-cold-start.png`、`outputs/r35/resumed-after-cold-start.png`、
+  `outputs/r35/recovery-save-success.png`、`outputs/r35/recovery-timeout.png`、
+  `outputs/r35/recovery-resave-success.png`。
+
+### SE 小屏 / 深色系统外观
+
+- SE-test（`-riderecovery`）：标题、路线名、双列数据、说明和底部两个行动完整，无横向溢出，
+  「结束并保存」文字按钮落在安全区内。
+- iPhone 17 Pro 系统深色外观（`-riderecoveryended`）：页面仍是纯白 v6 画布，主 / 次文字对比正常，
+  没有被系统外观带成黑底或低对比灰字。
+- 证据：`outputs/r35/se-recovery.png`、`outputs/r35/dark-recovery-ended.png`。
+
+### 构建与遗留
+
+- `xcodegen generate` + `xcodebuild`（iPhone 17 Pro 模拟器）：`BUILD SUCCEEDED`（2026-11-12）。
+- 真机待验证：后台定位、进程被杀后的定位续接、弱网真机时延；模拟器用不可达端口只能证明“会超时返回”，
+  不能替代真实运营商网络下的耗时。
+- 本轮改动尚未提交；首次提交为 `a11520c`，后续提交前先征得用户同意。
+
+## 逐页巡检（第三十六轮）：剩余状态页、键盘态与深色外观
+
+### 协议与账号辅助页
+
+- 用户协议长页（`-agreement-user`）、隐私说明（`-agreement-intro`）、隐私政策（`-agreement`）：
+  iPhone 17 Pro / SE-test 均使用纯白 v6 画布，`DesignPageHeader`、正文 14pt 灰字、段间距一致；
+  长页滚到底部无横向溢出，返回按钮与安全区正常。
+- 邮箱绑定（`-emailbind`）：标题区、输入框、底部主按钮和「邮箱仅用于登录与数据同步」说明完整；
+  `-emailbind -focusotp` 在 Pro / SE 上数字键盘弹起后，「保存」按钮与底部说明仍完整可见，未被键盘遮挡。
+- 关于与反馈（`-about`）：品牌区、三条入口、免责说明层级正常。本轮修复版权行对比度问题：
+  `© 2026 WellWay` 原先使用 `Theme.textSecondary.opacity(0.65)`，在白色画布上明显偏淡；
+  改为完整 `Theme.textSecondary`，12pt 字号不变，与免责说明保持同一可读层级。
+- 意见反馈（`-about -feedback`）：软键盘弹起时输入框、字数计数和提交按钮完整可见；
+  `-about -feedback -feedbackerror` 的失败文案「提交失败，请检查网络后重试」为红色，主按钮未被遮挡。
+
+### 登录成功、网络错误与权限错误
+
+- 登录成功（`-loginsuccess`）、网络错误（`-networkerror`）、权限错误（`-networkerror-auth`）：
+  Pro / SE 两个尺寸均保持纯白画布、单一黑色主行动，说明文字与按钮不重叠。
+- 网络错误的服务器错误 / 超时分支沿用同一版式，文案按分支替换，没有新增卡片或第二个行动色。
+
+### 深色系统外观
+
+- iPhone 17 Pro 系统深色外观下逐页检查五页：隐私说明、邮箱绑定、关于与反馈、登录成功、网络错误。
+- 五页均保持 v6 纯白画布，主 / 次文字对比正常，没有被系统外观带成黑底或低对比灰字。
+
+### 无障碍语义补修
+
+- 设置页通知开关先改为原生带标题 `Toggle(title, isOn:)`，移除外层 `onTapGesture` 与
+  `allowsHitTesting`；但 iOS 26 仍会在辅助功能树里额外暴露一个无标签内部开关，第三十七轮继续修正。
+- 中断恢复页的里程 / 时长指标原先把数值和标签拆成四个读屏元素，顺序为「28.6 km → 40 分钟 →
+  已骑里程 → 累计时长」。现用 `accessibilityRepresentation` 合并为两句完整指标：
+  「已骑里程 28.6 公里」「累计时长 40 分钟」，视觉布局不变。
+- 证据：`outputs/r36/settings-toggle-fixed.png`、`outputs/r36/ride-recovery-metrics-a11y.png`。
+
+### 证据与构建
+
+- 证据目录：`outputs/r36/`。包含 `agreement-*-pro/se.png`、`emailbind-*-pro/se.png`、
+  `emailbind-focusotp-pro/se.png`、`about-fixed.png`、`feedback-keyboard-pro.png`、
+  `feedback-error-keyboard-pro.png`、`loginsuccess-*-pro/se.png`、`networkerror-*-pro/se.png` 与
+  `*-dark.png`、`settings-toggle-fixed.png`、`ride-recovery-metrics-a11y.png`。
+- `xcodegen generate` + `xcodebuild`（iPhone 17 Pro 模拟器）：`BUILD SUCCEEDED`（2026-11-12）。
+- 本轮改动尚未提交；提交前先征得用户同意。
+
+## 逐页巡检（第三十七轮）：剩余状态页与读屏去重
+
+### 剩余状态页（复核，未改）
+
+- 车辆（`-vehicles`）：单辆车整行是一个按钮，默认标签、车型信息与操作暗示完整；右上角新增车辆是独立按钮。无障碍树没有重复车辆卡或空按钮。
+- 徽章列表（`-badges`）：进度、下一枚徽章与六个徽章格完整；每个徽章是一条按钮，名称、获得状态和条件合并在同一标签内。
+- 通知（`-notifications`）：日期分组、通知标题 / 时间 / 正文与未读状态完整；单条通知只暴露一个按钮。
+- 骑行总结（`-summary`）：轨迹提示、四项指标、3/3 打卡点和底部操作层级正确；里程 / 时长 / 均速 / 爬升由显式合并标签朗读，不逐个数字停顿。
+- 骑行 HUD（`-riding`）：路线标题、骑手提示、速度、三项统计、剩余里程 / 预计到达 / 打卡与暂停、结束操作完整；地图全屏入口和关闭提示均有独立标签。
+- 骑行恢复（`-riderecovery`）：里程与累计时长各是一句完整指标；说明文字与「继续记录 / 结束并保存」主次操作无重叠。
+- 徽章详情（`-badgedetail`）：获得条件、获得时间、本路线 3/3 打卡点与分享 / 再跑一次操作完整，没有重复文本节点。
+- 分享卡（`-sharecard`）：4:5 深色卡面的品牌、路线、时间、起终点、轨迹与四项指标完整且无裁切；该调试入口是导出位图预览，本身无交互节点，实际分享由系统分享面板承载。
+
+### 出发页卡片的重复读屏元素（已修）
+
+- 现象：出发页的路线主卡与「骑行参考」折叠卡在无障碍树中各出现两条同名按钮；卡片内容和按钮语义被重复朗读。
+- 根因：`.accessibilityElement(children: .ignore)`、标签和 `.accessibilityAddTraits(.isButton)` 挂在 `Button` 外层，系统按钮自身又生成一条自动合并元素。
+- 改法：把无障碍修饰移进 `Button` 的 label 内容，并删除外层多余的 `.isButton`。路线主卡复验只剩「城市穿梭线，起点 滨江路，终点 中央公园，上海，20 公里，简单」，骑行参考只剩一条完整摘要。
+- 证据：`outputs/r37/` 内对应状态页截图；最终无障碍树已复查。
+
+### 设置页通知开关的空节点（已修）
+
+- 现象：iOS 26 的 SwiftUI `Toggle(title:)` 在辅助功能树中同时暴露带标签的包装节点与内部无标签 `UISwitch`，三个通知开关会多出三个空 switch；`labelsHidden()`、外层 `accessibilityElement` 等组合均无法稳定消除。
+- 改法：用 `UIViewRepresentable` 包装系统 `UISwitch`，`onTintColor = .black`；标题与提示直接挂在 `UISwitch`，左侧标题隐藏，避免重复朗读。回调把真实绑定值同步回控件，通知权限未授权时开关保持关闭，不伪装成已开启。
+- 复验：`-settings` 只剩「对向提醒 / 打卡完成 / 骑行完成」三个带名称开关；`-settings -settingsnotifyoff` 三个开关值均为 0，点按弹出「通知权限未开启」且视觉不回弹为开启。
+- 证据：`outputs/r37/settings-fixed.png`、`outputs/r37/settings-notifyoff.png`。
+
+### 证据与构建
+
+- 证据目录：`outputs/r37/`。包含 `vehicles.png`、`badges.png`、`notifications.png`、`summary.png`、`riding.png`、`riderecovery.png`、`badgedetail.png`、`sharecard.png`、`settings-fixed.png`、`settings-notifyoff.png`、`records.png`、`profilepage.png`。
+- `xcodegen generate` + `xcodebuild`（iPhone 17 Pro 模拟器）：`BUILD SUCCEEDED`（2026-11-12）。
+- 本轮改动尚未提交；提交前先征得用户同意。

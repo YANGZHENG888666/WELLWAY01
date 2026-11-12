@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import CoreLocation
+import os
 
 struct RootView: View {
     @Environment(AuthManager.self) private var auth
@@ -52,6 +53,11 @@ struct RootView: View {
                 .environment(NavChoiceCenter())
         } else if ProcessInfo.processInfo.arguments.contains("-badgesharepreview") {
             DebugBadgeSharePreview()
+        } else if ProcessInfo.processInfo.arguments.contains("-riderecovery")
+                    || ProcessInfo.processInfo.arguments.contains("-riderecoveryended") {
+            DebugRideRecoveryLoader(
+                ended: ProcessInfo.processInfo.arguments.contains("-riderecoveryended")
+            )
         } else if ProcessInfo.processInfo.arguments.contains("-riding") {
             DebugRideLoader()
         } else if ProcessInfo.processInfo.arguments.contains("-arrival") {
@@ -287,6 +293,12 @@ struct MainTabView: View {
     /// 提示前的图标：成功是勾，失败提示必须是警示，不能给错误配一个对勾
     @State private var toastIcon: String? = "checkmark"
     @State private var toastWork: DispatchWorkItem?
+    /// 冷启动发现有未收尾的骑行：先展示恢复页，不能直接把它标成 abandoned。
+    /// 用会话本身驱动唯一的 cover，避免 isPresented 先翻转时内容还是空的，
+    /// 也避免同一层挂两个 fullScreenCover 导致「继续记录」弹出纯白页。
+    @State private var recoverySession: ActiveRideSession?
+
+    private static let recoveryLogger = Logger(subsystem: "com.wellway.app", category: "RideRecovery")
 
     /// Tab 栏黑白配色(设计稿：未选中 #9A9A9A / 选中黑色，白底，不用系统蓝)
     init(initialTab: Int = 0) {
@@ -412,10 +424,23 @@ struct MainTabView: View {
             }
         }
         .task {
-            // 冷启动时不存在仍在运行的骑行会话：把上一次被系统终止后遗留的
-            // riding 记录收尾为「未完成」，避免记录页出现幽灵「进行中」。
             guard let userId = auth.user?.id else { return }
+            // 有本机快照时说明进程被杀前骑行仍在进行：让用户决定继续还是收尾。
+            // 只有完全没有快照的遗留 riding 记录才按「未完成」收尾，
+            // 否则会把一次真实骑行静默改成未完成，轨迹也一起丢掉。
+            if let session = ActiveRideSessionStore.load() {
+                if session.userId == userId {
+                    recoverySession = session
+                    return
+                }
+                Self.recoveryLogger.error("Snapshot belongs to another user; ignoring")
+            }
             await InterruptedRideRecovery.abandonInterruptedRides(client: auth.client, userId: userId)
+        }
+        .fullScreenCover(item: $recoverySession) { session in
+            RideRecoveryFlow(session: session) {
+                recoverySession = nil
+            }
         }
         .onChange(of: selectedTab) { _, newValue in
             applyTabBarStyle(dark: false)

@@ -594,12 +594,12 @@ struct RideInfoPanel: View {
             .background(Theme.lightField)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .contentShape(Rectangle())
+            // 同路线卡：无障碍修饰放在 label 内，避免 Button 自己再生成一条。
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(summaryAccessibilityLabel)
+            .accessibilityHint("查看完整详情")
         }
         .buttonStyle(CardPressStyle(scale: 0.98))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(summaryAccessibilityLabel)
-        .accessibilityHint("查看完整详情")
-        .accessibilityAddTraits(.isButton)
     }
 
     private var shortSummaryRow: some View {

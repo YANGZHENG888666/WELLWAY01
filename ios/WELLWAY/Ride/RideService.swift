@@ -10,6 +10,11 @@ enum RidePhase {
     case paused
 }
 
+private struct RideRecordStatusRow: Decodable {
+    let id: UUID
+    let status: String
+}
+
 /// 一次骑行结束后的总结
 struct RideSummary {
     let record: RideRecord?
@@ -34,6 +39,9 @@ final class RideService: NSObject, CLLocationManagerDelegate {
     private let checkpoints: [Checkpoint]
     private let userId: UUID
     private let vehicleId: UUID?
+    private let vehicleName: String?
+    /// 冷启动恢复时传入；nil 表示一次全新骑行
+    private let resumeSession: ActiveRideSession?
 
     @ObservationIgnored private let manager = CLLocationManager()
     @ObservationIgnored private let isoFormatter: ISO8601DateFormatter
@@ -59,6 +67,9 @@ final class RideService: NSObject, CLLocationManagerDelegate {
     private var lastBearing: Double?
     private var pendingPoints: [RidePointInsert] = []
     private var pendingCheckins: [RideCheckinInsert] = []
+    /// 轨迹样本与 track 同步增长，快照需要原始时间戳，不能只留坐标
+    private var trackSamples: [RideTrackSample] = []
+    private var lastSnapshotAt = Date.distantPast
     private var ticker: Task<Void, Never>?
     private var presenceTask: Task<Void, Never>?
     /// 已结算的骑行秒数。进入后台时 ticker 可能被挂起，不能靠每秒 +1 计时；
@@ -69,12 +80,22 @@ final class RideService: NSObject, CLLocationManagerDelegate {
     private var lastCompanionCount = 0
     private var companionsPrimed = false
 
-    init(client: SupabaseClient, route: Route, checkpoints: [Checkpoint], userId: UUID, vehicleId: UUID?) {
+    init(
+        client: SupabaseClient,
+        route: Route,
+        checkpoints: [Checkpoint],
+        userId: UUID,
+        vehicleId: UUID?,
+        vehicleName: String? = nil,
+        resumeSession: ActiveRideSession? = nil
+    ) {
         self.client = client
         self.route = route
         self.checkpoints = checkpoints
         self.userId = userId
         self.vehicleId = vehicleId
+        self.vehicleName = vehicleName
+        self.resumeSession = resumeSession
         self.isoFormatter = ISO8601DateFormatter()
         super.init()
         manager.delegate = self
@@ -88,8 +109,13 @@ final class RideService: NSObject, CLLocationManagerDelegate {
     // MARK: - 开始 / 暂停 / 结束
 
     func start() async {
+        if let resumeSession {
+            await restore(from: resumeSession)
+            return
+        }
         Task { await NotificationHelper.requestAuthorizationIfNeeded() }
         phase = .riding
+        trackSamples.removeAll()
         startedAt = Date()
         distanceM = 0
         durationS = 0
@@ -127,10 +153,218 @@ final class RideService: NSObject, CLLocationManagerDelegate {
         manager.startUpdatingLocation()
         startTicker()
         await probeSchemaSupport()
+        persistSnapshot(force: true)
         if let tripId = TripSession.shared.tripId {
             _ = await TripService.updateStatus(client, tripId: tripId, status: "riding")
         }
         startPresenceReporting()
+    }
+
+    /// 冷启动恢复：复用原 rideId 和开始时间，不重复建记录。
+    ///
+    /// 进程被杀期间可能已经过去一段时间，但没有任何定位数据。这里不把
+    /// 关机时间算进骑行时长，而是以最后一次快照的累计时长为准，从恢复这一刻
+    /// 重新开启计时段，避免给用户凭空多出几小时。
+    private func restore(from session: ActiveRideSession) async {
+        Task { await NotificationHelper.requestAuthorizationIfNeeded() }
+
+        startedAt = session.startedAt
+        distanceM = session.distanceM
+        settledDurationS = TimeInterval(session.durationS)
+        durationS = session.durationS
+        speedKmh = 0
+        track = session.track.map(\.coordinate)
+        trackSamples = session.track
+        checkedCheckpointIds = Set(session.checkedCheckpointIds)
+        pendingPoints.removeAll()
+        pendingCheckins.removeAll()
+        if let last = session.track.last {
+            lastLat = last.lat
+            lastLng = last.lng
+        }
+
+        rideId = session.rideId
+        await verifyRestoredRecord()
+        if rideId == nil {
+            await createRestoredRecord()
+        }
+
+        await probeSchemaSupport()
+        await restorePendingPoints(session.pendingPoints)
+        await loadRecentTrack()
+
+        phase = session.isPaused ? .paused : .riding
+        if phase == .riding {
+            segmentStartedAt = Date()
+            manager.startUpdatingLocation()
+            startTicker()
+            startPresenceReporting()
+        } else {
+            segmentStartedAt = nil
+        }
+        persistSnapshot(force: true)
+    }
+
+    /// 快照里的记录可能已被别的路径收尾（例如上次结束保存成功的最后一秒被杀）。
+    /// 只有仍然处于 riding 的记录才值得继续，否则重新建一条，不覆盖已保存的数据。
+    private func verifyRestoredRecord() async {
+        guard let rideId else { return }
+        let rows: [RideRecordStatusRow] = (try? await client
+            .from("ride_records")
+            .select("id, status")
+            .eq("id", value: rideId)
+            .limit(1)
+            .execute()
+            .value) ?? []
+        guard let row = rows.first, row.status == "riding" else {
+            self.rideId = nil
+            return
+        }
+    }
+
+    private func createRestoredRecord() async {
+        let insert = RideRecordInsert(
+            userId: userId,
+            routeId: route.id,
+            vehicleId: vehicleId,
+            startedAt: isoFormatter.string(from: startedAt),
+            endedAt: isoFormatter.string(from: Date()),
+            status: "riding"
+        )
+        do {
+            let record: RideRecord = try await client
+                .from("ride_records")
+                .insert(insert)
+                .select("id, user_id, route_id, vehicle_id, started_at, ended_at, distance_m, duration_s, avg_speed_kmh, max_speed_kmh, elevation_gain_m, status")
+                .single()
+                .execute()
+                .value
+            rideId = record.id
+        } catch {
+            rideId = nil
+            errorMessage = error.wellwayUserMessage
+        }
+    }
+
+    /// 进程被杀瞬间还没上传成功的轨迹点，恢复后补传；先按时间窗去重，
+    /// 避免「快照已写、上传也已成功」的那一批重复入库。
+    private func restorePendingPoints(_ samples: [RideTrackSample]) async {
+        guard let rideId, !samples.isEmpty else { return }
+        let times = samples.map(\.recordedAt)
+        guard let lower = times.min(), let upper = times.max() else { return }
+        let existing: [RidePointTimeRow] = (try? await client
+            .from("ride_points")
+            .select("recorded_at")
+            .eq("ride_id", value: rideId)
+            .gte("recorded_at", value: isoFormatter.string(from: lower.addingTimeInterval(-1)))
+            .lte("recorded_at", value: isoFormatter.string(from: upper.addingTimeInterval(1)))
+            .execute()
+            .value) ?? []
+        let existingDates = existing.compactMap { ISO8601DateFormatter.wellwayDate(from: $0.recordedAt) }
+        let filtered = samples.filter { sample in
+            !existingDates.contains { abs($0.timeIntervalSince(sample.recordedAt)) < 0.5 }
+        }
+        pendingPoints = filtered.map {
+            RidePointInsert(
+                rideId: rideId,
+                lat: $0.lat,
+                lng: $0.lng,
+                speedKmh: $0.speedKmh,
+                recordedAt: isoFormatter.string(from: $0.recordedAt),
+                bearing: supportsExtras == true ? $0.bearing : nil
+            )
+        }
+        if !pendingPoints.isEmpty {
+            await flushPoints()
+        }
+    }
+
+    /// 用服务端最近 1000 个点补全地图轨迹。PostgREST 默认只返回 1000 行，
+    /// 因此按时间倒序取尾部再反转，足够覆盖绝大多数单次骑行。
+    private func loadRecentTrack() async {
+        guard let rideId else { return }
+        let points: [RidePoint] = (try? await client
+            .from("ride_points")
+            .select("lat, lng, speed_kmh, recorded_at")
+            .eq("ride_id", value: rideId)
+            .order("recorded_at", ascending: false)
+            .limit(1000)
+            .execute()
+            .value) ?? []
+        guard !points.isEmpty else { return }
+        let sorted = points.reversed().compactMap { point -> RideTrackSample? in
+            guard let date = ISO8601DateFormatter.wellwayDate(from: point.recordedAt) else { return nil }
+            return RideTrackSample(
+                lat: point.lat,
+                lng: point.lng,
+                recordedAt: date,
+                speedKmh: point.speedKmh ?? 0,
+                bearing: nil
+            )
+        }
+        guard let serverLast = sorted.last else { return }
+        if let snapshotLast = trackSamples.last, snapshotLast.recordedAt > serverLast.recordedAt {
+            return
+        }
+        trackSamples = sorted
+        track = sorted.map(\.coordinate)
+        if let last = sorted.last {
+            lastLat = last.lat
+            lastLng = last.lng
+        }
+    }
+
+    // MARK: - 会话快照
+
+    /// 当前状态压成快照。`durationS` 按墙钟时间结算，暂停时冻结。
+    private func makeSnapshot() -> ActiveRideSession {
+        let now = Date()
+        let openSegment = phase == .riding
+            ? max(0, now.timeIntervalSince(segmentStartedAt ?? now))
+            : 0
+        let liveDuration = settledDurationS + openSegment
+        let pending = pendingPoints.compactMap { insert -> RideTrackSample? in
+            guard let date = isoFormatter.date(from: insert.recordedAt) else { return nil }
+            return RideTrackSample(
+                lat: insert.lat,
+                lng: insert.lng,
+                recordedAt: date,
+                speedKmh: insert.speedKmh,
+                bearing: insert.bearing
+            )
+        }
+        return ActiveRideSession(
+            userId: userId,
+            rideId: rideId,
+            route: route,
+            checkpoints: checkpoints,
+            vehicleId: vehicleId,
+            vehicleName: vehicleName,
+            startedAt: startedAt,
+            updatedAt: now,
+            phase: phase == .paused ? "paused" : "riding",
+            durationS: Int(liveDuration.rounded(.down)),
+            distanceM: distanceM,
+            track: Array(trackSamples.suffix(2000)),
+            pendingPoints: Array(pending.suffix(5000)),
+            checkedCheckpointIds: Array(checkedCheckpointIds)
+        )
+    }
+
+    /// 定位回调频率约 1Hz，快照最多每 8 秒写一次；暂停/恢复/开始时强制写。
+    private func persistSnapshot(force: Bool = false) {
+        guard phase != .idle else { return }
+        let now = Date()
+        if !force, now.timeIntervalSince(lastSnapshotAt) < 8 { return }
+        lastSnapshotAt = now
+        ActiveRideSessionStore.save(makeSnapshot())
+    }
+
+    /// 进入后台前调用，尽量减少被杀时丢失的轨迹。
+    func persistNow() {
+        guard phase != .idle else { return }
+        lastSnapshotAt = Date()
+        ActiveRideSessionStore.save(makeSnapshot())
     }
 
     func pause() {
@@ -138,6 +372,7 @@ final class RideService: NSObject, CLLocationManagerDelegate {
         settleDuration()
         segmentStartedAt = nil
         phase = .paused
+        persistSnapshot(force: true)
         manager.stopUpdatingLocation()
         // 暂停后不再收定位，speedKmh 会停在暂停前那一秒：暂停页上继续顶着
         // 「48 km/h」的大数字，读起来像还在骑行。速度归零，时长由 ticker 的
@@ -151,12 +386,17 @@ final class RideService: NSObject, CLLocationManagerDelegate {
         phase = .riding
         segmentStartedAt = Date()
         manager.startUpdatingLocation()
+        persistSnapshot(force: true)
     }
 
     /// 结束骑行：保存轨迹/打卡 → 重算统计 → 发放徽章 → 返回总结
     func end() async -> RideSummary {
         settleDuration()
         segmentStartedAt = nil
+        // 先把最终里程/时长写进快照，再离开 riding 状态。
+        // 云端收尾失败时保留快照，下次冷启动还能补存这次骑行；
+        // 只有确认同步成功后才清除，避免静默丢记录。
+        persistSnapshot(force: true)
         phase = .idle
         ticker?.cancel()
         manager.stopUpdatingLocation()
@@ -173,12 +413,19 @@ final class RideService: NSObject, CLLocationManagerDelegate {
 
         // 结束保存包含消除在线状态、行程状态、轨迹补传、统计重算、徽章等多次串行请求。
         // 网络不可达时必须在限定时间内返回本地总结，否则用户会觉得“结束骑行没反应”。
-        if let wrapped = await Self.runWithDeadline(seconds: 4.5, { @MainActor in
+        if let wrapped = await AsyncDeadline.run(seconds: 4.5, { @MainActor in
             await self.performCompletion(endedAt: endedAt)
         }), let summary = wrapped {
+            if summary.saveWarning == nil {
+                ActiveRideSessionStore.clear()
+            } else {
+                persistEndedSnapshot()
+            }
             return summary
         }
 
+        // 4.5 秒超时兜底：收尾可能还在后台继续，快照必须留到确认保存为止。
+        persistEndedSnapshot()
         let fallbackId = rideId ?? UUID()
         return RideSummary(
             record: localSummaryRecord(id: fallbackId, endedAt: endedAt),
@@ -191,6 +438,13 @@ final class RideService: NSObject, CLLocationManagerDelegate {
                 : "网络较慢，记录尚未同步完成，返回后可在骑行总结中重试",
             canRetrySave: rideId != nil
         )
+    }
+
+    /// 云端收尾未确认成功时保存的终态快照，冷启动只允许补存，不再继续记录。
+    private func persistEndedSnapshot() {
+        var snapshot = makeSnapshot()
+        snapshot.phase = "ended"
+        ActiveRideSessionStore.save(snapshot)
     }
 
     /// 逐项完成云端收尾。任何一步失败都不阻塞总结页返回。
@@ -290,46 +544,13 @@ final class RideService: NSObject, CLLocationManagerDelegate {
         let allDone = !checkpoints.isEmpty && checkpoints.allSatisfy { checkedCheckpointIds.contains($0.id) }
         var awarded: Badge?
         do {
-            let owned: [UserBadge] = try await client
-                .from("user_badges")
-                .select("id, badge_id, ride_id, earned_at")
-                .eq("user_id", value: userId.uuidString)
-                .execute()
-                .value
-            let ownedIds = Set(owned.map(\.badgeId))
-
-            var target: Badge?
-            if allDone {
-                let routeBadges: [Badge] = try await client
-                    .from("badges")
-                    .select("id, route_id, name, image_url, condition_desc, seq")
-                    .eq("route_id", value: route.id)
-                    .limit(1)
-                    .execute()
-                    .value
-                target = routeBadges.first
-            }
-            // 「新手首骑」的条件是「完成第一次骑行记录」，和打卡点无关：
-            // 之前只在打卡点全部完成时才尝试发放，导致骑了很多次徽章仍是 0/6。
-            if target == nil {
-                let global: [Badge] = try await client
-                    .from("badges")
-                    .select("id, route_id, name, image_url, condition_desc, seq")
-                    .is("route_id", value: nil)
-                    .order("seq")
-                    .limit(1)
-                    .execute()
-                    .value
-                target = global.first
-            }
-            if let badge = target, !ownedIds.contains(badge.id) {
-                _ = try await client.rpc("award_badge", params: [
-                    "p_user_id": userId.uuidString,
-                    "p_badge_id": String(badge.id),
-                    "p_ride_id": rideId.uuidString,
-                ]).execute()
-                awarded = badge
-            }
+            awarded = try await Self.awardBadgeIfNeeded(
+                client: client,
+                userId: userId,
+                routeId: route.id,
+                rideId: rideId,
+                allCheckpointsDone: allDone
+            )
         } catch {
             errorMessage = error.wellwayUserMessage
         }
@@ -345,35 +566,54 @@ final class RideService: NSObject, CLLocationManagerDelegate {
         )
     }
 
-    /// 限时执行：到点立即返回 nil，不等底层网络请求自然超时。
-    private static func runWithDeadline<T: Sendable>(
-        seconds: Double,
-        _ operation: @escaping @Sendable () async -> T
-    ) async -> T? {
-        await withCheckedContinuation { (continuation: CheckedContinuation<T?, Never>) in
-            let lock = NSLock()
-            var finished = false
+    /// 结束骑行时发放徽章：全部打卡走路线徽章，否则兜底「新手首骑」。
+    /// 正常结束和冷启动「结束并保存」共用，避免两条收尾路径给出不同结果。
+    static func awardBadgeIfNeeded(
+        client: SupabaseClient,
+        userId: UUID,
+        routeId: Int,
+        rideId: UUID,
+        allCheckpointsDone: Bool
+    ) async throws -> Badge? {
+        let owned: [UserBadge] = try await client
+            .from("user_badges")
+            .select("id, badge_id, ride_id, earned_at")
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+            .value
+        let ownedIds = Set(owned.map(\.badgeId))
 
-            let work = Task {
-                let value = await operation()
-                lock.lock()
-                let isFirst = !finished
-                if isFirst { finished = true }
-                lock.unlock()
-                if isFirst { continuation.resume(returning: value) }
-            }
-
-            DispatchQueue.global().asyncAfter(deadline: .now() + seconds) {
-                lock.lock()
-                let isFirst = !finished
-                if isFirst { finished = true }
-                lock.unlock()
-                if isFirst {
-                    work.cancel()
-                    continuation.resume(returning: nil)
-                }
-            }
+        var target: Badge?
+        if allCheckpointsDone {
+            let routeBadges: [Badge] = try await client
+                .from("badges")
+                .select("id, route_id, name, image_url, condition_desc, seq")
+                .eq("route_id", value: routeId)
+                .limit(1)
+                .execute()
+                .value
+            target = routeBadges.first
         }
+        // 「新手首骑」的条件是「完成第一次骑行记录」，和打卡点无关：
+        // 之前只在打卡点全部完成时才尝试发放，导致骑了很多次徽章仍是 0/6。
+        if target == nil {
+            let global: [Badge] = try await client
+                .from("badges")
+                .select("id, route_id, name, image_url, condition_desc, seq")
+                .is("route_id", value: nil)
+                .order("seq")
+                .limit(1)
+                .execute()
+                .value
+            target = global.first
+        }
+        guard let badge = target, !ownedIds.contains(badge.id) else { return nil }
+        _ = try await client.rpc("award_badge", params: [
+            "p_user_id": userId.uuidString,
+            "p_badge_id": String(badge.id),
+            "p_ride_id": rideId.uuidString,
+        ]).execute()
+        return badge
     }
 
     private func localSummaryRecord(id: UUID, endedAt: String) -> RideRecord {
@@ -403,7 +643,7 @@ final class RideService: NSObject, CLLocationManagerDelegate {
     @discardableResult
     func retryCompletion() async -> Bool {
         guard let rideId else { return false }
-        let ok = await Self.runWithDeadline(seconds: 8) { @MainActor [weak self] () -> Bool in
+        let ok = await AsyncDeadline.run(seconds: 8) { @MainActor [weak self] () -> Bool in
             guard let self else { return false }
             for _ in 0..<2 {
                 await self.flushPoints()
@@ -425,6 +665,7 @@ final class RideService: NSObject, CLLocationManagerDelegate {
                         .update(["ended_at": endedAt, "status": "completed"])
                         .eq("id", value: rideId)
                         .execute()
+                    ActiveRideSessionStore.clear()
                     self.errorMessage = nil
                     return true
                 } catch {
@@ -478,8 +719,18 @@ final class RideService: NSObject, CLLocationManagerDelegate {
             distanceM += delta
         }
         track.append(loc.coordinate)
+        trackSamples.append(RideTrackSample(
+            lat: loc.coordinate.latitude,
+            lng: loc.coordinate.longitude,
+            recordedAt: loc.timestamp,
+            speedKmh: speedKmh,
+            bearing: lastBearing
+        ))
 
-        guard let rideId else { return }
+        guard let rideId else {
+            persistSnapshot()
+            return
+        }
         pendingPoints.append(RidePointInsert(
             rideId: rideId,
             lat: loc.coordinate.latitude,
@@ -494,6 +745,7 @@ final class RideService: NSObject, CLLocationManagerDelegate {
         if pendingPoints.count >= 30 {
             Task { await self.flushPoints() }
         }
+        persistSnapshot()
     }
 
     private func checkCheckpoints(at loc: CLLocation) {
@@ -535,6 +787,9 @@ final class RideService: NSObject, CLLocationManagerDelegate {
                 try? await Task.sleep(for: .seconds(1))
                 guard let self, self.phase == .riding else { continue }
                 self.settleDuration()
+                // 没有定位回调时（模拟器、隧道、定位被拒），时长只能靠 ticker
+                // 结算。这里按限频顺手落盘，进程被强杀也能恢复到最后一次写盘。
+                self.persistSnapshot()
             }
         }
     }
@@ -625,11 +880,21 @@ final class RideService: NSObject, CLLocationManagerDelegate {
     }
 }
 
-/// 冷启动时收尾被系统终止的骑行。
-/// 骑行引擎只存在于 RidingView 的内存中，App 重新启动后不可能继续上一次会话；
-/// 若数据库里仍留着 status = riding，记录页会一直显示「进行中」，误导用户。
+/// 冷启动时收尾没有快照可恢复的骑行。
+/// 新版客户端会在骑行中持续写 `ActiveRideSession` 快照，冷启动优先走恢复流程；
+/// 这里只兜底旧版本留下的、或快照丢失的 `riding` 记录，避免记录页出现幽灵「进行中」。
 enum InterruptedRideRecovery {
-    static func abandonInterruptedRides(client: SupabaseClient, userId: UUID) async {
+    /// 返回被收尾的记录数，调用方据此决定是否解释去向。
+    @discardableResult
+    static func abandonInterruptedRides(client: SupabaseClient, userId: UUID) async -> Int {
+        let stale: [RideRecordStatusRow] = (try? await client
+            .from("ride_records")
+            .select("id, status")
+            .eq("user_id", value: userId)
+            .eq("status", value: "riding")
+            .execute()
+            .value) ?? []
+        guard !stale.isEmpty else { return 0 }
         let endedAt = ISO8601DateFormatter().string(from: Date())
         try? await client
             .from("ride_records")
@@ -637,5 +902,6 @@ enum InterruptedRideRecovery {
             .eq("user_id", value: userId)
             .eq("status", value: "riding")
             .execute()
+        return stale.count
     }
 }

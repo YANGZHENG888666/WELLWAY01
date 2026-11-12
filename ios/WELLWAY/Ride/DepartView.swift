@@ -538,15 +538,15 @@ struct DepartView: View {
                     .lineLimit(1)
                     .padding(.top, 4)
             }
+            // 卡片内是缩略图 + 三行文字，系统自动合并会把「·」和「km」直接念出来。
+            // 这里改成显式文案：起点终点说清楚，距离用中文「公里」。
+            // 修饰必须落在 label 内容上；加在 Button 外层会同时保留系统生成的
+            // 自动合并元素，读屏里出现两条同名卡片。
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(routeAccessibilityLabel(route))
+            .accessibilityHint("查看路线详情")
         }
         .buttonStyle(CardPressStyle(scale: 0.98))
-        // 卡片内是缩略图 + 三行文字，系统自动合并会把「·」和「km」直接念出来。
-        // 这里改成显式文案：起点终点说清楚，距离用中文「公里」。
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(routeAccessibilityLabel(route))
-        .accessibilityHint("查看路线详情")
-        // 合并子元素后会丢掉按钮特征，读屏需要明确念出「按钮」。
-        .accessibilityAddTraits(.isButton)
         .padding(.horizontal, 20)
     }
 

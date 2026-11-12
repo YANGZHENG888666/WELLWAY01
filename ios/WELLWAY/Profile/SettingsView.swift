@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreLocation
 import UserNotifications
+import UIKit
 
 /// 设置页(Figma「设置页」115:1239,按节点数据 1:1 还原)
 /// 权限卡 + 绑定邮箱/隐私说明 + 通知开关 + 关于与反馈
@@ -242,27 +243,24 @@ struct SettingsView: View {
     }
 
     private func switchRow(_ title: String, isOn: Binding<Bool>) -> some View {
-        HStack {
+        HStack(spacing: 8) {
             Text(title)
                 .font(.system(size: 16))
                 .foregroundStyle(Theme.textPrimary)
                 .accessibilityHidden(true)
-            Spacer()
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-                .tint(Color.black)
-                .opacity(notificationOK ? 1 : 0.45)
-                .allowsHitTesting(notificationOK)
-                .accessibilityLabel(title)
-                .accessibilityHint(notificationOK ? "允许或关闭\(title)通知" : "系统通知未开启，请先开启通知权限")
+            Spacer(minLength: 8)
+            // iOS 26 的 SwiftUI Toggle 会在辅助功能树里同时暴露带标签的包装节点
+            // 和内部无标签 UISwitch，读屏要停两次。直接用系统 UISwitch：
+            // 标签挂在控件自身，树里只有一个开关元素。
+            SettingSwitch(
+                title: title,
+                hint: notificationOK ? "允许或关闭\(title)通知" : "系统通知未开启，请先开启通知权限",
+                isOn: isOn
+            )
         }
+        .opacity(notificationOK ? 1 : 0.45)
         .padding(.horizontal, 20)
         .frame(height: 56)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            // 权限未开启时不是“假装禁用”：点整行给出开启通知的入口
-            if !notificationOK { showNotifyBlocked = true }
-        }
     }
 
     private var notificationStatusDetail: String? {
@@ -326,6 +324,50 @@ struct SettingsView: View {
     private func openSettings() {
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
+        }
+    }
+}
+
+/// 设置页通知开关。SwiftUI Toggle 在 iOS 26 会多暴露一个无标签开关节点，
+/// 这里用系统 UISwitch 承接同一套外观与开关语义。
+private struct SettingSwitch: UIViewRepresentable {
+    let title: String
+    let hint: String
+    @Binding var isOn: Bool
+
+    func makeCoordinator() -> Coordinator { Coordinator(isOn: $isOn) }
+
+    func makeUIView(context: Context) -> UISwitch {
+        let control = UISwitch()
+        control.onTintColor = .black
+        control.addTarget(
+            context.coordinator,
+            action: #selector(Coordinator.valueChanged(_:)),
+            for: .valueChanged
+        )
+        return control
+    }
+
+    func updateUIView(_ control: UISwitch, context: Context) {
+        control.setOn(isOn, animated: false)
+        control.accessibilityLabel = title
+        control.accessibilityHint = hint
+    }
+
+    final class Coordinator: NSObject {
+        private var isOn: Binding<Bool>
+
+        init(isOn: Binding<Bool>) {
+            self.isOn = isOn
+        }
+
+        @objc func valueChanged(_ sender: UISwitch) {
+            isOn.wrappedValue = sender.isOn
+            // 系统通知未授权时，绑定的 getter 会拒绝打开；UISwitch 自己已经
+            // 先翻过去了，这里同步回真实值，避免界面假装已开启。
+            if sender.isOn != isOn.wrappedValue {
+                sender.setOn(isOn.wrappedValue, animated: true)
+            }
         }
     }
 }
@@ -473,7 +515,7 @@ struct AboutFeedbackView: View {
 
                     Text("© 2026 WellWay")
                         .font(.system(size: 12))
-                        .foregroundColor(Theme.textSecondary.opacity(0.65))
+                        .foregroundColor(Theme.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 12)
 

@@ -574,6 +574,7 @@ struct RideSummaryItem: Identifiable {
 struct RidingView: View {
     @Environment(AuthManager.self) private var auth
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     /// 深色 HUD 期间把根视图外观压成深色(HUD 是全屏的,下层不可见)
     private var screenAppearance: ScreenAppearance { .shared }
 
@@ -585,6 +586,8 @@ struct RidingView: View {
     var demo: Bool = false
     /// 设计自查入口：直接展示「已到达终点」提示卡
     var demoArrival: Bool = false
+    /// 冷启动恢复：复用上一次会话，而不是从零开始
+    var resumeSession: ActiveRideSession? = nil
 
     @State private var ride: RideService?
     @State private var showEndConfirm = false
@@ -689,18 +692,25 @@ struct RidingView: View {
         }
         .task {
             guard !demo, ride == nil else { return }
+            let session = resumeSession
             let service = RideService(
                 client: auth.client,
-                route: route,
-                checkpoints: checkpoints,
-                userId: auth.user?.id ?? UUID(),
-                vehicleId: vehicleId
+                route: session?.route ?? route,
+                checkpoints: session?.checkpoints ?? checkpoints,
+                userId: auth.user?.id ?? session?.userId ?? UUID(),
+                vehicleId: session?.vehicleId ?? vehicleId,
+                vehicleName: session?.vehicleName ?? vehicleName,
+                resumeSession: session
             )
             ride = service
             await service.start()
             Task { await reportTripPlan() }
             await loadRiders()
             fitCameraToRoute()
+        }
+        .onChange(of: scenePhase) { _, newValue in
+            // 退到后台时立刻写一次快照：系统回收进程前不一定还有定位回调。
+            if newValue != .active { ride?.persistNow() }
         }
         // item 方式传值：总结数据随封面原子传入，避免 isPresented + @State 时序不同步导致空白/加载态
         .fullScreenCover(item: $summaryItem, onDismiss: {
