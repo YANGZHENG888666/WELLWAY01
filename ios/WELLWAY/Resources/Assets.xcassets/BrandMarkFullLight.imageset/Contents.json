@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "brandmarkfulllight.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "brandmarkfulllight@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "brandmarkfulllight@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

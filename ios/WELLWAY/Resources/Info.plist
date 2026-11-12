@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>WELL WAY</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>iosamap</string>
+		<string>baidumap</string>
+		<string>qqmap</string>
+	</array>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>用于连接车机与同路设备(后置功能)。</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_wellway._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>用于查找附近骑行设备与同路提醒(仅本地)。</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>骑行时需要后台持续记录位置,方便生成完整轨迹。</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>用于查看前往路线起点路上的同路骑友,骑行时记录位置生成轨迹。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>用于保存骑行分享卡图片。</string>
+	<key>SUPABASE_ANON_KEY</key>
+	<string>sb_publishable_wUdbrbEFBtWcLO86nk_nwA_vRyXnfp4</string>
+	<key>SUPABASE_URL</key>
+	<string>https://hyfxpcwbhfgmtwjhcxdn.supabase.co</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+	</dict>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
+</dict>
+</plist>

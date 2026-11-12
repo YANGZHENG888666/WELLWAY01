@@ -1,0 +1,12 @@
+{
+  "name": "wellway-backend-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "smoke": "node --env-file=../.env smoke-test.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "pg": "^8.23.0"
+  }
+}

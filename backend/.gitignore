@@ -1,0 +1,20 @@
+# secrets
+.env
+.env.local
+.env.*.local
+supabase/.temp
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# build output
+node_modules/
+dist/
+build/
+
+# generated / scratch
+*.log
+work/

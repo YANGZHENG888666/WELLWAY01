@@ -1,0 +1,57 @@
+name: WELLWAY
+
+options:
+  bundleIdPrefix: com.wellway
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: "2.0.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: YX672AY9U9
+    ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+targets:
+  WELLWAY:
+    type: application
+    platform: iOS
+    sources:
+      - WELLWAY
+    dependencies:
+      - package: Supabase
+    info:
+      path: WELLWAY/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: WELL WAY
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        # 设计稿为黑白浅色稿,固定浅色模式,避免系统深色模式下出现黑边
+        UIUserInterfaceStyle: Light
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIBackgroundModes:
+          - location
+        NSLocationWhenInUseUsageDescription: 用于查看前往路线起点路上的同路骑友,骑行时记录位置生成轨迹。
+        NSLocationAlwaysAndWhenInUseUsageDescription: 骑行时需要后台持续记录位置,方便生成完整轨迹。
+        NSPhotoLibraryUsageDescription: 用于保存骑行分享卡图片。
+        NSBluetoothAlwaysUsageDescription: 用于连接车机与同路设备(后置功能)。
+        NSLocalNetworkUsageDescription: 用于查找附近骑行设备与同路提醒(仅本地)。
+        NSBonjourServices:
+          - _wellway._tcp
+        LSApplicationQueriesSchemes:
+          - iosamap
+          - baidumap
+          - qqmap
+        SUPABASE_URL: https://hyfxpcwbhfgmtwjhcxdn.supabase.co
+        SUPABASE_ANON_KEY: sb_publishable_wUdbrbEFBtWcLO86nk_nwA_vRyXnfp4

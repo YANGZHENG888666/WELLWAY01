@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wellway — 好路当骑，同行当悉</title>
+<meta name="description" content="wellway 摩托车骑行 App：好路当骑，同行当悉。纯路线全览、骑行记录、擦肩而过的相遇。下载 App，开始你的下一段旅程。">
+<link rel="icon" type="image/png" href="assets/app-icon.png">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-2: #141414;
+    --panel: #171715;
+    --text: #f5f5f2;
+    --text-dim: rgba(245,245,242,.6);
+    --text-faint: rgba(245,245,242,.36);
+    --line: rgba(255,255,255,.1);
+    --line-strong: rgba(255,255,255,.26);
+    --accent: #f04818;
+    --accent-soft: rgba(240,72,24,.12);
+    --light: #f2efe9;
+    --light-dim: rgba(10,10,10,.58);
+    --light-line: rgba(10,10,10,.12);
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  html { scroll-behavior: auto; overflow-x: clip; scrollbar-width: none; -ms-overflow-style: none; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", "SF Pro Display", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  ::selection { background: var(--accent); color: #fff; }
+  ::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+
+  /* ---------- Layout ---------- */
+  #smooth-wrapper { position: relative; z-index: 1; }
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px clamp(20px, 5vw, 60px);
+    transition: background .4s, border-color .4s, padding .4s;
+    border-bottom: 1px solid transparent;
+  }
+  nav.scrolled { background: rgba(10,10,10,.84); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-color: var(--line); padding: 12px clamp(20px, 5vw, 60px); }
+  .brand { display: flex; align-items: center; }
+  .brand img { height: 34px; width: auto; }
+  .nav-links { display: flex; gap: 36px; font-size: 14px; letter-spacing: .06em; }
+  .nav-links a { color: var(--text-dim); position: relative; transition: color .3s; }
+  .nav-links a::after { content: ""; position: absolute; left: 0; bottom: -5px; width: 100%; height: 1px; background: var(--accent); transform: scaleX(0); transform-origin: right; transition: transform .35s cubic-bezier(.65,.05,.36,1); }
+  .nav-links a:hover { color: var(--text); }
+  .nav-links a:hover::after { transform: scaleX(1); transform-origin: left; }
+  .nav-cta { font-size: 13px; letter-spacing: .04em; padding: 11px 24px; }
+  @media (max-width: 720px) { .nav-links { display: none; } .brand img { height: 28px; width: auto; } }
+
+  section { position: relative; scroll-margin-top: 90px; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 60px); }
+  h1, h2, h3 { text-wrap: balance; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 15px 32px; border-radius: 999px; font-size: 15px; font-weight: 600; letter-spacing: .04em;
+    border: 1px solid transparent; transition: color .3s, background .3s, border-color .3s, box-shadow .3s;
+    position: relative; overflow: hidden;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #d63f13; }
+  .btn-ghost { border-color: var(--line-strong); color: var(--text); background: transparent; }
+  .btn-ghost:hover { border-color: var(--text); background: rgba(255,255,255,.06); }
+
+  /* ---------- Hero ---------- */
+  .hero { min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 120px 20px 90px; }
+  .hero-kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .34em; color: var(--text-faint); margin-bottom: 34px; }
+  .hero-kicker i { font-style: normal; color: var(--accent); }
+  .hero-logo { width: clamp(120px, 20vw, 220px); margin: 0 auto 44px; will-change: transform; transform-style: preserve-3d; }
+  .hero-logo img { width: 100%; height: auto; }
+  .hero-title { font-size: clamp(42px, 7.4vw, 88px); font-weight: 800; letter-spacing: -.035em; line-height: 1.05; }
+  .hero-sub { margin-top: 26px; font-size: clamp(15px, 1.8vw, 18px); color: var(--text-dim); letter-spacing: .04em; }
+  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 46px; }
+  .hero-meta { margin-top: 30px; display: flex; gap: 24px; justify-content: center; font-family: var(--mono); font-size: 12px; letter-spacing: .16em; color: var(--text-faint); text-transform: uppercase; }
+  .hero-scroll { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: var(--text-faint); }
+  .hero-scroll .bar { width: 1px; height: 46px; background: rgba(255,255,255,.16); position: relative; overflow: hidden; }
+  .hero-scroll .bar::after { content: ""; position: absolute; left: 0; top: -100%; width: 100%; height: 100%; background: var(--accent); animation: scrolldrop 2.2s cubic-bezier(.7,0,.3,1) infinite; }
+  @keyframes scrolldrop { 0% { top: -100%; } 55% { top: 100%; } 100% { top: 100%; } }
+
+  /* ---------- Section head ---------- */
+  .sec-head { margin-bottom: 60px; }
+  .sec-kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .34em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 18px; }
+  .sec-kicker b { color: var(--accent); font-weight: 600; }
+  .sec-title { font-size: clamp(30px, 4.6vw, 54px); font-weight: 800; letter-spacing: -.025em; line-height: 1.1; }
+  .sec-sub { margin-top: 18px; font-size: 15px; color: var(--text-dim); max-width: 560px; letter-spacing: .03em; }
+
+  /* ---------- Corridor (scroll depth) ---------- */
+  .corridor {
+    --corridor-p: 1000px;
+    --half-w: clamp(230px, 42vw, 580px);
+    --half-h: clamp(190px, 46vh, 440px);
+    height: calc(100svh * 3.5);
+    position: relative; overflow: clip;
+  }
+  .corridor__viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100svh; perspective: var(--corridor-p); overflow: hidden; }
+  .corridor__camera, .corridor__field, .corridor__rank { position: absolute; top: 50%; left: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+  .corridor__field, .corridor__rank { top: 0; left: 0; }
+  .corridor__camera, .corridor__field, .corridor__rank, .corridor__panel, .corridor__hero { pointer-events: none; }
+  .corridor__panel {
+    position: absolute;
+    width: clamp(240px, 30vw, 460px); height: clamp(150px, 18vw, 270px);
+    background: var(--panel-bg, #f2efe9); color: var(--panel-ink, #0a0a0a);
+    border-radius: 16px; padding: 18px;
+    display: flex; flex-direction: column; gap: 12px;
+    transform-style: preserve-3d; backface-visibility: visible;
+    box-shadow: 0 30px 60px rgba(0,0,0,.5);
+    will-change: transform;
+  }
+  .corridor__panel::after { content: ''; position: absolute; inset: 0; background: var(--bg); opacity: var(--haze, 0); border-radius: inherit; }
+  .corridor__panel--bone { --panel-bg: #f2efe9; --panel-ink: #0a0a0a; --panel-edge: rgba(0,0,0,.12); }
+  .corridor__panel--graphite { --panel-bg: #1a1a18; --panel-ink: #f5f5f2; --panel-edge: rgba(255,255,255,.14); }
+  .corridor__panel--signal { --panel-bg: #c9c4ba; --panel-ink: #0a0a0a; --panel-edge: rgba(0,0,0,.18); }
+  .corridor__shot { flex: 1; min-height: 0; border-radius: 10px; overflow: hidden; background: #101010; }
+  .corridor__shot img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .corridor__type { font-size: clamp(16px, 1.8vw, 24px); font-weight: 800; letter-spacing: -.02em; line-height: 1.05; text-transform: uppercase; display: flex; align-items: center; flex: 1; }
+  .corridor__cap { font-family: var(--mono); font-size: 10px; letter-spacing: .22em; opacity: .66; }
+  .corridor__num { font-size: clamp(34px, 4vw, 56px); font-weight: 800; letter-spacing: -.04em; line-height: 1; color: var(--accent); }
+  .corridor__rule { flex: 1; min-height: 0; background-image: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 14px); opacity: .5; }
+  .corridor__rank--left .corridor__panel { transform: translate3d(calc(-1 * var(--half-w)), var(--py, 0px), var(--pz, 0px)) translate(-50%,-50%) rotateY(calc(90deg - var(--turn, 0deg))); }
+  .corridor__rank--right .corridor__panel { transform: translate3d(var(--half-w), var(--py, 0px), var(--pz, 0px)) translate(-50%,-50%) rotateY(calc(-90deg + var(--turn, 0deg))); }
+  .corridor__rank--left .corridor__panel:nth-child(1) { --pz: -380px; --py: -132px; --turn: 20deg; }
+  .corridor__rank--left .corridor__panel:nth-child(2) { --pz: -760px; --py: 96px; --turn: 6deg; --haze: .3; }
+  .corridor__rank--left .corridor__panel:nth-child(3) { --pz: -1140px; --py: 118px; --haze: .55; }
+  .corridor__rank--left .corridor__panel:nth-child(4) { --pz: -1520px; --py: -104px; --haze: .72; }
+  .corridor__rank--left .corridor__panel:nth-child(5) { --pz: -1900px; --py: 24px; --haze: .86; }
+  .corridor__rank--left .corridor__panel:nth-child(6) { --pz: -2280px; --py: -18px; --haze: .95; }
+  .corridor__rank--right .corridor__panel:nth-child(1) { --pz: -380px; --py: 108px; --turn: 12deg; }
+  .corridor__rank--right .corridor__panel:nth-child(2) { --pz: -760px; --py: -126px; --haze: .3; }
+  .corridor__rank--right .corridor__panel:nth-child(3) { --pz: -1140px; --py: 40px; --haze: .55; }
+  .corridor__rank--right .corridor__panel:nth-child(4) { --pz: -1520px; --py: 128px; --turn: 22deg; --haze: .72; }
+  .corridor__rank--right .corridor__panel:nth-child(5) { --pz: -1900px; --py: -60px; --haze: .86; }
+  .corridor__rank--right .corridor__panel:nth-child(6) { --pz: -2280px; --py: -6px; --haze: .95; }
+  .corridor__hero { position: absolute; top: 50%; left: 50%; z-index: 3; width: clamp(240px, 28vw, 420px); text-align: center; transform: translate(-50%,-50%); }
+  .corridor__kicker { font-family: var(--mono); font-size: 11px; letter-spacing: .4em; color: var(--text-faint); }
+  .corridor__word { margin: .42em 0 .34em; font-size: clamp(30px, 5vw, 56px); font-weight: 800; letter-spacing: -.02em; line-height: .94; text-transform: uppercase; text-shadow: 0 0 26px rgba(0,0,0,.65); }
+  .corridor__word span { color: var(--accent); }
+  .corridor__hero-sub { display: inline-block; padding-top: .6em; border-top: 1px solid var(--line-strong); font-size: 12px; letter-spacing: .1em; color: var(--text-dim); text-shadow: 0 0 18px rgba(0,0,0,.7); }
+  .corridor__streaks { position: absolute; inset: -35%; display: none; opacity: calc(var(--warp) * .8); transform: scale(calc(1 + var(--warp) * .4)); background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(240,72,24,0) 0deg 1.5deg, rgba(240,72,24,.42) 1.5deg 2deg, rgba(240,72,24,0) 2deg 3.6deg, rgba(240,72,24,.24) 3.6deg 4deg, rgba(240,72,24,0) 4deg 6.4deg); -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 6%, #000 40%, transparent 86%); mask-image: radial-gradient(circle at 50% 50%, transparent 6%, #000 40%, transparent 86%); mix-blend-mode: screen; will-change: opacity, transform; }
+  .corridor.is-warping .corridor__streaks { display: block; }
+  .corridor__fog { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(circle at 50% 50%, rgba(10,10,10,0) calc(10% + var(--warp) * 20%), rgba(10,10,10,.38) calc(34% + var(--warp) * 16%), rgba(10,10,10,.78) 76%, rgba(10,10,10,.97) 100%); }
+  .corridor__streaks { z-index: 2; }
+  .corridor__cue { position: absolute; z-index: 4; left: clamp(1.1rem, 3vw, 2.4rem); bottom: clamp(1.1rem, 3vw, 2.4rem); display: flex; align-items: center; gap: .55rem; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--text-dim); }
+  .corridor__cue strong { color: var(--text); font-weight: 600; }
+  .corridor__cue-dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .corridor__cue-fine { opacity: .7; }
+  .corridor__cue-sep { color: var(--line-strong); }
+  @media (pointer: coarse) { .corridor { --corridor-p: 1400px; } }
+  @media (max-width: 640px) { .corridor { --half-w: 200px; --half-h: 230px; } .corridor__cue { left: .9rem; top: .9rem; bottom: auto; } }
+  @media (prefers-reduced-motion: reduce) { .corridor { height: 100svh; } }
+
+  /* ---------- Stats ---------- */
+  .stats-wrap { padding: 30px 0 140px; }
+  .stats-head { text-align: center; margin-bottom: 50px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 720px) { .stats { grid-template-columns: 1fr; } }
+  .stat { padding: 40px 24px; text-align: center; }
+  .stat .value { font-size: clamp(44px, 5vw, 66px); font-weight: 800; letter-spacing: -.02em; line-height: 1; color: var(--accent); }
+  .stat .value em { font-style: normal; font-size: .45em; color: var(--text-faint); margin-left: 4px; }
+  .stat .label { margin-top: 14px; font-family: var(--mono); font-size: 12px; letter-spacing: .18em; color: var(--text-dim); text-transform: uppercase; }
+
+  /* ---------- Product section ---------- */
+  .product-section { background: var(--bg); color: var(--text); }
+
+  /* ---------- Showcase (elastic stack) ---------- */
+  .showcase { padding: 150px 0 70px; }
+  .stack-zone { position: relative; max-width: 700px; margin: 0 auto; }
+  .stack-hint { text-align: center; font-family: var(--mono); font-size: 12px; letter-spacing: .16em; color: var(--text-faint); margin-bottom: 26px; }
+  .stack-hint b { color: var(--text); font-weight: 600; }
+  .stack-deck { position: relative; height: 420px; perspective: 1400px; }
+  .stack-card {
+    position: absolute; inset: 0; margin: auto;
+    width: min(600px, 92vw); height: 330px;
+    background: #e6e2d8; color: var(--bg);
+    border-radius: 22px; padding: 22px;
+    box-shadow: 0 36px 70px rgba(0,0,0,.18);
+    will-change: transform; backface-visibility: hidden; transform: translateZ(0);
+    display: flex; gap: 20px; user-select: none;
+  }
+  .card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .card-top { display: flex; align-items: baseline; justify-content: space-between; padding: 2px 2px 0; }
+  .card-top .mark { width: auto; height: auto; border-radius: 0; background: none; color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: .12em; }
+  .card-top .tag { font-family: var(--mono); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: rgba(10,10,10,.42); }
+  .stack-card h3 { margin-top: 30px; font-size: clamp(24px, 2.8vw, 32px); font-weight: 800; letter-spacing: -.02em; }
+  .stack-card .sub { font-size: 12.5px; color: rgba(10,10,10,.55); margin-top: 8px; letter-spacing: .04em; }
+  .card-foot { margin-top: auto; display: flex; align-items: center; gap: 12px; border-top: 1px solid rgba(10,10,10,.09); padding-top: 12px; }
+  .card-foot .foot-line { flex: 1; height: 1px; background: rgba(10,10,10,.14); }
+  .card-foot .foot-arrow { width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(10,10,10,.16); display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 13px; }
+  .stack-card .shot { width: 46%; border-radius: 16px; overflow: hidden; background: #141414; display: flex; align-items: center; justify-content: center; padding: 8px; position: relative; flex-shrink: 0; }
+  .stack-card .shot::after { content: ''; position: absolute; inset: 0; border-radius: 16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); pointer-events: none; }
+  .stack-card .shot img { height: 100%; width: auto; max-width: 100%; object-fit: contain; border-radius: 4px; }
+  .stack-card--brand { background: #e6e2d8; color: var(--bg); }
+  .stack-card--brand .brand-word { margin-top: 26px; font-size: clamp(44px, 6vw, 68px); font-weight: 800; letter-spacing: -.03em; line-height: 1; color: var(--accent); }
+  .stack-card--brand .brand-accent { width: 40px; height: 3px; background: var(--accent); margin-top: 18px; }
+  .stack-card--brand .slogan { margin-top: 14px; font-size: 14px; letter-spacing: .18em; color: rgba(10,10,10,.72); }
+  .stack-card--brand .card-foot { border-color: rgba(10,10,10,.1); }
+  .stack-card--brand .card-foot .foot-line { background: rgba(10,10,10,.14); }
+  .stack-card--brand .card-foot .foot-arrow { border-color: rgba(10,10,10,.2); }
+
+  /* ---------- Features ---------- */
+  .features { padding: 90px 0 140px; }
+  .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  @media (max-width: 860px) { .features-grid { grid-template-columns: 1fr; } }
+  .feature { position: relative; padding: 40px 30px; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--ty, 0px)); transition: transform .18s ease-out; }
+  .feature:hover { --ty: -4px; }
+  .feature .ico { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line-strong); display: flex; align-items: center; justify-content: center; color: var(--text); margin-bottom: 24px; }
+  .feature .ico svg { width: 22px; height: 22px; }
+  .feature h3 { font-size: 21px; font-weight: 800; letter-spacing: -.01em; }
+  .feature p { margin-top: 10px; font-size: 14px; color: var(--text-dim); line-height: 1.75; }
+  .feature .num { position: absolute; top: 28px; right: 32px; font-family: var(--mono); font-size: 12px; letter-spacing: .2em; color: var(--accent); font-weight: 600; }
+
+  /* ---------- Steps ---------- */
+  .steps-wrap { padding: 150px 0 60px; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+  .step { padding: 40px 30px; position: relative; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--ty, 0px)); transition: transform .18s ease-out; }
+  .step:hover { --ty: -4px; }
+  .step .snum { font-family: var(--mono); font-size: 12px; letter-spacing: .24em; color: var(--accent); font-weight: 600; }
+  .step h3 { font-size: 21px; font-weight: 800; margin: 16px 0 10px; }
+  .step p { font-size: 14px; color: var(--text-dim); line-height: 1.75; }
+
+  /* ---------- CTA ---------- */
+  .cta-wrap { padding: 40px 0 140px; }
+  .cta-box { position: relative; color: var(--text); overflow: hidden; padding: clamp(60px, 8vw, 100px) 0 0; text-align: center; }
+  .cta-box img { width: min(132px, 28vw); margin: 0 auto 36px; }
+  .cta-box h2 { font-size: clamp(34px, 5vw, 60px); font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+  .cta-box p { margin-top: 18px; color: var(--text-dim); font-size: 15px; letter-spacing: .05em; }
+  .cta-actions { margin-top: 42px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .cta-box .btn-primary { background: var(--accent); color: #fff; }
+  .cta-box .btn-primary:hover { background: #d63f13; }
+  .cta-box .btn-ghost { border-color: var(--line-strong); color: var(--text); }
+  .cta-box .btn-ghost:hover { border-color: var(--text); background: rgba(255,255,255,.06); }
+
+  /* ---------- Footer ---------- */
+  footer { border-top: 1px solid var(--line); position: relative; }
+  .foot-inner { padding: 70px clamp(20px, 5vw, 60px) 46px; display: flex; gap: 60px; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; }
+  .foot-brand img { width: 128px; height: auto; margin-bottom: 18px; }
+  .foot-brand p { font-size: 13px; color: var(--text-dim); letter-spacing: .05em; max-width: 320px; line-height: 1.8; }
+  .foot-links { display: flex; gap: 70px; flex-wrap: wrap; }
+  .foot-links h4 { font-family: var(--mono); font-size: 11px; letter-spacing: .28em; color: var(--text-faint); margin-bottom: 20px; text-transform: uppercase; }
+  .foot-links a { display: block; font-size: 14px; color: var(--text-dim); margin-bottom: 14px; transition: color .3s; }
+  .foot-links a:hover { color: var(--accent); }
+  .foot-icp { border-top: 1px solid var(--line); padding: 22px clamp(20px, 5vw, 60px); font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--text-faint); display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+
+  /* ==================================================================
+     GEOMETRIC LINEAR POSTER REDESIGN (2026-08-27)
+     Reference: REVOLUTIONARY PATTERNKI — bold stacked type +
+     geminate abstract linear shapes; monochrome poster, brand orange.
+     ================================================================== */
+  :root {
+    --display: "Arial Black", "Helvetica Neue", -apple-system, "PingFang SC", "Heiti SC", "Microsoft YaHei", sans-serif;
+    --hair: rgba(242,239,233,.13);
+    --hair-2: rgba(242,239,233,.3);
+    --paper: #f2efe9;
+    --ink: #0b0b0a;
+  }
+  body { background: #0a0a09; }
+
+  /* ---- geometric linear motifs (SVG sprite, see <body> top) ---- */
+  .motif { position: absolute; overflow: visible; pointer-events: none; fill: none; color: var(--paper); stroke: currentColor; z-index: 1; }
+  .motif use { width: 100%; height: 100%; display: block; }
+  .motif--accent { color: var(--accent); }
+  .motif--faint { opacity: .34; }
+  .motif--dim { opacity: .55; }
+  .motif--fader { opacity: .14; }
+  .motif--sun { width: clamp(180px, 26vw, 340px); aspect-ratio: 1; }
+  .motif--arcs { width: clamp(160px, 22vw, 300px); aspect-ratio: 1; }
+  .motif--mt { width: clamp(140px, 20vw, 260px); aspect-ratio: 120/90; }
+  .motif--route { width: clamp(220px, 30vw, 420px); aspect-ratio: 120/60; }
+  .motif--cross { width: 44px; height: 44px; }
+  .motif--ladder { width: clamp(120px, 16vw, 200px); aspect-ratio: 80/100; }
+  .ico-svg { width: 26px; height: 26px; fill: none; stroke: currentColor; }
+  .ico-svg use { width: 100%; height: 100%; }
+
+  /* ---- blueprint grid backgrounds ---- */
+  .grid-bg { background-image: linear-gradient(var(--hair) 1px, transparent 1px), linear-gradient(90deg, var(--hair) 1px, transparent 1px); background-size: 72px 72px; background-position: center; }
+
+  /* ---- corner tick frame (pair of right-angle brackets) ---- */
+  .tick::before, .tick::after { content: ""; position: absolute; width: 16px; height: 16px; border-color: var(--hair-2); border-style: solid; pointer-events: none; z-index: 2; }
+  .tick::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
+  .tick::after { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+  /* ---- diamond marker before kickers ---- */
+  .sec-kicker::before, .hero-kicker::before { content: ""; display: inline-block; width: 8px; height: 8px; border: 1.5px solid var(--accent); transform: rotate(45deg); margin-right: 14px; vertical-align: 1px; }
+
+  /* ---- giant outlined watermark word behind section titles ---- */
+  .sec-word { position: absolute; top: -0.34em; left: -0.03em; z-index: 0; font-family: var(--display); font-weight: 900; font-size: clamp(80px, 14vw, 210px); line-height: 1; letter-spacing: -.02em; color: transparent; -webkit-text-stroke: 1px rgba(242,239,233,.09); white-space: nowrap; user-select: none; pointer-events: none; text-transform: uppercase; }
+  .sec-head { position: relative; }
+  .sec-kicker, .sec-title { position: relative; z-index: 1; }
+  .sec-title { font-family: var(--display); font-weight: 900; letter-spacing: -.03em; }
+  .sec-sub { position: relative; z-index: 1; }
+  @media (max-width: 640px) { .sec-word { font-size: 76px; } }
+
+  /* ---------- Hero (editorial poster) ---------- */
+  .hero {
+    position: relative; min-height: 100svh; display: flex; flex-direction: column; justify-content: center;
+    text-align: left; padding: 130px clamp(20px, 5vw, 60px) 110px; overflow: hidden;
+    background: radial-gradient(1200px 640px at 82% -8%, rgba(240,72,24,.1), transparent 60%), radial-gradient(900px 520px at 108% 108%, rgba(242,239,233,.05), transparent 55%), #0a0a09;
+  }
+  .hero::before {
+    content: ""; position: absolute; inset: 0;
+    background-image: linear-gradient(var(--hair) 1px, transparent 1px), linear-gradient(90deg, var(--hair) 1px, transparent 1px);
+    background-size: clamp(48px, 7vw, 88px) clamp(48px, 7vw, 88px);
+    -webkit-mask-image: radial-gradient(ellipse at 70% 46%, #000 0%, transparent 74%); mask-image: radial-gradient(ellipse at 70% 46%, #000 0%, transparent 74%);
+  }
+  .hero .tick { position: absolute; inset: clamp(16px, 3vw, 34px); z-index: 2; pointer-events: none; }
+  .hero-inner { position: relative; z-index: 3; max-width: 1200px; margin: 0 auto; width: 100%; }
+  .hero-logo { width: clamp(96px, 18vw, 168px); margin: 0 0 30px; will-change: transform; transform-style: preserve-3d; }
+  .hero-kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .34em; color: var(--text-faint); margin-bottom: 34px; text-transform: uppercase; }
+  .hero-title { font-family: var(--display); font-weight: 900; font-size: clamp(56px, 10.5vw, 148px); line-height: .92; letter-spacing: -.045em; margin: 0; }
+  .hero-title span { color: var(--accent); }
+  .hero-sub { margin-top: 28px; font-size: clamp(15px, 1.8vw, 18px); color: var(--text-dim); letter-spacing: .04em; max-width: 480px; }
+  .hero-actions { justify-content: flex-start; margin-top: 44px; }
+  .hero-meta { justify-content: flex-start; margin-top: 28px; }
+  .hero-word { position: absolute; z-index: 1; left: clamp(14px, 4vw, 60px); bottom: -0.14em; font-family: var(--display); font-weight: 900; font-size: clamp(120px, 22vw, 300px); line-height: 1; letter-spacing: -.02em; color: transparent; -webkit-text-stroke: 1px rgba(242,239,233,.07); white-space: nowrap; user-select: none; pointer-events: none; }
+  .hero-art { position: absolute; z-index: 2; top: 50%; right: 0; transform: translateY(-50%); width: min(46vw, 560px); height: 74vh; pointer-events: none; }
+  .hero-art .motif--sun { right: 2%; top: 0; opacity: .42; }
+  .hero-art .motif--arcs { right: 6%; top: 36%; opacity: .85; }
+  .hero-art .motif--mt { right: 36%; bottom: 6%; opacity: .9; }
+  .hero-art .motif--route { right: 0; bottom: 6%; opacity: .6; }
+  .hero-art .motif--cross { right: 42%; top: 10%; opacity: .75; }
+  .hero-art .motif--ladder { left: 0; bottom: 28%; opacity: .5; }
+  .hero-scroll { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); }
+  @media (max-width: 860px) {
+    .hero-art { opacity: .34; width: 100%; left: 10%; right: auto; top: 56%; }
+    .hero-title { font-size: clamp(48px, 13vw, 92px); }
+  }
+  @media (max-width: 640px) { .hero-word { display: none; } }
+
+  /* ---------- Corridor (keep effect, sharpen geometry) ---------- */
+  .corridor__panel { border-radius: 4px; }
+  .corridor__shot { border-radius: 2px; }
+  .corridor__panel::after { border-radius: inherit; }
+  .corridor__word { font-family: var(--display); font-weight: 900; letter-spacing: -.03em; }
+  .corridor__type { font-family: var(--display); font-weight: 900; letter-spacing: -.02em; }
+  .corridor__num { font-family: var(--display); font-weight: 900; }
+
+  /* ---------- Stats ---------- */
+  .stats-wrap { border-top: 1px solid var(--hair); position: relative; }
+  .stats-head { text-align: left; position: relative; margin-bottom: 56px; }
+  .stats { position: relative; }
+  .stat { position: relative; padding: 44px 26px; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); overflow: hidden; }
+  .stat::before { content: ""; position: absolute; top: -1px; left: 0; width: 72px; height: 3px; background: var(--accent); }
+  .stat::after { content: ""; position: absolute; right: 20px; top: 20px; width: 8px; height: 8px; border: 1px solid var(--hair-2); transform: rotate(45deg); }
+  .stat .value { font-family: var(--display); font-weight: 900; font-size: clamp(52px, 6vw, 84px); letter-spacing: -.03em; line-height: 1; color: var(--accent); }
+  .stat .value em { font-size: .4em; color: var(--text-faint); margin-left: 6px; }
+  .stat .motif { right: 18px; bottom: 16px; width: 56px; height: 56px; opacity: .4; color: var(--paper); }
+  @media (max-width: 720px) { .stats-head { text-align: left; } }
+
+  /* ---------- Product / showcase ---------- */
+  .showcase { position: relative; }
+  .stack-zone { position: relative; z-index: 1; }
+  .stack-hint b { color: var(--accent); }
+  .stack-card { border-radius: 6px; background: #e9e5db; }
+  .stack-card::before, .stack-card::after { content: ""; position: absolute; width: 16px; height: 16px; border-color: rgba(10,10,10,.5); border-style: solid; pointer-events: none; z-index: 3; }
+  .stack-card::before { top: 9px; left: 9px; border-width: 1px 0 0 1px; }
+  .stack-card::after { bottom: 9px; right: 9px; border-width: 0 1px 1px 0; }
+  .stack-card h3 { font-family: var(--display); font-weight: 900; }
+  .stack-card .mark { font-family: var(--display); font-weight: 900; letter-spacing: .1em; }
+  .stack-card .shot { border-radius: 4px; }
+  .stack-card .shot::after { box-shadow: inset 0 0 0 1px rgba(10,10,10,.14); }
+  .stack-card--brand .brand-word { font-family: var(--display); font-weight: 900; letter-spacing: -.03em; }
+
+  /* ---------- Features ---------- */
+  .features { border-top: 1px solid var(--hair); position: relative; }
+  .feature { position: relative; padding: 42px 30px; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); }
+  .feature::before { content: ""; position: absolute; top: 9px; left: 9px; width: 12px; height: 12px; border-top: 1px solid var(--hair-2); border-left: 1px solid var(--hair-2); }
+  .feature::after { content: ""; position: absolute; right: 20px; bottom: 20px; width: 8px; height: 8px; border: 1px solid var(--hair-2); transform: rotate(45deg); }
+  .feature .ico { width: 52px; height: 52px; border-radius: 2px; border: 1px solid var(--hair-2); display: flex; align-items: center; justify-content: center; color: var(--paper); margin-bottom: 24px; position: relative; }
+  .feature .ico::after { content: ""; position: absolute; right: -5px; top: -5px; width: 10px; height: 10px; border-right: 1px solid var(--accent); border-top: 1px solid var(--accent); }
+  .feature h3 { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: -.01em; }
+  .feature .num { font-family: var(--display); font-weight: 900; font-size: 14px; letter-spacing: .16em; color: var(--accent); }
+  .feature .ico svg { width: 26px; height: 26px; }
+
+  /* ---------- Steps ---------- */
+  .steps-wrap { border-top: 1px solid var(--hair); }
+  .step { position: relative; padding: 42px 30px; border-top: 1px solid var(--hair); }
+  .step::before { content: ""; position: absolute; top: 0; left: 30px; width: 60px; height: 3px; background: var(--accent); }
+  .step .snum { font-family: var(--display); font-weight: 900; font-size: 13px; letter-spacing: .22em; color: var(--accent); }
+  .step h3 { font-family: var(--display); font-weight: 900; font-size: 22px; }
+  .step .motif--cross { right: 26px; top: 36px; width: 38px; height: 38px; opacity: .5; }
+  .step .motif--route { right: 18px; bottom: 16px; width: 116px; opacity: .5; }
+  .step .motif--arcs { right: 20px; bottom: 16px; width: 62px; height: 62px; opacity: .5; }
+
+  /* ---------- CTA ---------- */
+  .cta-wrap { border-top: 1px solid var(--hair); position: relative; }
+  .cta-box { border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); position: relative; overflow: hidden; }
+  .cta-box h2 { font-family: var(--display); font-weight: 900; letter-spacing: -.03em; }
+  .cta-box .motif--arcs { left: 0; bottom: 0; opacity: .18; }
+  .cta-box .motif--sun { right: 0; top: 0; opacity: .12; }
+  .cta-box .motif--cross { left: 50%; top: 14px; margin-left: -22px; opacity: .5; }
+
+  /* ---------- Footer ---------- */
+  footer { border-top: 1px solid var(--hair); overflow: hidden; }
+  footer::before { content: ""; position: absolute; top: -1px; left: clamp(20px, 5vw, 60px); width: 130px; height: 2px; background: var(--accent); }
+  footer .motif--cross { top: 30px; right: clamp(20px, 5vw, 60px); width: 34px; height: 34px; opacity: .4; }
+  .foot-links h4::after { content: ""; display: block; width: 22px; height: 2px; background: var(--accent); margin-top: 10px; }
+
+  /* ---------- Mouse effects ---------- */
+  .btn:hover { box-shadow: 0 14px 34px rgba(0,0,0,.35); }
+  .cursor-trail { position: fixed; inset: 0; pointer-events: none; z-index: 9996; }
+  .cursor-trail i { position: absolute; border-radius: 50%; will-change: transform, opacity; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="m-mt" viewBox="0 0 120 90">
+      <path d="M4 66 L38 12 L58 46 L74 20 L116 66 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M4 76 L38 22 L58 56 L74 30 L116 76 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M4 84 L116 84" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="m-arcs" viewBox="0 0 100 100">
+      <path d="M10 90 A40 40 0 0 1 90 90" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M18 90 A32 32 0 0 1 82 90" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M26 90 A24 24 0 0 1 74 90" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M34 90 A16 16 0 0 1 66 90" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M50 94 V100" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M6 90 H94" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="m-route" viewBox="0 0 120 60">
+      <path d="M6 42 C22 40 28 14 42 16 C58 20 56 44 74 40 C92 36 96 14 114 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 6"/>
+      <circle cx="6" cy="42" r="3.2" fill="currentColor" stroke="none"/>
+      <circle cx="114" cy="18" r="3.2" fill="currentColor" stroke="none"/>
+      <path d="M6 42 C22 40 28 14 42 16" fill="none" stroke="currentColor" stroke-width="1" opacity=".7"/>
+      <path d="M42 16 L30 2 M74 40 L86 54" fill="none" stroke="currentColor" stroke-width="1" opacity=".7"/>
+    </symbol>
+    <symbol id="m-cross" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="11" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M30 3 V57 M3 30 H57" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M30 17 V43 M17 30 H43" fill="none" stroke="currentColor" stroke-width="1"/>
+    </symbol>
+    <symbol id="m-ladder" viewBox="0 0 80 100">
+      <path d="M12 90 L46 10" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M36 90 L70 10" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M18 66 L44 40 M27 44 L53 18 M31 82 L57 56" fill="none" stroke="currentColor" stroke-width="1.4"/>
+    </symbol>
+    <symbol id="m-sun" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="11" fill="none" stroke="currentColor" stroke-width="2"/>
+      <circle cx="50" cy="50" r="3.5" fill="currentColor" stroke="none"/>
+      <path d="M50 6 V20 M50 80 V94 M6 50 H20 M80 50 H94 M17 17 L28 28 M72 72 L83 83 M83 17 L72 28 M17 83 L28 72" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="m-wheel" viewBox="0 0 80 80">
+      <circle cx="40" cy="40" r="29" fill="none" stroke="currentColor" stroke-width="2"/>
+      <circle cx="40" cy="40" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M40 11 V32 M40 48 V69 M11 40 H32 M48 40 H69" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M19.5 19.5 L30 30 M50 50 L60.5 60.5 M60.5 19.5 L50 30 M19.5 60.5 L30 50" fill="none" stroke="currentColor" stroke-width="1.4"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div id="smooth-wrapper">
+<div id="smooth-content">
+
+<nav>
+  <a class="brand" href="#" aria-label="wellway 首页"><img src="assets/logo-full-cream.png?v=20260907-r1" alt="wellway"></a>
+  <div class="nav-links">
+    <a href="#corridor">路线</a>
+    <a href="#product">产品</a>
+    <a href="#features">功能</a>
+    <a href="#download">下载</a>
+  </div>
+  <a class="btn btn-primary nav-cta" href="#download">下载 App</a>
+</nav>
+
+<header class="hero" id="top">
+  <span class="tick" aria-hidden="true"></span>
+  <span class="hero-word" aria-hidden="true">WELLWAY</span>
+  <div class="hero-art" aria-hidden="true">
+    <svg class="motif motif--sun"><use href="#m-sun"/></svg>
+    <svg class="motif motif--arcs"><use href="#m-arcs"/></svg>
+    <svg class="motif motif--mt"><use href="#m-mt"/></svg>
+    <svg class="motif motif--route"><use href="#m-route"/></svg>
+    <svg class="motif motif--cross motif--accent"><use href="#m-cross"/></svg>
+    <svg class="motif motif--ladder"><use href="#m-ladder"/></svg>
+  </div>
+  <div class="hero-inner">
+    <p class="hero-kicker">wellway · 摩托车骑行 <i>/</i> 好路当骑 同行当悉</p>
+    <div class="hero-logo" id="hero-logo"><img src="assets/logo-full-cream.png?v=20260907-r1" alt="wellway"></div>
+    <h1 class="hero-title" id="hero-title">好路当骑<br><span>同行当悉</span></h1>
+    <p class="hero-sub">纯路线全览 · 骑行记录 · 擦肩而过的相遇</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#download">App Store 下载</a>
+      <a class="btn btn-ghost" href="#corridor">进入路线走廊</a>
+    </div>
+    <div class="hero-meta"><span>iOS</span><span>·</span><span>免费</span><span>·</span><span>中文</span></div>
+  </div>
+  <div class="hero-scroll"><span>SCROLL</span><div class="bar"></div></div>
+</header>
+
+<section class="corridor" id="corridor" data-depth="1800" data-near="340" aria-label="路线走廊">
+  <div class="corridor__viewport">
+    <div class="corridor__camera">
+      <div class="corridor__field">
+        <div class="corridor__rank corridor__rank--left">
+          <article class="corridor__panel corridor__panel--bone" data-corridor-panel><div class="corridor__shot"><img src="assets/shot-01-garage.png" alt="我的车库"></div><span class="corridor__cap">我的车库</span></article>
+          <article class="corridor__panel corridor__panel--graphite" data-corridor-panel><span class="corridor__type">纯路线<br>全览</span><span class="corridor__cap corridor__cap--end">无限放大</span></article>
+          <article class="corridor__panel corridor__panel--signal" data-corridor-panel><span class="corridor__cap">精选路线</span><span class="corridor__num">01</span></article>
+          <article class="corridor__panel corridor__panel--bone" data-corridor-panel><span class="corridor__cap">FIELD NOTE</span><span class="corridor__rule" aria-hidden="true"></span></article>
+          <article class="corridor__panel corridor__panel--graphite" data-corridor-panel><div class="corridor__shot"><img src="assets/shot-05-routes-list.png" alt="路线列表"></div><span class="corridor__cap">路线列表</span></article>
+          <article class="corridor__panel corridor__panel--signal" data-corridor-panel><span class="corridor__type">擦肩<br>而过</span><span class="corridor__cap corridor__cap--end">相遇</span></article>
+        </div>
+        <div class="corridor__rank corridor__rank--right">
+          <article class="corridor__panel corridor__panel--graphite" data-corridor-panel><div class="corridor__shot"><img src="assets/shot-02-route-detail.png" alt="路线详情"></div><span class="corridor__cap">路线详情</span></article>
+          <article class="corridor__panel corridor__panel--bone" data-corridor-panel><span class="corridor__cap">车型勋章</span><span class="corridor__num">09</span></article>
+          <article class="corridor__panel corridor__panel--graphite" data-corridor-panel><span class="corridor__rule" aria-hidden="true"></span><span class="corridor__cap corridor__cap--end">下一段旅程</span></article>
+          <article class="corridor__panel corridor__panel--signal" data-corridor-panel><span class="corridor__type">骑行<br>记录</span><span class="corridor__cap corridor__cap--end">里程 · 时间</span></article>
+          <article class="corridor__panel corridor__panel--bone" data-corridor-panel><div class="corridor__shot"><img src="assets/shot-06-badges.png" alt="车型勋章"></div><span class="corridor__cap">勋章</span></article>
+          <article class="corridor__panel corridor__panel--graphite" data-corridor-panel><span class="corridor__type">好路当骑<br>同行当悉</span><span class="corridor__cap corridor__cap--end">wellway</span></article>
+        </div>
+      </div>
+    </div>
+    <span class="corridor__streaks" aria-hidden="true"></span>
+    <span class="corridor__fog" aria-hidden="true"></span>
+    <div class="corridor__hero">
+      <p class="corridor__kicker">wellway</p>
+      <h2 class="corridor__word">骑行<span>路线</span></h2>
+      <p class="corridor__hero-sub">穿过路线走廊 · 找到你的下一段旅程</p>
+    </div>
+    <p class="corridor__cue"><span class="corridor__cue-dot" aria-hidden="true"></span> <strong>滚动飞行</strong> <span class="corridor__cue-sep corridor__cue-fine" aria-hidden="true">/</span> <span class="corridor__cue-fine">快速滚动触发加速</span></p>
+  </div>
+</section>
+
+<div class="stats-wrap wrap">
+  <div class="stats-head" data-reveal>
+    <span class="sec-word" aria-hidden="true">NUMBERS</span>
+    <p class="sec-kicker">NUMBERS</p>
+    <h2 class="sec-title">每一天，都在路上</h2>
+  </div>
+  <div class="stats">
+    <div class="stat" data-reveal>
+      <div class="value"><span data-count="60">0</span><em>+</em></div>
+      <div class="label">精选路线</div>
+      <svg class="motif motif--arcs" aria-hidden="true"><use href="#m-arcs"/></svg>
+    </div>
+    <div class="stat" data-reveal>
+      <div class="value"><span data-count="10000">0</span><em>+</em></div>
+      <div class="label">次擦肩相遇</div>
+      <svg class="motif motif--cross" aria-hidden="true"><use href="#m-cross"/></svg>
+    </div>
+    <div class="stat" data-reveal>
+      <div class="value"><span data-count="365">0</span><em>天</em></div>
+      <div class="label">全年在路上</div>
+      <svg class="motif motif--mt" aria-hidden="true"><use href="#m-mt"/></svg>
+    </div>
+  </div>
+</div>
+
+<section class="product-section" id="product">
+  <div class="wrap showcase">
+    <div class="sec-head" data-reveal>
+      <span class="sec-word" aria-hidden="true">PRODUCT</span>
+      <p class="sec-kicker">PRODUCT <b>/</b> 产品</p>
+      <h2 class="sec-title">一个应用，装下你的骑行</h2>
+      <p class="sec-sub">从车库到路线，从记录到擦肩——所有骑行时刻，都收在一叠卡片里。</p>
+    </div>
+    <div class="stack-zone" data-reveal>
+      <p class="stack-hint"><b>悬停</b> 展开 · <b>点击</b> 置顶</p>
+      <div class="stack-deck" id="stack-deck">
+        <article class="stack-card">
+          <div class="card-info">
+            <div class="card-top"><span class="mark">01</span><span class="tag">Garage / 车库</span></div>
+            <h3>我的车库</h3>
+            <p class="sub">管理你的车型与爱车</p>
+            <div class="card-foot"><span class="foot-line"></span><span class="foot-arrow">→</span></div>
+          </div>
+          <div class="shot"><img src="assets/shot-01-garage.png" alt="我的车库"></div>
+        </article>
+        <article class="stack-card">
+          <div class="card-info">
+            <div class="card-top"><span class="mark">02</span><span class="tag">Route Map / 路线全览</span></div>
+            <h3>路线详情</h3>
+            <p class="sub">纯路线全览，无限放大</p>
+            <div class="card-foot"><span class="foot-line"></span><span class="foot-arrow">→</span></div>
+          </div>
+          <div class="shot"><img src="assets/shot-02-route-detail.png" alt="路线详情"></div>
+        </article>
+        <article class="stack-card">
+          <div class="card-info">
+            <div class="card-top"><span class="mark">03</span><span class="tag">Routes / 精选路线</span></div>
+            <h3>路线列表</h3>
+            <p class="sub">精选路线，随时出发</p>
+            <div class="card-foot"><span class="foot-line"></span><span class="foot-arrow">→</span></div>
+          </div>
+          <div class="shot"><img src="assets/shot-05-routes-list.png" alt="路线列表"></div>
+        </article>
+        <article class="stack-card">
+          <div class="card-info">
+            <div class="card-top"><span class="mark">04</span><span class="tag">Badges / 车型勋章</span></div>
+            <h3>车型勋章</h3>
+            <p class="sub">擦肩而过，收集勋章</p>
+            <div class="card-foot"><span class="foot-line"></span><span class="foot-arrow">→</span></div>
+          </div>
+          <div class="shot"><img src="assets/shot-06-badges.png" alt="车型勋章"></div>
+        </article>
+        <article class="stack-card stack-card--brand">
+          <div class="card-info">
+            <div class="card-top"><span class="mark">05</span><span class="tag">Brand</span></div>
+            <div class="brand-word">wellway</div>
+            <span class="brand-accent"></span>
+            <p class="slogan">好路当骑 · 同行当悉</p>
+            <div class="card-foot"><span class="foot-line"></span><span class="foot-arrow">→</span></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap features" id="features">
+    <div class="sec-head" data-reveal>
+      <span class="sec-word" aria-hidden="true">FEATURES</span>
+      <p class="sec-kicker">FEATURES <b>/</b> 功能</p>
+      <h2 class="sec-title">为骑士设计的每个细节</h2>
+    </div>
+    <div class="features-grid">
+      <article class="feature" data-reveal>
+        <span class="num">01</span>
+        <div class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#m-route"/></svg></div>
+        <h3>纯路线全览</h3>
+        <p>上传你的路线图，以 SVG 无限放大查看；点击地图进入全屏，手指缩放拖动，像看地图一样看路线。</p>
+      </article>
+      <article class="feature" data-reveal>
+        <span class="num">02</span>
+        <div class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#m-wheel"/></svg></div>
+        <h3>骑行记录</h3>
+        <p>每次出发都被好好记录：里程、路线、时刻，骑行数据一目了然，365 天都在路上。</p>
+      </article>
+      <article class="feature" data-reveal>
+        <span class="num">03</span>
+        <div class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#m-arcs"/></svg></div>
+        <h3>擦肩而过</h3>
+        <p>擦肩而过时匿名展示车型与勋章信息，不进主页、不打扰，只留下一次相遇。</p>
+      </article>
+      <article class="feature" data-reveal>
+        <span class="num">04</span>
+        <div class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#m-mt"/></svg></div>
+        <h3>车型勋章</h3>
+        <p>在路上遇见同好，收集车型与路线勋章，把每次相遇都变成小小的纪念。</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="wrap steps-wrap">
+  <div class="sec-head" data-reveal>
+    <span class="sec-word" aria-hidden="true">RIDE</span>
+    <p class="sec-kicker">HOW IT WORKS <b>/</b> 三步出发</p>
+    <h2 class="sec-title">从出发到相遇</h2>
+  </div>
+  <div class="steps">
+    <div class="step" data-reveal>
+      <span class="snum">STEP 01</span>
+      <h3>选一条路线</h3>
+      <p>在车库挑选或上传专属路线，点击地图进入全屏全览，无限放大查看每一段弯道。</p>
+      <svg class="motif motif--cross motif--fader" aria-hidden="true"><use href="#m-cross"/></svg>
+    </div>
+    <div class="step" data-reveal>
+      <span class="snum">STEP 02</span>
+      <h3>出发骑行</h3>
+      <p>选择高德导航或 wellway 骑行模式，路线自动加入出发页，开始你的下一段旅程。</p>
+      <svg class="motif motif--route motif--fader" aria-hidden="true"><use href="#m-route"/></svg>
+    </div>
+    <div class="step" data-reveal>
+      <span class="snum">STEP 03</span>
+      <h3>擦肩纪念</h3>
+      <p>骑行途中与同好擦肩而过，匿名交换车型与勋章信息，只留下一次相遇。</p>
+      <svg class="motif motif--arcs motif--fader" aria-hidden="true"><use href="#m-arcs"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="cta-wrap wrap" id="download">
+  <div class="cta-box" data-reveal>
+    <svg class="motif motif--arcs" aria-hidden="true"><use href="#m-arcs"/></svg>
+    <svg class="motif motif--sun" aria-hidden="true"><use href="#m-sun"/></svg>
+    <svg class="motif motif--cross" aria-hidden="true"><use href="#m-cross"/></svg>
+    <img src="assets/logo-full-cream.png?v=20260907-r1" alt="wellway">
+    <h2>好路当骑，同行当悉</h2>
+    <p>下载 wellway，开始你的下一段旅程。</p>
+    <div class="cta-actions">
+      <!-- TODO(上架后): 替换为 App Store 真实链接 -->
+      <a class="btn btn-primary" href="#">App Store 下载</a>
+      <a class="btn btn-ghost" href="privacy.html">隐私政策</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <svg class="motif motif--cross" aria-hidden="true"><use href="#m-cross"/></svg>
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <img src="assets/logo-full-cream.png?v=20260907-r1" alt="wellway">
+      <p>好路当骑，同行当悉</p>
+    </div>
+    <div class="foot-links">
+      <div>
+        <h4>产品</h4>
+        <a href="#corridor">路线走廊</a>
+        <a href="#product">产品展示</a>
+        <a href="#features">功能</a>
+      </div>
+      <div>
+        <h4>支持</h4>
+        <a href="privacy.html">隐私政策</a>
+        <a href="terms.html">用户协议</a>
+        <!-- TODO: 替换为真实联系邮箱 -->
+        <a href="mailto:contact@wellway.app">联系我们</a>
+      </div>
+    </div>
+  </div>
+  <div class="foot-icp">
+    <span>© 2026 wellway</span>
+  </div>
+</footer>
+
+</div>
+</div>
+
+<script src="assets/vendor/gsap.min.js"></script>
+<script src="assets/vendor/ScrollTrigger.min.js"></script>
+<script src="assets/vendor/ScrollSmoother.min.js"></script>
+<script src="assets/vendor/SplitText.min.js"></script>
+<script>
+gsap.registerPlugin(ScrollTrigger, ScrollSmoother, SplitText);
+
+const isTouch = window.matchMedia('(hover: none)').matches;
+const mm = gsap.matchMedia();
+
+/* ---------- Smooth scroll ---------- */
+mm.add('(min-width: 961px) and (prefers-reduced-motion: no-preference)', () => {
+  const smoother = ScrollSmoother.create({
+    wrapper: '#smooth-wrapper',
+    content: '#smooth-content',
+    smooth: 1.2,
+    effects: true,
+    smoothTouch: 0.1
+  });
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (!target) return;
+      e.preventDefault();
+      smoother.scrollTo(target, true, 'top 80px');
+    });
+  });
+  ScrollTrigger.create({
+    start: 60,
+    onUpdate: self => document.querySelector('nav').classList.toggle('scrolled', self.scroll() > 40)
+  });
+  return () => smoother.kill();
+});
+
+/* ---------- Hero intro ---------- */
+mm.add('(prefers-reduced-motion: no-preference)', () => {
+  const split = SplitText.create('#hero-title', { type: 'chars', mask: 'chars' });
+  gsap.from(split.chars, { yPercent: 130, opacity: 0, duration: 1.1, ease: 'power4.out', stagger: 0.03, delay: 0.25 });
+  gsap.from('.hero-kicker', { y: 24, opacity: 0, duration: 0.8, ease: 'power3.out', delay: 0.1 });
+  gsap.from('.hero-sub, .hero-actions, .hero-meta', { y: 30, opacity: 0, duration: 0.9, ease: 'power3.out', stagger: 0.1, delay: 0.6 });
+  gsap.from('#hero-logo', { y: -60, opacity: 0, scale: 0.9, duration: 1.4, ease: 'power3.out', delay: 0.1 });
+  gsap.from('.hero-scroll', { opacity: 0, duration: 1, delay: 1.4 });
+});
+
+/* ---------- Scroll reveals ---------- */
+const revealEls = document.querySelectorAll('[data-reveal]');
+gsap.set(revealEls, { opacity: 0, y: 46 });
+revealEls.forEach(el => {
+  gsap.to(el, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' } });
+});
+
+/* ---------- Scroll depth corridor (gsapvault) ---------- */
+mm.add('(prefers-reduced-motion: no-preference)', () => {
+  const corridor = document.querySelector('#corridor');
+  if (!corridor) return;
+  const viewport = corridor.querySelector('.corridor__viewport');
+  const ranks = gsap.utils.toArray('.corridor__rank', corridor);
+  const near = parseFloat(corridor.dataset.near) || 340;
+  const depth = parseFloat(corridor.dataset.depth) || 1800;
+  const hazeNear = -320;
+  const hazeFar = -1500;
+  const warpProxy = { v: 0 };
+  const applyWarp = () => {
+    corridor.style.setProperty('--warp', warpProxy.v);
+    corridor.classList.toggle('is-warping', warpProxy.v > 0.05);
+  };
+  const warpTo = target => gsap.to(warpProxy, {
+    v: target, duration: target > warpProxy.v ? 0.12 : 0.5,
+    ease: 'power2.out', overwrite: true, onUpdate: applyWarp
+  });
+  const releaseWarp = () => gsap.to(warpProxy, {
+    v: 0, duration: 0.5, ease: 'power2.out', overwrite: true, onUpdate: applyWarp
+  });
+
+  let bases = [];
+  function computeBases() {
+    const narrow = matchMedia('(max-width: 640px)').matches;
+    const halfW = narrow ? 200 : Math.min(Math.max(230, innerWidth * 0.42), 580);
+    const halfH = narrow ? 230 : Math.min(Math.max(190, innerHeight * 0.46), 440);
+    bases = [];
+    ranks.forEach(rank => {
+      const ps = gsap.utils.toArray('[data-corridor-panel]', rank);
+      if (ps.length < 2) return;
+      const side = rank.classList.contains('corridor__rank--left') || rank.classList.contains('corridor__rank--right');
+      const step = side ? halfW * 1.37 : halfH * 1.32;
+      const span = (ps.length - 1) * step;
+      ps.forEach((p, k) => bases.push({ el: p, base: -(k + 1) * step, span }));
+    });
+  }
+  computeBases();
+
+  let progress = 0;
+  const apply = () => {
+    const camZ = progress * depth;
+    for (let i = 0; i < bases.length; i++) {
+      const s = bases[i];
+      let rel = s.base + camZ;
+      while (rel > near) rel -= s.span;
+      while (rel < near - s.span) rel += s.span;
+      s.el.style.setProperty('--pz', rel.toFixed(1) + 'px');
+      const h = Math.pow(gsap.utils.clamp(0, 1, (rel - hazeNear) / (hazeFar - hazeNear)), 0.8);
+      s.el.style.setProperty('--haze', h.toFixed(3));
+    }
+  };
+  apply();
+
+  const st = ScrollTrigger.create({
+    trigger: corridor,
+    start: 'top top',
+    end: 'bottom bottom',
+    pin: viewport,
+    scrub: 0.8,
+    invalidateOnRefresh: true,
+    onRefresh: computeBases,
+    onUpdate(self) {
+      progress = self.progress;
+      apply();
+      const v = Math.abs(self.getVelocity());
+      warpTo(gsap.utils.clamp(0, 1, (v - 500) / 2600));
+    },
+    onLeave: () => corridor.classList.remove('is-warping'),
+    onLeaveBack: () => corridor.classList.remove('is-warping')
+  });
+  ScrollTrigger.addEventListener('scrollEnd', releaseWarp);
+  return () => {
+    ScrollTrigger.removeEventListener('scrollEnd', releaseWarp);
+    st.kill();
+  };
+});
+
+/* ---------- Elastic stack deck ---------- */
+const deck = document.querySelector('#stack-deck');
+const cards = gsap.utils.toArray('.stack-card');
+const N = cards.length;
+const initX = i => (i - (N - 1) / 2) * 16;
+const initY = i => i * 14;
+const initR = i => (i - (N - 1) / 2) * 1.6;
+gsap.set(cards, { x: initX, y: initY, rotation: initR, zIndex: i => i, transformPerspective: 1200, transformOrigin: 'center center', force3D: true });
+
+let fanned = false;
+function fan() {
+  if (fanned) return;
+  fanned = true;
+  gsap.to(cards, {
+    x: i => (i - (N - 1) / 2) * 132,
+    y: i => 24 - Math.abs(i - (N - 1) / 2) * 46,
+    rotation: i => (i - (N - 1) / 2) * 5,
+    zIndex: i => i + 20,
+    scale: 1, opacity: 1,
+    duration: 0.85, ease: 'power3.out', stagger: 0.022, force3D: true
+  });
+}
+function stack() {
+  fanned = false;
+  gsap.to(cards, { x: initX, y: initY, rotation: initR, zIndex: i => i, scale: 1, opacity: 1, duration: 1, ease: 'elastic.out(1, 0.6)', stagger: 0.01, force3D: true });
+}
+if (!isTouch) {
+  deck.addEventListener('mouseenter', fan);
+  deck.addEventListener('mouseleave', () => { stack(); });
+} else {
+  deck.addEventListener('click', () => { fanned ? stack() : fan(); });
+}
+
+cards.forEach(card => {
+  card.addEventListener('click', () => {
+    const isFront = card.dataset.front === '1';
+    cards.forEach(c => { c.dataset.front = '0'; });
+    if (!isFront) {
+      card.dataset.front = '1';
+      gsap.to(card, { zIndex: 60, x: 0, y: -66, rotation: 0, scale: 1.1, duration: 0.85, ease: 'elastic.out(1, 0.45)', force3D: true });
+      gsap.to(cards.filter(c => c !== card), { scale: 0.9, opacity: 0.55, duration: 0.5, ease: 'power2.out', force3D: true });
+    } else {
+      gsap.to(cards, { scale: 1, opacity: 1, duration: 0.6, ease: 'power2.out', force3D: true });
+      gsap.to(card, { zIndex: 40, y: fanned ? -Math.abs(4 - (N - 1) / 2) * 46 + 24 : (N - 1) * 14, x: 0, rotation: 0, scale: 1, duration: 0.8, ease: 'elastic.out(1,0.5)', force3D: true });
+      setTimeout(stack, 400);
+    }
+  });
+});
+
+/* ---------- Stats counters ---------- */
+document.querySelectorAll('[data-count]').forEach(el => {
+  const end = parseFloat(el.dataset.count);
+  const obj = { v: 0 };
+  gsap.to(obj, {
+    v: end, duration: 1.8, ease: 'power2.out',
+    scrollTrigger: { trigger: el, start: 'top 88%' },
+    onUpdate: () => { el.textContent = Math.round(obj.v).toLocaleString(); }
+  });
+});
+
+/* ---------- Mouse effects ---------- */
+if (!isTouch && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+  const trail = document.createElement('div');
+  trail.className = 'cursor-trail';
+  document.body.appendChild(trail);
+  let lastSpawn = 0;
+  window.addEventListener('mousemove', e => {
+    const now = performance.now();
+    if (now - lastSpawn < 24) return;
+    lastSpawn = now;
+    if (trail.children.length > 48) return;
+    const p = document.createElement('i');
+    const s = 2 + Math.random() * 3;
+    const orange = Math.random() > 0.22;
+    p.style.width = p.style.height = s.toFixed(1) + 'px';
+    p.style.left = e.clientX + 'px';
+    p.style.top = e.clientY + 'px';
+    p.style.background = orange ? '#f04818' : '#f2efe9';
+    if (orange) p.style.boxShadow = '0 0 6px rgba(240,72,24,.55)';
+    trail.appendChild(p);
+    gsap.to(p, {
+      x: (Math.random() - 0.5) * 80,
+      y: -12 - Math.random() * 46,
+      opacity: 0,
+      scale: 0.15,
+      duration: 0.55 + Math.random() * 0.7,
+      ease: 'power2.out',
+      onComplete: () => p.remove()
+    });
+  });
+
+  document.querySelectorAll('.feature, .step').forEach(el => {
+    el.addEventListener('mousemove', e => {
+      const r = el.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width - 0.5;
+      const py = (e.clientY - r.top) / r.height - 0.5;
+      el.style.setProperty('--rx', (py * -7).toFixed(2) + 'deg');
+      el.style.setProperty('--ry', (px * 8).toFixed(2) + 'deg');
+    });
+    el.addEventListener('mouseleave', () => {
+      el.style.setProperty('--rx', '0deg');
+      el.style.setProperty('--ry', '0deg');
+    });
+  });
+
+  document.querySelectorAll('.btn').forEach(btn => {
+    const bx = gsap.quickTo(btn, 'x', { duration: 0.4, ease: 'power3.out' });
+    const by = gsap.quickTo(btn, 'y', { duration: 0.4, ease: 'power3.out' });
+    btn.addEventListener('mousemove', e => {
+      const r = btn.getBoundingClientRect();
+      bx(gsap.utils.clamp(-7, 7, (e.clientX - (r.left + r.width / 2)) * 0.18));
+      by(gsap.utils.clamp(-5, 5, (e.clientY - (r.top + r.height / 2)) * 0.18));
+    });
+    btn.addEventListener('mouseleave', () => { bx(0); by(0); });
+  });
+
+  const heroLogo = document.querySelector('#hero-logo');
+  const heroTitle = document.querySelector('#hero-title');
+  if (heroLogo && heroTitle) {
+    const lx = gsap.quickTo(heroLogo, 'x', { duration: 1, ease: 'power3.out' });
+    const ly = gsap.quickTo(heroLogo, 'y', { duration: 1, ease: 'power3.out' });
+    const lr = gsap.quickTo(heroLogo, 'rotation', { duration: 1.4, ease: 'power3.out' });
+    const tx = gsap.quickTo(heroTitle, 'x', { duration: 1.2, ease: 'power3.out' });
+    const ty = gsap.quickTo(heroTitle, 'y', { duration: 1.2, ease: 'power3.out' });
+    window.addEventListener('mousemove', e => {
+      const nx = e.clientX / innerWidth - 0.5;
+      const ny = e.clientY / innerHeight - 0.5;
+      lx(nx * -16); ly(ny * -10); lr(nx * -1.6);
+      tx(nx * -24); ty(ny * -16);
+    });
+  }
+}
+
+window.addEventListener('load', () => ScrollTrigger.refresh());
+</script>
+</body>
+</html>

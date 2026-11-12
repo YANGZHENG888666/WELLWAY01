@@ -1,0 +1,44 @@
+# scratch / intermediate
+work/
+
+# secrets
+.env
+.env.local
+.env.*.local
+.env.bak
+.env.*.bak
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# build / deps
+node_modules/
+dist/
+build/
+
+# logs
+*.log
+
+# local historical copies
+*.bak
+*.bak-*
+ios/_brand_backup/
+
+# backend
+backend/scripts/node_modules/
+backend/scripts/catalog/data/model-images/
+backend/backups/
+backend/supabase/backups/
+
+# generated evidence / local outputs
+outputs/
+audit/shots/
+demo_output/
+
+# ios (Xcode / XcodeGen build artifacts)
+ios/*.xcodeproj
+ios/build*/
+ios/DerivedData/
