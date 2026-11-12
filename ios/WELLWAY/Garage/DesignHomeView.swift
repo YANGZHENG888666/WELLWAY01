@@ -1174,7 +1174,7 @@ struct DesignHomeView: View {
                 VStack(spacing: 0) {
                     HStack(spacing: 12) {
                         RoundedRectangle(cornerRadius: 11, style: .continuous)
-                            .fill(Color(red: 0xF1 / 255, green: 0xF4 / 255, blue: 0xF6 / 255))
+                            .fill(Theme.lightField)
                             .frame(width: 64, height: 64)
                         VStack(alignment: .leading, spacing: 7) {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -1289,7 +1289,7 @@ struct DesignHomeView: View {
         let points = thumbPoints(for: ride)
         return ZStack {
             RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(Color(red: 0xF1 / 255, green: 0xF4 / 255, blue: 0xF6 / 255))
+                .fill(Theme.lightField)
 
             if points.count >= 2 {
                 MiniRouteThumb(

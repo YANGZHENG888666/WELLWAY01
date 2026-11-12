@@ -70,7 +70,7 @@ struct DesignLoginView: View {
                 .accessibilityHidden(true)
             Text("好路当骑 同行当悉")
                 .font(.system(size: 24, weight: .bold))
-                .foregroundColor(Color(red: 0x0F/255, green: 0x11/255, blue: 0x15/255))
+                .foregroundColor(Theme.textPrimary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

@@ -1179,132 +1179,156 @@ struct RidingView: View {
 
     private func statsPanel(compact: Bool) -> some View {
         VStack(spacing: 0) {
-            Group {
-                if hasArrived {
-                    // 状态胶囊已经写了「已到达」，这里只保留一次大字状态 + 一句行动指引，
-                    // 不再额外叠一条同样标题的提示卡。
-                    VStack(spacing: 8) {
-                        Text("已到达")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("请就近安全停车，再结束骑行")
-                            .font(.system(size: 12))
-                            .foregroundColor(.white.opacity(0.55))
-                    }
-                } else {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(currentSpeedKmh, format: .number.precision(.fractionLength(0)))
-                            .font(.system(size: compact ? 62 : 76, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundColor(.white)
-                        Text("km/h")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white.opacity(0.5))
-                    }
-                    // 读数会被拆成「48」「km/h」两段，听不出是时速
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("当前时速 \(Int(currentSpeedKmh.rounded())) 公里每小时")
-                }
-            }
-            .padding(.top, hasArrived ? 24 : (compact ? 12 : 28))
-            .padding(.bottom, hasArrived ? 10 : (compact ? 10 : 20))
-
-            MetricRowLayout {
-                statCell("里程", value: String(format: "%.1f km", riddenMeters / 1000))
-                dividerOnLight
-                statCell("时长", value: formatDuration(rideSeconds))
-                dividerOnLight
-                statCell("均速", value: averageSpeed + " km/h")
-            }
-            .padding(.vertical, 18)
-            .frame(maxWidth: .infinity)
-            .background(Color.white.opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(.white.opacity(0.08), lineWidth: 1)
-            }
-            .padding(.horizontal, 16)
-            // 三格按布局顺序会念成「8.2 km、35:38、13.8 km/h、里程、时长、均速」
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(
-                "里程 " + String(format: "%.1f", riddenMeters / 1000) + " 公里，"
-                    + "时长 \(spokenDuration(rideSeconds))，均速 \(averageSpeed) 公里每小时"
-            )
-
-            if !hasArrived {
-                tripProgressStrip(compact: compact)
-            }
-
-            if hasArrived && !checkpoints.isEmpty {
-                checkpointReviewCard
-                    .padding(.top, 14)
-            }
-
-            if let counts = ride?.nearbyRiders, counts.total > 0 {
-                nearbyRidersStrip(counts)
-            }
-
-            // 已到达态比骑行态多出打卡卡与提示行：短屏上内容刚好超出面板高度，
-            // 溢出的几 pt 会把底部 12pt 内边距顶掉（实测只剩 7.5pt）。
-            // 这里让伸缩垫在短屏上完全收起，把安全距离还给按钮。
-            Spacer(minLength: compact ? (hasArrived ? 0 : 4) : 12)
-
             if hasArrived {
+                // 已到达态比骑行态多出打卡回看。SE 上整块内容高于剩余空间，
+                // 固定按钮会被顶出屏幕；让回看内容自己滚动，行动区始终钉在底部。
+                ScrollView {
+                    VStack(spacing: 0) {
+                        statsHeader(compact: compact)
+                        statsMetrics
+
+                        if !checkpoints.isEmpty {
+                            checkpointReviewCard
+                                .padding(.top, 14)
+                        }
+
+                        if let counts = ride?.nearbyRiders, counts.total > 0 {
+                            nearbyRidersStrip(counts)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 8)
+                }
+                .scrollIndicators(.hidden)
+
                 Text(arrivalFooterNote)
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.55))
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.bottom, compact ? 8 : 10)
-            }
+                    .padding(.horizontal, 16)
 
-            HStack(spacing: 10) {
-                if !hasArrived {
-                    Button {
-                        if ride?.phase == .riding {
-                            ride?.pause()
-                        } else if ride?.phase == .paused {
-                            ride?.resume()
-                        }
-                    } label: {
-                        Image(systemName: ride?.phase == .paused ? "play.fill" : "pause.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            // 骑行中最容易误触的是「结束」：实心白留给暂停/继续，
-                            // 结束降为描边次级。和暂停页「继续骑行实心 / 结束描边」保持一致。
-                            .foregroundColor(Theme.darkBackground)
-                            .frame(width: 52, height: 52)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    .buttonStyle(SolidPressStyle())
-                    .accessibilityLabel(ride?.phase == .paused ? "继续骑行" : "暂停骑行")
+                statsActions(compact: compact)
+            } else {
+                statsHeader(compact: compact)
+                statsMetrics
+                tripProgressStrip(compact: compact)
+
+                if let counts = ride?.nearbyRiders, counts.total > 0 {
+                    nearbyRidersStrip(counts)
                 }
 
-                Button {
-                    showEndConfirm = true
-                } label: {
-                    Text("结束骑行")
-                        // 已到达时结束是这一页唯一的主行动，必须是实心白；
-                        // 骑行中暂停才是主行动，结束保持描边次级。
-                        .font(.system(size: 16, weight: hasArrived ? .semibold : .medium))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .foregroundColor(hasArrived ? Theme.darkBackground : .white)
-                        .background(hasArrived ? Color.white : Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay {
-                            if !hasArrived {
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(.white.opacity(0.12), lineWidth: 1)
-                            }
-                        }
-                }
-                .buttonStyle(SolidPressStyle())
+                Spacer(minLength: compact ? 4 : 12)
+                statsActions(compact: compact)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, compact ? 12 : 16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private func statsHeader(compact: Bool) -> some View {
+        if hasArrived {
+            // 状态胶囊已经写了「已到达」，这里只保留一次大字状态 + 一句行动指引，
+            // 不再额外叠一条同样标题的提示卡。
+            VStack(spacing: 8) {
+                Text("已到达")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                Text("请就近安全停车，再结束骑行")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.55))
+            }
+            .padding(.top, 24)
+            .padding(.bottom, 10)
+        } else {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(currentSpeedKmh, format: .number.precision(.fractionLength(0)))
+                    .font(.system(size: compact ? 62 : 76, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundColor(.white)
+                Text("km/h")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.white.opacity(0.5))
+            }
+            // 读数会被拆成「48」「km/h」两段，听不出是时速
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("当前时速 \(Int(currentSpeedKmh.rounded())) 公里每小时")
+            .padding(.top, compact ? 12 : 28)
+            .padding(.bottom, compact ? 10 : 20)
+        }
+    }
+
+    private var statsMetrics: some View {
+        MetricRowLayout {
+            statCell("里程", value: String(format: "%.1f km", riddenMeters / 1000))
+            dividerOnLight
+            statCell("时长", value: formatDuration(rideSeconds))
+            dividerOnLight
+            statCell("均速", value: averageSpeed + " km/h")
+        }
+        .padding(.vertical, 18)
+        .frame(maxWidth: .infinity)
+        .background(Color.white.opacity(0.07))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(.white.opacity(0.08), lineWidth: 1)
+        }
+        .padding(.horizontal, 16)
+        // 三格按布局顺序会念成「8.2 km、35:38、13.8 km/h、里程、时长、均速」
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            "里程 " + String(format: "%.1f", riddenMeters / 1000) + " 公里，"
+                + "时长 \(spokenDuration(rideSeconds))，均速 \(averageSpeed) 公里每小时"
+        )
+    }
+
+    private func statsActions(compact: Bool) -> some View {
+        HStack(spacing: 10) {
+            if !hasArrived {
+                Button {
+                    if ride?.phase == .riding {
+                        ride?.pause()
+                    } else if ride?.phase == .paused {
+                        ride?.resume()
+                    }
+                } label: {
+                    Image(systemName: ride?.phase == .paused ? "play.fill" : "pause.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        // 骑行中最容易误触的是「结束」：实心白留给暂停/继续，
+                        // 结束降为描边次级。和暂停页「继续骑行实心 / 结束描边」保持一致。
+                        .foregroundColor(Theme.darkBackground)
+                        .frame(width: 52, height: 52)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(SolidPressStyle())
+                .accessibilityLabel(ride?.phase == .paused ? "继续骑行" : "暂停骑行")
+            }
+
+            Button {
+                showEndConfirm = true
+            } label: {
+                Text("结束骑行")
+                    // 已到达时结束是这一页唯一的主行动，必须是实心白；
+                    // 骑行中暂停才是主行动，结束保持描边次级。
+                    .font(.system(size: 16, weight: hasArrived ? .semibold : .medium))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .foregroundColor(hasArrived ? Theme.darkBackground : .white)
+                    .background(hasArrived ? Color.white : Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay {
+                        if !hasArrived {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(.white.opacity(0.12), lineWidth: 1)
+                        }
+                    }
+            }
+            .buttonStyle(SolidPressStyle())
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, compact ? 12 : 16)
     }
 
     private var dividerOnLight: some View {

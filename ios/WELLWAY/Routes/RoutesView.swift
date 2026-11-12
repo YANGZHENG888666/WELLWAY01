@@ -1222,7 +1222,7 @@ struct RouteMapFullscreenView: View {
         let isStart = index == 0
         let isEnd = index == total - 1
         let background: Color = isStart
-            ? Color(red: 0x22 / 255, green: 0xC5 / 255, blue: 0x7E / 255)
+            ? Theme.success
             : (isEnd ? .white : .black.opacity(0.88))
         let foreground: Color = isStart ? .white : (isEnd ? .black : .white)
         let label = isStart ? "起" : (isEnd ? "终" : "\(index + 1)")

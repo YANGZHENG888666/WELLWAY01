@@ -3782,3 +3782,33 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - 证据目录：`outputs/r37/`。包含 `vehicles.png`、`badges.png`、`notifications.png`、`summary.png`、`riding.png`、`riderecovery.png`、`badgedetail.png`、`sharecard.png`、`settings-fixed.png`、`settings-notifyoff.png`、`records.png`、`profilepage.png`。
 - `xcodegen generate` + `xcodebuild`（iPhone 17 Pro 模拟器）：`BUILD SUCCEEDED`（2026-11-12）。
 - 本轮改动尚未提交；提交前先征得用户同意。
+
+## 逐页巡检（第三十八轮）：双机型全量巡检与 SE 到达页收尾
+
+### 全量巡检（复核，未改）
+
+- Pro / SE 各 95 页截图，两套文件名完全一致、无空白帧；先看接触表，再放大复核小屏高风险页面。
+- 出发页、骑行中、路线详情、记录详情、邮箱绑定键盘态、油价 / 天气错误 Sheet、通知权限弹层、设置页、空态与错误态：主按钮、Tab 胶囊、键盘与浮层均完整。
+- 「我的」页初始视口里「退出登录」被 Tab 胶囊压住，但内容区已有 108pt 底部预留，向下滚动即可完整露出；不是永久遮挡，本轮不改。
+- 界面文案未出现 `WELLWAY / Wellway / wellway` 等错误品牌写法。
+
+### SE 到达页主按钮裁切（已修）
+
+- 现象：`-arrival` 在 SE 上「结束骑行」被屏幕底边裁掉，到达后唯一的主行动无法可靠点击。
+- 根因：到达态比骑行态多出打卡回看与提示行，固定 `VStack` 的内容高度超出剩余面板，底部按钮被顶出屏幕。
+- 改法：拆出 `statsHeader(compact:)` / `statsMetrics` / `statsActions(compact:)`；到达态把状态、指标、打卡回看与同行骑手放进独立 `ScrollView`，提示行与行动区固定在面板底部。骑行态布局与逻辑保持不变。
+- 复验：SE 主按钮完整可见且与屏幕底边保留安全距离，打卡回看可滚动；Pro 到达页无回归；SE 骑行 / 暂停态截图与改前一致。
+
+### 中性色归并（已修）
+
+- 路线地图起点标记 `#22C57E` → `Theme.success`（同值，零视觉变化）。
+- 车库骨架占位与首页两处占位灰 `#F1F4F6` → `Theme.lightField`（骨骼屏与路线缩略图底灰，视觉无可辨差异）。
+- 登录页标语近黑 `#0F1115` → `Theme.textPrimary`。
+- 保留未动：`DesignHomeView` 顶部的本地调色板（`ink / ink65 / ink50 / ...`）与油价、空气质量、天气等数据语义色。前者整体替换会改变车库首页的观感，应在单独的视觉统一轮带前后对照处理，不在巡检中机械替换。
+
+### 证据与构建
+
+- 全量证据：`outputs/r38/pro/`、`outputs/r38/se/`（各 95 张）与 `outputs/r38/sheets/` 接触表。
+- 本轮复验：`outputs/r39/pro/arrival.png`、`outputs/r39/se/arrival.png`、`outputs/r39/se/riding.png`、`outputs/r39/se/riding_ridingpaused.png`、`outputs/r39/se/login.png`、`outputs/r39/se/routedetail.png`、`outputs/r39/se/garageskeleton.png`。
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-12）。
+- 第 38 轮改动已提交（2026-11-12）。

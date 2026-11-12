@@ -393,7 +393,7 @@ private struct GarageSkeletonView: View {
     private var lastRidePlaceholder: some View {
         HStack(spacing: 12) {
             RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(Color(red: 0xF1 / 255, green: 0xF4 / 255, blue: 0xF6 / 255))
+                .fill(Theme.lightField)
                 .frame(width: 64, height: 64)
             VStack(alignment: .leading, spacing: 7) {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
