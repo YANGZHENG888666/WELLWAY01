@@ -3781,7 +3781,7 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 
 - 证据目录：`outputs/r37/`。包含 `vehicles.png`、`badges.png`、`notifications.png`、`summary.png`、`riding.png`、`riderecovery.png`、`badgedetail.png`、`sharecard.png`、`settings-fixed.png`、`settings-notifyoff.png`、`records.png`、`profilepage.png`。
 - `xcodegen generate` + `xcodebuild`（iPhone 17 Pro 模拟器）：`BUILD SUCCEEDED`（2026-11-12）。
-- 本轮改动尚未提交；提交前先征得用户同意。
+- 本轮改动已在首次提交 `a11520c` 中一并入库。
 
 ## 逐页巡检（第三十八轮）：双机型全量巡检与 SE 到达页收尾
 
@@ -3924,7 +3924,7 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 
 ### 边界与决策
 
-- 不展示「附近救援点」：当前没有真实数据源，假列表会在紧急场景误导用户；该能力保持未做。
+- 第 43 轮当时不展示「附近救援点」：当时没有真实数据源，假列表会在紧急场景误导用户；第 44 轮已改为 MapKit 真实检索。
 - 不实现自动报警 / 自动通知 / 救援调度：页内明确说明只会打开系统电话确认与系统分享面板。
 - 「事故上报」未落地，因此 SOS 仅记为**部分完成**，不能按整项关闭。
 - 演示 HUD 不传假坐标，所以从 `-riding` 进入救援页默认是无定位态；`-sos` 调试入口取路线首个打卡点作为真实坐标。
@@ -3946,3 +3946,38 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - SE：`outputs/r43/se/hud-rescue-entry.png`、`sos-normal.png`、`sos-nolocation.png`、`sos-share.png`
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
 - 本轮改动尚未提交；提交前先征得用户同意。
+
+## 逐页巡检（第四十四轮）：SOS 附近救援点
+
+### 复核结论
+
+- 「安全救援」新增「附近救援点」（`-sos`，Pro / SE）：以真实位置调用 MapKit 检索 8 公里内的医院与派出所，按距离排序最多 5 条，显示名称、类型与距离；列表落在白底发丝线上，不套卡片。
+- 真实查询（Pro，四惠东）：返回北京四惠中医医院 422 m、北京济民中医医院 680 m、八里庄派出所 916 m、北京东站派出所（暂停开放）989 m、八里庄第二社区卫生服务中心 1.1 km；点击首条已在 Apple 地图打开「我的位置 → 北京四惠中医医院」驾车路线。
+- 加载 / 空 / 失败态（`-sossearchloading`、`-sossearchempty`、`-sossearchfailed`）：Pro / SE 均完整显示，失败与空态都明确提示直接拨打 120 / 110，并保留 44pt「重试」，不伪造数据。
+- 无定位态（`-sos -sosnolocation`）：显示「获取位置后可查找」，不发起查询，分享按钮保持浅灰禁用。
+- SE 375×667：标题、三行电话、位置、5 条救援点、重要说明与 52pt 主按钮均可滚动完整查看，未被底部按钮裁切或压住安全区。
+- 两类查询并行；任一类失败时展示另一类结果，只有两类都失败才进入失败态。
+
+### 边界与决策
+
+- 救援点只作导航参考：页面注明「是否接诊或受理请以现场为准」，不承诺床位、接诊时间或出警。
+- 查询失败文案为「查询服务不可用，不代表附近没有救援资源」，避免用户误判附近无救援。
+- 「事故上报」仍未落地，SOS 继续记为**部分完成**。
+
+### 改动
+
+- `Ride/SafetyRescueView.swift`：新增附近救援点检索、加载 / 空 / 失败 / 重试、Apple 地图驾车导航与调试状态。
+
+### 调试入口
+
+- `-sos`：直接打开安全救援页，使用路线首个打卡点坐标
+- `-sos -sossearchloading`：强制加载态
+- `-sos -sossearchempty`：强制无结果态
+- `-sos -sossearchfailed`：强制查询失败态
+- `-sos -sosnolocation`：强制无定位态
+
+### 证据与构建
+
+- Pro：`outputs/r44/pro/sos-nearby.png`、`sos-nearby-bottom.png`、`maps-open.png`、`sos-loading.png`、`sos-empty.png`、`sos-failed.png`、`sos-nolocation.png`
+- SE：`outputs/r44/se/sos-nearby.png`、`sos-nearby-bottom.png`、`sos-loading.png`、`sos-empty.png`、`sos-failed.png`、`sos-nolocation.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
