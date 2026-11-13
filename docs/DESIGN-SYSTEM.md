@@ -3981,3 +3981,43 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - Pro：`outputs/r44/pro/sos-nearby.png`、`sos-nearby-bottom.png`、`maps-open.png`、`sos-loading.png`、`sos-empty.png`、`sos-failed.png`、`sos-nolocation.png`
 - SE：`outputs/r44/se/sos-nearby.png`、`sos-nearby-bottom.png`、`sos-loading.png`、`sos-empty.png`、`sos-failed.png`、`sos-nolocation.png`
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+
+## 逐页巡检（第四十五轮）：事故现场记录与 SOS 页头
+
+### 复核结论
+
+- 「记录事故现场」（`-sosaccident`，Pro / SE）：救援页入口为扁平文字行；表单为事故类型选择、500 字经过、现场信息（时间 / 路线 / 位置 / 版本）与底部 52pt 黑色主行动，保持 20pt 边距与发丝线分组，没有新增卡片或配色。
+- 经过输入：SE 键盘弹出后输入区可正常滚动，底部主行动由 `safeAreaInset` 避让；超过 500 字即时截断，计数固定显示 `n/500`。
+- 无定位态（`-sosaccidentnolocation`）：「位置不可用（仍可提交）」明确，不填假坐标；提交按钮仍可用。
+- 提交中（`-sosaccidentsubmitting`）：主行动保持纯黑，白色 spinner + 「正在提交…」，不把整颗按钮压灰。
+- 失败态（`-sosaccidentfailed`）：错误原因放在主行动上方，SE 首屏即可看到；按钮变为「重新提交」，已选类型与经过不丢失。
+- 回执（`-sosaccidentreceipt`）：页头固定「记录事故现场」，正文确认「记录已保存」，并列出编号、时间、类型、路线、位置、经过与分享文字；页头与正文不再重复同一句「记录已保存」。
+- SE SOS 页头：仅在正文实际滚动后显示 24pt 白→透明渐隐；静止态不压灰第一条内容，滚动后标题自然过渡，不再硬切。
+
+### 边界与决策
+
+- 事故记录只做本人留存与后台客服只读核对，不自动报警、不通知任何人、不做救援调度；表单与回执都重复这条边界。
+- 回执 `#1042` 是 `-sosaccidentreceipt` 的合成数据，仅用于版式复核；`0026_incident_reports.sql` 尚未在云端执行，不能声称云端已有真实记录。
+- 后台「事故记录」为只读列表，无编辑 / 删除；迁移前显示 `PGRST205` 与执行迁移文件的提示，不伪造空态为「暂无数据」。
+
+### 改动
+
+- 新增 `Ride/IncidentReportView.swift`；`Ride/SafetyRescueView.swift` 增加入口与滚动渐隐。
+- `Auth/AgreementViews.swift`、`legal/privacy.html` 与后台隐私页补充事故记录说明；隐私政策升至 v2.1（2026-11-13）。
+- 新增 `backend/supabase/migrations/0026_incident_reports.sql` 并合入 `ALL.sql`；后台 `admin/index.html` 增加只读列表。
+- `App/RootView.swift` 增加 `-sosaccidentreceipt`、`-sosaccidentsubmitting` 调试入口。
+
+### 调试入口
+
+- `-sosaccident`：填写态，使用路线首个打卡点坐标
+- `-sosaccidentnolocation`：无定位态
+- `-sosaccidentfailed`：提交失败态
+- `-sosaccidentsubmitting`：提交中态
+- `-sosaccidentreceipt`：合成回执（编号 `#1042`）
+
+### 证据与构建
+
+- Pro：`outputs/r45/pro/incident-form.png`、`incident-submitting.png`、`incident-failed.png`、`incident-nolocation.png`、`incident-receipt.png`、`sos-rest-no-dim.png`、`sos-scrolled-fade.png`
+- SE：`outputs/r45/se/incident-form.png`、`incident-keyboard.png`、`incident-keyboard-selected.png`、`incident-submitting.png`、`incident-failed.png`、`incident-nolocation.png`、`incident-receipt.png`、`sos-rest-no-dim.png`、`sos-scrolled-fade.png`、`sos-scrolled-midrow.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+- 后台列表脚本通过 `node --check`；真实数据待云端迁移后验证。

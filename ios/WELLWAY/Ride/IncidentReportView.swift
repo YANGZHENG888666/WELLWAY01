@@ -17,9 +17,9 @@ struct IncidentReportView: View {
     @State private var kind: IncidentKind? = IncidentReportView.debugKind
     @State private var note: String = IncidentReportView.debugNote
     @State private var occurredAt = Date()
-    @State private var submitting = false
+    @State private var submitting = IncidentReportView.isDebugSubmitting
     @State private var errorText: String? = IncidentReportView.debugError
-    @State private var receipt: IncidentReportReceipt?
+    @State private var receipt: IncidentReportReceipt? = IncidentReportView.debugReceipt
     @State private var showShare = false
     @FocusState private var noteFocused: Bool
     private var screenAppearance: ScreenAppearance { .shared }
@@ -57,12 +57,22 @@ struct IncidentReportView: View {
 
     private static var arguments: [String] { ProcessInfo.processInfo.arguments }
     private static var isDebugFailure: Bool { arguments.contains("-sosaccidentfailed") }
-    private static var debugKind: IncidentKind? { isDebugFailure ? .collision : nil }
+    private static var isDebugReceipt: Bool { arguments.contains("-sosaccidentreceipt") }
+    private static var isDebugSubmitting: Bool { arguments.contains("-sosaccidentsubmitting") }
+    private static var debugKind: IncidentKind? {
+        isDebugFailure || isDebugReceipt || isDebugSubmitting ? .collision : nil
+    }
     private static var debugNote: String {
-        isDebugFailure ? "在路口被后车追尾，人无大碍，右侧后视镜损坏，对方已停车。" : ""
+        isDebugFailure || isDebugReceipt || isDebugSubmitting
+            ? "在路口被后车追尾，人无大碍，右侧后视镜损坏，对方已停车。"
+            : ""
     }
     private static var debugError: String? {
         isDebugFailure ? "提交失败，记录仍保留在页面上。请检查网络后重试。" : nil
+    }
+    private static var debugReceipt: IncidentReportReceipt? {
+        guard isDebugReceipt else { return nil }
+        return IncidentReportReceipt(id: 1042, occurredAt: isoFormatter.string(from: Date()))
     }
 
     private var coordinate: (latitude: Double, longitude: Double)? {
@@ -92,7 +102,7 @@ struct IncidentReportView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            DesignPageHeader(title: receipt == nil ? "记录事故现场" : "记录已保存", onBack: { dismiss() })
+            DesignPageHeader(title: "记录事故现场", onBack: { dismiss() })
 
             if let receipt {
                 receiptContent(receipt)
@@ -140,15 +150,6 @@ struct IncidentReportView: View {
 
                 sectionTitle("事故经过", top: 24)
                 noteEditor
-
-                if let errorText {
-                    Text(errorText)
-                        .font(.system(size: 12))
-                        .foregroundStyle(Theme.danger)
-                        .lineSpacing(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 10)
-                }
 
                 sectionTitle("现场信息", top: 24)
                 infoList
@@ -416,32 +417,42 @@ struct IncidentReportView: View {
                 }
                 .buttonStyle(SolidPressStyle())
             } else {
-                Button {
-                    submit()
-                } label: {
-                    Group {
-                        if submitting {
-                            HStack(spacing: 8) {
-                                ProgressView().tint(.white)
-                                Text("正在提交…")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(Color.white)
-                            }
-                        } else {
-                            Text(errorText == nil ? "提交记录" : "重新提交")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(canSubmit ? Color.white : Theme.listGray)
-                        }
+                VStack(alignment: .leading, spacing: 10) {
+                    if let errorText {
+                        Text(errorText)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Theme.danger)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(canSubmit ? Color.black : Theme.lightField)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .opacity(submitting ? 0.65 : 1)
+
+                    Button {
+                        submit()
+                    } label: {
+                        Group {
+                            if submitting {
+                                HStack(spacing: 8) {
+                                    ProgressView().tint(.white)
+                                    Text("正在提交…")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundStyle(Color.white)
+                                }
+                            } else {
+                                Text(errorText == nil ? "提交记录" : "重新提交")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(canSubmit ? Color.white : Theme.listGray)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(canSubmit || submitting ? Color.black : Theme.lightField)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                    .buttonStyle(SolidPressStyle())
+                    .allowsHitTesting(canSubmit)
+                    .accessibilityHint(kind == nil ? "请先选择事故类型" : "保存本次事故现场记录")
                 }
-                .buttonStyle(SolidPressStyle())
-                .allowsHitTesting(canSubmit)
-                .accessibilityHint(kind == nil ? "请先选择事故类型" : "保存本次事故现场记录")
             }
         }
         .padding(.horizontal, 20)

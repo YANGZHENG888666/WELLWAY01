@@ -33,9 +33,28 @@ create table if not exists public.incident_reports (
   constraint incident_reports_coordinate_check
     check (
       (latitude is null and longitude is null)
-      or (latitude between -90 and 90 and longitude between -180 and 180)
+      or (
+        latitude is not null
+        and longitude is not null
+        and latitude between -90 and 90
+        and longitude between -180 and 180
+      )
     )
 );
+
+alter table public.incident_reports
+  drop constraint if exists incident_reports_coordinate_check;
+alter table public.incident_reports
+  add constraint incident_reports_coordinate_check
+  check (
+    (latitude is null and longitude is null)
+    or (
+      latitude is not null
+      and longitude is not null
+      and latitude between -90 and 90
+      and longitude between -180 and 180
+    )
+  );
 
 comment on table public.incident_reports is
   '用户主动提交的事故现场记录；仅留存，不触发报警、通知或救援调度。';

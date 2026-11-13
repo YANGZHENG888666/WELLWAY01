@@ -213,7 +213,7 @@ Authorization: Bearer <access_token>
 函数返回 `void` → HTTP 200/204,**响应体为空**;App 侧以 HTTP 2xx 判成功,失败时 body 为
 `{"code":"P0001","message":"forbidden: 未登录"}`。调用前 App 会先删掉 Storage 里的头像/车辆照片(见 `0016_delete_account.sql` 注释)。
 
-级联删除:`profiles` / `vehicles` / `ride_records`(轨迹点随之删除)/ `user_badges` / `route_favorites` / `ride_checkins` / `ride_presence` / `trip_plans`(🆕);`feedback`、`admin_logs` 匿名化保留(`on delete set null`)。
+级联删除:`profiles` / `vehicles` / `ride_records`(轨迹点随之删除)/ `user_badges` / `route_favorites` / `ride_checkins` / `ride_presence` / `trip_plans`(🆕)/ `incident_reports`(🆕,事故现场记录);`feedback`、`admin_logs` 匿名化保留(`on delete set null`)。
 
 退出登录是纯客户端行为:`auth.signOut()` 清掉本地 session;服务端可选调 `POST /auth/v1/logout` 吊销 refresh token。
 
@@ -615,16 +615,67 @@ POST {SUPABASE_URL}/rest/v1/rpc/riders_nearby
 
 ---
 
-## 7. 可选接口
+## 7. 安全救援与事故现场记录 `✅ 已有`
+
+> 安全救援只做**本地能力**:110 / 120 / 122 由系统电话确认,位置由系统分享面板交给用户选择的对象;
+> 不做自动报警、自动通知、后台值守或救援调度。所有页面文案必须保留这条边界。
+
+### 7.1 紧急电话 / 位置分享 / 附近救援点(纯客户端)
+
+| 能力 | 实现 | 说明 |
+| --- | --- | --- |
+| 紧急电话 | `tel://110`、`tel://120`、`tel://122` | 先弹系统确认,用户点「拨打」才跳转 |
+| 位置分享 | 系统分享面板(`ShareSheet`) | 文案含路线名与实时坐标;无定位时按钮禁用,不伪造位置 |
+| 附近救援点 | MapKit `MKLocalSearch` | 8 公里内医院 / 派出所,按距离排序最多 5 条,点击打开 Apple 地图驾车导航;不承诺床位、接诊或出警 |
+
+### 7.2 事故现场记录
+
+```http
+POST {SUPABASE_URL}/rest/v1/incident_reports
+Authorization: Bearer <access_token>
+Content-Type: application/json
+Prefer: return=representation
+
+{
+  "user_id": "<auth.uid()>",
+  "route_name": "城市穿梭线",
+  "latitude": 39.9087,
+  "longitude": 116.3975,
+  "incident_type": "collision",
+  "note": "在路口被后车追尾,人无大碍,右侧后视镜损坏。",
+  "occurred_at": "2026-11-13T10:02:11.000Z",
+  "app_version": "0.1.0"
+}
+```
+
+```json
+[{ "id": 1042, "occurred_at": "2026-11-13T10:02:11.000Z" }]
+```
+
+- `incident_type`:`fall`(摔车)/ `collision`(碰撞)/ `breakdown`(车辆故障)/ `other`(其他)
+- `note` 最长 500 字;`latitude` / `longitude` 必须同时为空或同时有效(-90..90 / -180..180);无定位时提交 `null`,不填假坐标
+- 响应返回 `id` 与 `occurred_at`,App 用其渲染回执编号与时间
+
+权限(`backend/supabase/migrations/0026_incident_reports.sql`):
+
+| 角色 | insert | select | update / delete |
+| --- | --- | --- | --- |
+| 本人(含匿名登录) | ✅ 仅 `user_id = auth.uid()` | ✅ 仅自己的记录 | ❌ 无策略 |
+| 管理员 | ❌ | ✅ 全部(`is_admin()`) | ❌ 无策略 |
+
+后台「事故记录」为只读列表,按发生时间倒序,支持路线 / 经过 / 版本搜索;注销账号时随 `auth.users` 级联删除。
+迁移未执行时 PostgREST 返回 `PGRST205`,后台会直接显示执行 `0026_incident_reports.sql` 的提示。
+
+## 8. 可选接口
 
 | 接口 | 状态 | 说明 |
 | --- | --- | --- |
-| `POST /api/sos` | `⏸ 暂不开发` | 需要短信/客服通道,内测先不做;UI 入口也不放,避免给出无法兑现的安全承诺 |
+| `POST /api/sos` | `⏸ 不提供` | 自动报警 / 通知 / 调度需要短信、客服值守与合规资质;当前只做系统电话、系统分享与本人事故留存(见第 7 节),避免给出无法兑现的安全承诺 |
 | `GET /api/version` | `⏸ 暂不开发` | 内测用 TestFlight 自动更新替代;确实需要时用 `GET /rest/v1/app_config?key=eq.min_version` 一张表即可 |
 
 ---
 
-## 8. 完整业务流程 × 接口对照
+## 9. 完整业务流程 × 接口对照
 
 | # | 业务步骤 | 调用 |
 | --- | --- | --- |
@@ -637,7 +688,7 @@ POST {SUPABASE_URL}/rest/v1/rpc/riders_nearby
 
 ---
 
-## 9. 隐私协议要点 × 实现对照
+## 10. 隐私协议要点 × 实现对照
 
 | 协议承诺 | 实现位置 |
 | --- | --- |
@@ -646,12 +697,13 @@ POST {SUPABASE_URL}/rest/v1/rpc/riders_nearby
 | 轨迹仅本人可见、可随时删除 | RLS `rides_select_own` + 本次新增 `rides_delete_own`(级联删点位) |
 | 不收集车牌、排量、健康/生理数据 | **匿名统计链路**只读经纬度/航向,不碰这些字段;健康/生理数据全库无列;`vehicles` 的排量来自车型库只读展示,不由用户填报;车牌字段已于 `0021_drop_vehicle_plate.sql` 从 `vehicles` 物理删除,App 内无车牌录入/展示,`legal/privacy.html` 同步声明"我们不收集车牌号" |
 | 无 UGC、无互相私信、不看彼此资料 | `0014_remove_social.sql` 已删除聊天与主页;所有统计接口只回数字 |
+| 事故记录仅本人留存、管理员只读 | `incident_reports` RLS:本人 insert/select 自己的行,管理员只读,无 update/delete;不自动外发、不触发报警 |
 
 ---
 
-## 10. 附录
+## 11. 附录
 
-### 10.1 数据表索引(与本节相关)
+### 11.1 数据表索引(与本节相关)
 
 | 表 | 用途 | 状态 |
 | --- | --- | --- |
@@ -660,8 +712,9 @@ POST {SUPABASE_URL}/rest/v1/rpc/riders_nearby
 | `trip_plans` | 行程计划与状态 | 🆕 |
 | `ride_presence` | 骑行中位置心跳(+`bearing`) | ✅ / 🆕 加列 |
 | `ride_records` / `ride_points` | 轨迹与统计(+`ride_points.bearing`、delete 策略) | ✅ / 🆕 补 |
+| `incident_reports` | 事故现场记录(本人可写可读,管理员只读,不可改删) | 🆕 |
 
-### 10.2 RPC 索引
+### 11.2 RPC 索引
 
 | 函数 | 权限 | 说明 |
 | --- | --- | --- |
@@ -676,13 +729,14 @@ POST {SUPABASE_URL}/rest/v1/rpc/riders_nearby
 | `count_route_riders_today()` | anon, authenticated | 今日各路线骑行人数(已有功能) ✅ |
 | `rider_badge_counts()` | authenticated | 同路骑友徽章数(已有功能) ✅ |
 
-### 10.3 上线前配置清单
+### 11.3 上线前配置清单
 
 - [x] `backend/supabase/migrations/0019_trip_and_rider_stats.sql` 执行(行程 / 骑手统计 / 轨迹删除 / bearing / 隐私列)——**2026-09-17 已在云端执行**
 - [x] `backend/supabase/migrations/0020_moto_rules.sql` 执行(限行规则表 + 免责函数 + 示例城市)——**2026-09-17 已在云端执行**
 - [x] `backend/supabase/migrations/0021_drop_vehicle_plate.sql` 执行(下线车牌:删除 `vehicles.plate`)——**2026-09-17 已在云端执行**
 - [ ] 和风天气 Key 填入 `ios/WELLWAY/Resources/Info.plist`(`QWEATHER_KEY`),并在控制台确认域名白名单
 - [ ] `Info.plist` 定位权限文案已含"用于天气查询、轨迹记录与匿名骑手统计"(已有,复核一遍)
+- [ ] `backend/supabase/migrations/0026_incident_reports.sql` 执行(事故现场记录表 + RLS)——**尚未执行**,本机 `backend/.env` 缺 `SUPABASE_DB_URL` 密码
 - [ ] 限行规则逐城市人工核对 `moto_rules.rule_text` 与 `source_url`(内测先覆盖一线/新一线)
 
 #### 怎么执行迁移(两条路,任选)

@@ -64,7 +64,9 @@ struct RootView: View {
             DebugRideLoader(arrival: true)
         } else if ProcessInfo.processInfo.arguments.contains("-sosaccident")
                     || ProcessInfo.processInfo.arguments.contains("-sosaccidentfailed")
-                    || ProcessInfo.processInfo.arguments.contains("-sosaccidentnolocation") {
+                    || ProcessInfo.processInfo.arguments.contains("-sosaccidentnolocation")
+                    || ProcessInfo.processInfo.arguments.contains("-sosaccidentreceipt")
+                    || ProcessInfo.processInfo.arguments.contains("-sosaccidentsubmitting") {
             // 事故记录页直接入口：位置默认取路线首个打卡点，
             // 加 -sosaccidentnolocation 复检无定位态。
             DebugRideLoader(accident: true)

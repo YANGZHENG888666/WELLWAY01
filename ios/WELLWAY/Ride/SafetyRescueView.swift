@@ -16,6 +16,7 @@ struct SafetyRescueView: View {
     @State private var showShare = false
     @State private var showIncidentReport = false
     @State private var nearbyState: NearbyState = .idle
+    @State private var isScrolled = false
     private var screenAppearance: ScreenAppearance { .shared }
 
     private static let nearbySearchRadius: CLLocationDistance = 8_000
@@ -113,6 +114,26 @@ struct SafetyRescueView: View {
     var body: some View {
         VStack(spacing: 0) {
             DesignPageHeader(title: "安全救援", onBack: { dismiss() })
+                // 页头实底到 86pt，正文滚到这里会被硬切，半行标题紧贴「安全救援」下沿。
+                // 补一段 24pt 白→透明渐隐，让内容读成滑进页头下方。
+                .overlay(alignment: .bottom) {
+                    if isScrolled {
+                        LinearGradient(
+                            stops: [
+                                .init(color: Color.white, location: 0),
+                                .init(color: Color.white.opacity(0.96), location: 0.45),
+                                .init(color: Color.white.opacity(0), location: 1)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 24)
+                        .offset(y: 24)
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                    }
+                }
+                .zIndex(1)
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -160,6 +181,20 @@ struct SafetyRescueView: View {
                     Color.clear.frame(height: 28)
                 }
                 .padding(.horizontal, 20)
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: SafetyScrollOffsetKey.self,
+                            value: proxy.frame(in: .named("safetyScroll")).minY
+                        )
+                    }
+                )
+            }
+            .coordinateSpace(name: "safetyScroll")
+            .onPreferenceChange(SafetyScrollOffsetKey.self) { offset in
+                let scrolled = offset < -2
+                guard scrolled != isScrolled else { return }
+                withAnimation(.easeInOut(duration: 0.15)) { isScrolled = scrolled }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -588,5 +623,13 @@ struct SafetyRescueView: View {
         let lng = String(format: "%.6f", coordinate.longitude)
         let link = "https://maps.apple.com/?ll=\(lat),\(lng)&q=\(lat),\(lng)"
         return "我在骑行「\(routeName)」，需要帮助。我的位置：\n\(link)"
+    }
+}
+
+/// 只在正文真正滚动后才显示页头下缘渐隐，避免静止态把第一条内容压灰。
+private struct SafetyScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
