@@ -3857,3 +3857,26 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - `outputs/r40/se/recordtrack-detail.png`、`outputs/r40/se/recordtrack-fullscreen.png`
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
 - 本轮改动尚未提交；提交前先征得用户同意。
+
+## 逐页巡检（第四十一轮）：路线详情交互与「全览」命中区
+
+### 复核结论
+
+- 路线详情（`-routedetail`，Pro / SE）：「收藏路线」与「取消收藏」切换正常，右上星标在 `star` / `star.fill` 之间即时变化；返回列表后同一行立即带「已收藏」，两处共用 `FavoritesStore`，不存在需要手动刷新的副本状态。
+- 路线筛选（`-routes`）：有 1 条收藏时「只看收藏路线」只显示「城市穿梭线」；取消收藏后回到「还没有收藏路线」空态，没有残留旧结果。
+- 搜索无结果（`-routesfilterempty`）：「没有符合筛选的路线 / 换个关键词，或清除筛选条件试试」居中空态干净，底部「清除筛选」可一键恢复全量列表，空态不抢走主行动。
+- 全屏地图（Pro / SE）：点「全览」进入深色全屏地图，路线标题、起终点徽标、底部「返回路线详情」与右上关闭钮在 375×667 上都不挤压、不裁切；关闭后回到详情且滚动位置不变。
+- 地图本体点击与「全览」按钮共用同一个 `showFullscreenMap` 状态（`RouteDetailView` hero 内两处入口），不存在只在一个入口生效的分支。
+
+### 改动
+
+- `RouteDetailView` 主视觉「全览」：视觉胶囊仍是 28pt 高、12pt 横向内边距、0.92 白底，胶囊尺寸与位置不变；命中区不足的问题出在 `.padding(12)` 只是布局留白、不扩大 `Button` 热区，因此把 44×44pt 的 `frame` 与矩形 `contentShape` 放进 label 内，外层 padding 改为横向 12pt、纵向 4pt 抵消多出的 16pt，总占位维持 52pt。
+- 地图本体不补独立读屏入口：hero 上再叠一整块读屏按钮会与「全览」重复，并在朗读顺序里压过收藏与全览两个明确按钮；可发现性和可点性由「全览」按钮承担，地图点击只作为视力用户的快捷方式保留。
+
+### 证据与构建
+
+- `outputs/r41/pro/routes.png`、`routes-scrolled.png`、`routedetail.png`、`routedetail-favorited.png`、`after-tap.png`、`after-type.png`、`routedetail-hittarget.png`
+- `outputs/r41/se/routedetail-hittarget.png`、`fullscreen-open.png`
+- 测试账号的收藏状态已恢复为 0 条，未留下测试数据。
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+- 本轮改动尚未提交；提交前先征得用户同意。

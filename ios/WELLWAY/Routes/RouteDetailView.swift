@@ -196,9 +196,13 @@ struct RouteDetailView: View {
                     .padding(.vertical, 7)
                     .background(Color.white.opacity(0.92))
                     .clipShape(Capsule())
+                    // 视觉胶囊保持 28pt 高，外层补足 44pt 命中区；否则地图上很难点准。
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(CardPressStyle(scale: 0.96))
-            .padding(12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
         }
         .overlay(alignment: .topTrailing) {
             Button {
