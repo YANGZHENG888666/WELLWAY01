@@ -635,6 +635,9 @@ private struct RecordTrackFullScreenView: View {
                         .background(Color.black.opacity(0.45), in: Circle())
                         .overlay(Circle().stroke(Color.white.opacity(0.25), lineWidth: 1))
                         .contentShape(Circle())
+                    // 视觉圆保持 38pt，外层补足 44pt 命中区；否则深色地图上很难点准。
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(IconPressStyle(pressedOpacity: 0.6))
                 .accessibilityLabel("关闭全屏轨迹")

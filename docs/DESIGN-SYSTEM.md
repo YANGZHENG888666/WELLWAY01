@@ -3748,7 +3748,7 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
   `feedback-error-keyboard-pro.png`、`loginsuccess-*-pro/se.png`、`networkerror-*-pro/se.png` 与
   `*-dark.png`、`settings-toggle-fixed.png`、`ride-recovery-metrics-a11y.png`。
 - `xcodegen generate` + `xcodebuild`（iPhone 17 Pro 模拟器）：`BUILD SUCCEEDED`（2026-11-12）。
-- 本轮改动尚未提交；提交前先征得用户同意。
+- 第 40 轮改动已提交（2026-11-13）。
 
 ## 逐页巡检（第三十七轮）：剩余状态页与读屏去重
 
@@ -3812,3 +3812,48 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - 本轮复验：`outputs/r39/pro/arrival.png`、`outputs/r39/se/arrival.png`、`outputs/r39/se/riding.png`、`outputs/r39/se/riding_ridingpaused.png`、`outputs/r39/se/login.png`、`outputs/r39/se/routedetail.png`、`outputs/r39/se/garageskeleton.png`。
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-12）。
 - 第 38 轮改动已提交（2026-11-12）。
+
+## 逐页巡检（第三十九轮）：长页与状态页复核（未改）
+
+### 长页与展开态
+
+- 通知（`-notifications -notifsample`）：长列表滚到底部后，图标列、标题 / 时间、13pt 正文和缩进发丝线都保持同一条左线；相对时间不换行。空态与样例态均未改。
+- 出发展开态（`-depart -departexpanded`）：Pro / SE 都能完整看到适宜度圆环、拥堵四格、限行卡与顶部双地天气；SE 上被底部主按钮截断的「N 位骑手计划前往…」属于滚动区边界，继续上滑可完整显示，不是遮挡。
+- 路线详情（`-routedetail`）：16:9 主视觉 + 收藏 44pt 圆钮、四列指标、海拔剖面、途经点 0/3 与底部主行动层级正确；Pro / SE 无裁切。
+- 骑行总结（`-summary`）：四项指标行、3/3 打卡点、无轨迹说明与「分享 + 完成」底部操作完整；SE 上按钮与内容之间仍保留安全距离。「路线示意」用虚线只表达计划路线，底部已写明本次未记录轨迹，不构成误导。
+
+### 错误态与空态
+
+- 网络错误（`-networkerror`）：裸图标 + 标题 + 说明 + 唯一「重试」，没有第二个竞争行动。
+- 定位拒绝（`-team -teamdenied`）：说明「开启后会看到什么」，唯一行动直达系统设置；底部匿名统计免责声明保留。
+- 出发数据失败（`-depart -departdatafail`）：天气与适宜度显示 `--`，路况仍显示可用数据，页面主行动不受阻；用户可从「查看详情」进入完整说明。
+
+### 代码复核
+
+- 对向页刷新按钮：`Image` 外层已有 44×44 `frame` + `contentShape(Rectangle())`，并带「刷新附近骑手统计」读屏标签，热区与语义都达标。
+- `Theme.background`（`#F5F7FA`）在视图层 **零引用**，页面直接用白底，v6 的纯白画布没有被旧 token 污染；`textPrimary / textSecondary` 仅比文档色值略偏冷，肉眼不可辨，不做会波及全站的全局替换。
+- `VehicleActionsSheet` 的「取消」使用 `Theme.textSecondary`（约 4.7:1），不是低对比灰；截图里的浅感来自缩放抗锯齿。
+
+### 证据
+
+- 复用 `outputs/r38/pro/`、`outputs/r38/se/` 的全量截图；本轮无代码改动，因此没有新增构建或截图目录。
+
+## 逐页巡检（第四十轮）：全屏轨迹与关闭热区
+
+### 复核结论
+
+- 记录详情（`-recorddetail -recordtrackpreview`）：Pro / SE 的指标、190pt 轨迹缩略图、起终点图例与打卡明细均完整，没有小屏裁切。
+- 点击轨迹缩略图在 Pro / SE 均能正常打开全屏轨迹；全屏地图铺满、标题与关闭钮不挤压，状态栏按深色沉浸页规则隐藏，关闭后返回记录详情正常。此前一次「点击未打开」未复现，判定为点击落点或截图时序，不是交互缺陷。
+- 全屏关闭钮视觉圆保持 38pt，外层命中区补到 44×44pt；读屏标签「关闭全屏轨迹」保留。Pro / SE 均验证可点。
+
+### 改动
+
+- `RecordTrackFullScreenView`：关闭按钮外层增加 44×44pt `frame` 与矩形 `contentShape`，视觉尺寸、位置和深色地图上的对比度不变。
+- 记录详情缩略图仍使用非交互 `RecordTrackMap`，避免地图手势与页面滚动冲突；点击入口与读屏动作保持原实现。
+
+### 证据与构建
+
+- `outputs/r40/pro/recordtrack-detail.png`、`outputs/r40/pro/recordtrack-fullscreen.png`
+- `outputs/r40/se/recordtrack-detail.png`、`outputs/r40/se/recordtrack-fullscreen.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+- 本轮改动尚未提交；提交前先征得用户同意。
