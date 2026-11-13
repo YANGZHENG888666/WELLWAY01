@@ -3911,3 +3911,38 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - SE：`outputs/r42/se/favorites-list.png`、`favorites-detail.png`、`favorites-empty.png`
 - 测试账号的收藏已恢复为 0 条；云端主账号的 2 条收藏未改动。
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+
+## 逐页巡检（第四十三轮）：SOS / 安全救援（部分完成）
+
+### 复核结论
+
+- 骑行 HUD 与暂停态顶部新增「救援」入口（Pro / SE）：28pt 胶囊、44pt 命中区，红色只用于盾牌图标；Pro / SE 上路线标题、车型与右侧「骑行中」均未被挤压，入口可正常打开救援页。
+- 「安全救援」（`-sos`，Pro / SE）：浅色页面、20pt 边距；110 / 120 / 122 三行紧急电话、红色「拨打」、位置区块与「重要说明」完整，SE 375×667 上标题、正文与底部按钮均无截断或安全区裁切。
+- 无定位态（`-sos -sosnolocation`）：显示「尚未获取到当前位置」，分享按钮变为浅灰禁用「暂无法分享位置」，不会伪造坐标或位置文案。
+- 分享（`-sos`，Pro / SE）：底部黑色「分享我的位置」打开系统分享面板，预览包含路线名与求助文案；面板发送对象由用户选择，App 不自动外发。
+- 从 HUD 点「救援」再返回：Pro 上正常回到骑行 HUD，骑行状态保持，无重复弹出或空白页。
+
+### 边界与决策
+
+- 不展示「附近救援点」：当前没有真实数据源，假列表会在紧急场景误导用户；该能力保持未做。
+- 不实现自动报警 / 自动通知 / 救援调度：页内明确说明只会打开系统电话确认与系统分享面板。
+- 「事故上报」未落地，因此 SOS 仅记为**部分完成**，不能按整项关闭。
+- 演示 HUD 不传假坐标，所以从 `-riding` 进入救援页默认是无定位态；`-sos` 调试入口取路线首个打卡点作为真实坐标。
+
+### 改动
+
+- 新增 `Ride/SafetyRescueView.swift`：紧急电话、位置状态、系统分享、禁用态与浅色外观。
+- `Ride/RidingView.swift`：HUD 与暂停态加入「救援」入口，通过 `fullScreenCover` 传入真实 `lastLat / lastLng`。
+- `App/RootView.swift`：增加 `-sos` 与 `-sosnolocation` 调试入口。
+
+### 调试入口
+
+- `-sos`：直接打开安全救援页，使用路线首个打卡点坐标
+- `-sos -sosnolocation`：强制无定位态
+
+### 证据与构建
+
+- Pro：`outputs/r43/pro/sos-normal.png`、`sos-nolocation.png`、`sos-share.png`、`hud-rescue-entry.png`、`hud-to-sos.png`、`hud-after-back.png`
+- SE：`outputs/r43/se/hud-rescue-entry.png`、`sos-normal.png`、`sos-nolocation.png`、`sos-share.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+- 本轮改动尚未提交；提交前先征得用户同意。

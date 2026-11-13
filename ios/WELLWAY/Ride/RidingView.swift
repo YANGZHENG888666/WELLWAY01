@@ -597,6 +597,7 @@ struct RidingView: View {
     @State private var didAnnounceArrival = false
     @State private var showTeamRiders = false
     @State private var showMapSwitch = false
+    @State private var showSafetyRescue = false
     @State private var isEndingRide = false
     /// 总结页关闭后退出骑行：等全屏封面真正 dismiss 完再调用外层 dismiss，
     /// 避免两层 fullScreenCover 同时收起时外层请求被系统忽略。
@@ -756,12 +757,53 @@ struct RidingView: View {
         .fullScreenCover(isPresented: $showMapSwitch) {
             MapSwitchView(route: route, checkpoints: checkpoints, ride: ride, riddenMeters: riddenMeters)
         }
+        .fullScreenCover(isPresented: $showSafetyRescue) {
+            SafetyRescueView(
+                routeName: route.name,
+                latitude: rescueLatitude,
+                longitude: rescueLongitude
+            )
+        }
         .fullScreenCover(isPresented: $showTeamRiders) {
             NavigationStack {
                 RidersView(route: route, checkpoints: checkpoints)
             }
         }
         .pageMark(2)
+    }
+
+    /// 演示 HUD 使用固定假数据，没有可分享的真实定位，因此救援页显示无定位态；
+    /// 正常态的坐标由 `-sos` 调试入口注入。正式骑行始终读 RideService 的实时坐标。
+    private var rescueLatitude: Double? {
+        demo ? nil : ride?.lastLat
+    }
+    private var rescueLongitude: Double? {
+        demo ? nil : ride?.lastLng
+    }
+
+    /// HUD 的救援入口视觉保持 28pt 胶囊，命中区撑到 44pt；红色只落在盾牌图标上。
+    private var rescueButton: some View {
+        Button {
+            showSafetyRescue = true
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "exclamationmark.shield.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.danger)
+                Text("救援")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+            }
+            .padding(.horizontal, 9)
+            .frame(height: 28)
+            .background(.white.opacity(0.07))
+            .clipShape(Capsule())
+            .frame(height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(IconPressStyle())
+        .accessibilityLabel("安全救援")
+        .accessibilityHint("打开紧急电话和位置分享")
     }
 
     /// 顶部：路线 / 车辆 + 当前状态
@@ -777,21 +819,25 @@ struct RidingView: View {
                     .foregroundColor(.white.opacity(0.55))
                     .lineLimit(1)
             }
-            Spacer(minLength: 12)
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(Theme.success)
-                    .frame(width: 6, height: 6)
-                // 到达后页面中央已经有一个大号「已到达」，胶囊再写一遍是重复；
-                // 这里改成回答另一个问题：记录还在不在继续。
-                Text(hasArrived ? "记录中" : "骑行中")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.82))
+            Spacer(minLength: 8)
+            HStack(spacing: 8) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Theme.success)
+                        .frame(width: 6, height: 6)
+                    // 到达后页面中央已经有一个大号「已到达」，胶囊再写一遍是重复；
+                    // 这里改成回答另一个问题：记录还在不在继续。
+                    Text(hasArrived ? "记录中" : "骑行中")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.82))
+                }
+                .padding(.horizontal, 10)
+                .frame(height: 28)
+                .background(.white.opacity(0.07))
+                .clipShape(Capsule())
+
+                rescueButton
             }
-            .padding(.horizontal, 10)
-            .frame(height: 28)
-            .background(.white.opacity(0.07))
-            .clipShape(Capsule())
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -811,19 +857,23 @@ struct RidingView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white.opacity(0.55))
                 }
-                Spacer(minLength: 12)
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.white.opacity(0.55))
-                        .frame(width: 6, height: 6)
-                    Text("已暂停")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.82))
+                Spacer(minLength: 8)
+                HStack(spacing: 8) {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color.white.opacity(0.55))
+                            .frame(width: 6, height: 6)
+                        Text("已暂停")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.82))
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(height: 28)
+                    .background(.white.opacity(0.07))
+                    .clipShape(Capsule())
+
+                    rescueButton
                 }
-                .padding(.horizontal, 10)
-                .frame(height: 28)
-                .background(.white.opacity(0.07))
-                .clipShape(Capsule())
             }
             .padding(.horizontal, 16)
             .padding(.top, compact ? 8 : 20)
