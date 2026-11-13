@@ -4021,3 +4021,28 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - SE：`outputs/r45/se/incident-form.png`、`incident-keyboard.png`、`incident-keyboard-selected.png`、`incident-submitting.png`、`incident-failed.png`、`incident-nolocation.png`、`incident-receipt.png`、`sos-rest-no-dim.png`、`sos-scrolled-fade.png`、`sos-scrolled-midrow.png`
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
 - 后台列表脚本通过 `node --check`；真实数据待云端迁移后验证。
+
+## 逐页巡检（第四十六轮）：车库「本次出发」天气 / 油价状态
+
+### 复核结论
+
+- 车库「本次出发」原先把天气与油价的任一失败合并成「刷新失败」，部分成功时也会把另一项误报为失败；现在两项各自记录，状态文案按优先级显示：定位未开启 → 更新中 → 两项都失败「刷新失败」→ 仅天气失败「天气未更新」→ 仅油价失败「油价未更新」→ 更新时间。
+- 首次加载与手动刷新期间统一显示「更新中」，不再出现「刚刚更新」和请求中并存的假状态；状态点只在定位被拒或任一请求失败时转危险色。
+- 天气与「省份 + 油价」改为并发请求，互不阻塞：Open-Meteo 超时时油价仍能独立到达。实测刷新 10 秒时油价 `8.87` 已显示、天气仍为「更新中」；28 秒后天气失败转为红点 +「天气未更新」，油价保留。
+- `loadWeather` 增加并发锁，快速连点状态行不会重复发起定位与请求。
+- Pro / SE 复验：请求中、天气失败、双失败、定位被拒与车库底部避让均正常；SE「我的」顶部 / 底部、「设置」、「关于与反馈」与意见反馈弹窗无回归。
+
+### 边界与已知限制
+
+- 本机网络访问 Open-Meteo 持续 20 秒超时（`curl` 亦失败），因此「仅油价失败」这一条无法在真实网络下触发；该分支保留为代码核对，不注入伪造的天气成功结果。
+- `-weatherrefreshfail` / `-fuelrefreshfail` 只作为调试启动参数，用来稳定复现失败态；不改变线上默认请求。
+
+### 改动
+
+- `Garage/DesignHomeView.swift`：拆分 `weatherRefreshFailed` / `fuelRefreshFailed`，重写状态文案优先级，天气与油价并发，补并发锁与调试失败注入。
+
+### 证据与构建
+
+- Pro：`outputs/r46/pro-r46-wait8.png`、`pro-r46-wait48.png`、`pro-r46-bothfail.png`、`pro-r46-location-denied.png`、`pro-r46-garage-bottom.png`、`pro-r46-parallel-10s.png`、`pro-r46-weatherfail.png`
+- SE：`outputs/r46/se/se-r46-parallel-10s.png`、`se-r46-weatherfail.png`、`se-r46-profile-top.png`、`se-r46-profile-bottom.png`、`se-r46-settings-top.png`、`se-r46-settings-bottom.png`、`se-r46-about.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。

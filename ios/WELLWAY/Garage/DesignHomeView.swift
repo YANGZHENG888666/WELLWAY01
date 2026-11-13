@@ -72,6 +72,7 @@ struct DesignHomeView: View {
     @State private var didAttemptUpdate = false
     @State private var isRefreshingWeather = false
     @State private var weatherRefreshFailed = false
+    @State private var fuelRefreshFailed = false
 
     // MARK: - 色板(与设计稿一致)
 
@@ -436,37 +437,64 @@ struct DesignHomeView: View {
     /// 当前位置天气(和风优先，失败回退 Open-Meteo) + 本省油价
     private func loadWeather(force: Bool = false) async {
         didAttemptUpdate = true
-        if force { isRefreshingWeather = true }
-        weatherRefreshFailed = false
-        defer { if force { isRefreshingWeather = false } }
         // 新用户空车库不弹系统定位授权，等有车后再请求
         if CLLocationManager().authorizationStatus == .notDetermined, garage.vehicles.isEmpty {
             return
         }
-        var refreshed = false
-        if (force || weather == nil), let location = await locationFetcher.fetchLocation() {
-            if let snapshot = await WeatherService.fetchSmart(
-                lat: location.coordinate.latitude,
-                lng: location.coordinate.longitude
-            ) {
-                weather = snapshot
-                refreshed = true
-            }
+        guard !isRefreshingWeather else { return }
+        let needsWeather = force || weather == nil
+        let needsFuel = force || fuel == nil
+        guard needsWeather || needsFuel else { return }
+
+        isRefreshingWeather = true
+        defer { isRefreshingWeather = false }
+
+        let debugArgs = ProcessInfo.processInfo.arguments
+        let simulateWeatherFailure = debugArgs.contains("-weatherrefreshfail")
+        let simulateFuelFailure = debugArgs.contains("-fuelrefreshfail")
+        var weatherRefreshed = false
+        var fuelRefreshed = false
+        if let location = await locationFetcher.fetchLocation() {
+            // 天气与油价互不依赖：并发请求，避免天气超时把油价一起拖住
+            async let weatherSnapshot: WeatherSnapshot? = (needsWeather && !simulateWeatherFailure)
+                ? WeatherService.fetchSmart(
+                    lat: location.coordinate.latitude,
+                    lng: location.coordinate.longitude
+                )
+                : nil
             if province == nil {
                 province = await PlaceNameService.province(for: location)
             }
-            if let province,
-               let quote = await FuelPriceService.fetch(province: province) {
-                fuel = quote
-                refreshed = true
+            if needsFuel {
+                if !simulateFuelFailure,
+                   let province,
+                   let quote = await FuelPriceService.fetch(province: province) {
+                    fuel = quote
+                    fuelRefreshFailed = false
+                    fuelRefreshed = true
+                } else {
+                    fuelRefreshFailed = true
+                }
             }
+            if needsWeather {
+                if let snapshot = await weatherSnapshot {
+                    weather = snapshot
+                    weatherRefreshFailed = false
+                    weatherRefreshed = true
+                } else {
+                    weatherRefreshFailed = true
+                }
+            } else {
+                _ = await weatherSnapshot
+            }
+        } else {
+            if needsWeather { weatherRefreshFailed = true }
+            if needsFuel { fuelRefreshFailed = true }
         }
-        // 只有真正拿到新数据才更新“刚刚更新”，避免请求失败时误报
-        if refreshed {
+
+        // 只有真正拿到新数据才更新“刚刚更新”，避免部分成功时误报
+        if weatherRefreshed || fuelRefreshed {
             lastUpdated = Date()
-            weatherRefreshFailed = false
-        } else if force {
-            weatherRefreshFailed = true
         }
     }
 
@@ -823,7 +851,7 @@ struct DesignHomeView: View {
             HStack(spacing: 5) {
                 Circle()
                     .fill(
-                        weatherRefreshFailed
+                        (locationDeniedForWeather || weatherRefreshFailed || fuelRefreshFailed)
                             ? Theme.danger
                             : (lastUpdated == nil
                                 ? Theme.listGray
@@ -854,13 +882,12 @@ struct DesignHomeView: View {
     }
 
     private var updatedText: String {
+        if locationDeniedForWeather { return "定位未开启" }
         if isRefreshingWeather { return "更新中" }
-        if weatherRefreshFailed, lastUpdated != nil { return "刷新失败" }
+        if weatherRefreshFailed && fuelRefreshFailed { return "刷新失败" }
+        if weatherRefreshFailed { return "天气未更新" }
+        if fuelRefreshFailed { return "油价未更新" }
         guard let lastUpdated else {
-            // 定位被拒时汽油/天气永远拿不到，只写「暂未更新」会让人以为是网络问题
-            let status = CLLocationManager().authorizationStatus
-            if status == .denied || status == .restricted { return "定位未开启" }
-            if weatherRefreshFailed { return "刷新失败" }
             return didAttemptUpdate ? "待更新" : "更新中"
         }
         let minutes = Int(Date().timeIntervalSince(lastUpdated) / 60)
