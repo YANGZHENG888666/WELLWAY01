@@ -14,6 +14,7 @@ struct SafetyRescueView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @State private var showShare = false
+    @State private var showIncidentReport = false
     @State private var nearbyState: NearbyState = .idle
     private var screenAppearance: ScreenAppearance { .shared }
 
@@ -145,6 +146,9 @@ struct SafetyRescueView: View {
                     sectionTitle("附近救援点", top: 28)
                     nearbyRescueContent
 
+                    sectionTitle("事故记录", top: 28)
+                    incidentEntry
+
                     sectionTitle("重要说明", top: 28)
                     Text("附近救援点来自系统地图搜索，仅作导航参考；是否接诊或受理请以现场为准。本页不会自动报警，也不会自动通知任何人，不提供救援调度。紧急情况请先确保自身安全，再拨打上方电话。分享位置只会打开系统分享面板，发送对象由你决定。")
                         .font(.system(size: 13))
@@ -168,6 +172,13 @@ struct SafetyRescueView: View {
         .onDisappear { screenAppearance.pop(.light) }
         .sheet(isPresented: $showShare) {
             ShareSheet(items: [shareText])
+        }
+        .fullScreenCover(isPresented: $showIncidentReport) {
+            IncidentReportView(
+                routeName: routeName,
+                latitude: latitude,
+                longitude: longitude
+            )
         }
         .task(id: searchKey) {
             await loadNearbyRescuePlaces()
@@ -249,6 +260,38 @@ struct SafetyRescueView: View {
         .overlay(alignment: .bottom) {
             Rectangle().fill(Theme.separator).frame(height: 1)
         }
+    }
+
+    /// 事故记录是“留存”而不是“报警”，因此做成扁平文字行，不与底部「分享我的位置」抢主行动。
+    private var incidentEntry: some View {
+        Button {
+            showIncidentReport = true
+        } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("记录事故现场")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                    Text("保存时间、路线、位置与经过，供本人留存")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.chevron)
+            }
+            .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(RowPressStyle())
+        .overlay(alignment: .top) {
+            Rectangle().fill(Theme.separator).frame(height: 1)
+        }
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Theme.separator).frame(height: 1)
+        }
+        .accessibilityHint("打开事故现场记录页，不会自动报警")
     }
 
     @ViewBuilder

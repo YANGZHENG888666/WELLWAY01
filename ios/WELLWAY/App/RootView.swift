@@ -62,6 +62,12 @@ struct RootView: View {
             DebugRideLoader()
         } else if ProcessInfo.processInfo.arguments.contains("-arrival") {
             DebugRideLoader(arrival: true)
+        } else if ProcessInfo.processInfo.arguments.contains("-sosaccident")
+                    || ProcessInfo.processInfo.arguments.contains("-sosaccidentfailed")
+                    || ProcessInfo.processInfo.arguments.contains("-sosaccidentnolocation") {
+            // 事故记录页直接入口：位置默认取路线首个打卡点，
+            // 加 -sosaccidentnolocation 复检无定位态。
+            DebugRideLoader(accident: true)
         } else if ProcessInfo.processInfo.arguments.contains("-sos") {
             // 安全救援页直接入口：位置默认取该路线首个打卡点，
             // 加 -sosnolocation 复检无定位态。
@@ -939,6 +945,7 @@ struct DebugRideLoader: View {
     var mapOnly: Bool = false
     var arrival: Bool = false
     var safety: Bool = false
+    var accident: Bool = false
     @State private var route: Route?
     @State private var checkpoints: [Checkpoint] = []
     @State private var failed = false
@@ -948,6 +955,14 @@ struct DebugRideLoader: View {
             if let route {
                 if mapOnly {
                     MapSwitchView(route: route, checkpoints: checkpoints, ride: nil)
+                } else if accident {
+                    let showsLocation = !ProcessInfo.processInfo.arguments.contains("-sosaccidentnolocation")
+                    let point = checkpoints.first
+                    IncidentReportView(
+                        routeName: route.name,
+                        latitude: showsLocation ? point?.lat : nil,
+                        longitude: showsLocation ? point?.lng : nil
+                    )
                 } else if safety {
                     let showsLocation = !ProcessInfo.processInfo.arguments.contains("-sosnolocation")
                     let point = checkpoints.first

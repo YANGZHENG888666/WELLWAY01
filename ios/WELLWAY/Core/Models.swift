@@ -350,6 +350,38 @@ struct FeedbackInsert: Encodable {
     }
 }
 
+/// 事故现场记录(App 内提交)。只做留存，不触发报警或救援调度。
+struct IncidentReportInsert: Encodable {
+    let userId: UUID
+    let routeName: String?
+    let latitude: Double?
+    let longitude: Double?
+    let incidentType: String
+    let note: String
+    let occurredAt: String
+    let appVersion: String?
+
+    enum CodingKeys: String, CodingKey {
+        case latitude, longitude, note
+        case userId = "user_id"
+        case routeName = "route_name"
+        case incidentType = "incident_type"
+        case occurredAt = "occurred_at"
+        case appVersion = "app_version"
+    }
+}
+
+/// 插入成功后的回执，只取后台生成的编号与时间。
+struct IncidentReportReceipt: Decodable {
+    let id: Int
+    let occurredAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case occurredAt = "occurred_at"
+    }
+}
+
 // MARK: - 徽章
 
 struct Badge: Codable, Identifiable, Hashable {
