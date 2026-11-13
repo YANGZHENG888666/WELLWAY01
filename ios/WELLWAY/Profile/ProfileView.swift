@@ -163,6 +163,12 @@ struct ProfileView: View {
                     }
                     .motionAppear(delay: 0.12)
 
+                    sectionTitle("路线")
+                    ledgerGroup {
+                        menuRow("我的收藏") { FavoriteRoutesView() }
+                    }
+                    .motionAppear(delay: 0.16)
+
                     sectionTitle("骑行")
                     ledgerGroup {
                         menuRow("车辆") { MyVehiclesView() }

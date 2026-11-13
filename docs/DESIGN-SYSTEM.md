@@ -3880,3 +3880,34 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - 测试账号的收藏状态已恢复为 0 条，未留下测试数据。
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
 - 本轮改动尚未提交；提交前先征得用户同意。
+
+## 逐页巡检（第四十二轮）：我的收藏独立页
+
+### 复核结论
+
+- 新页「我的收藏」（`-favorites`，Pro / SE）：入口在「我的 → 路线 → 我的收藏」；加载骨架、2 条收藏列表、空态、错误重试与下拉刷新均沿用现有 v6 规范，没有引入新的卡片或配色。
+- 列表卡片复用路线页的 `RouteListCard`：星标、路线名、省·市 / 距离 / 难度、缩略图与无障碍标签一致；点入详情复用 `RouteDetailView`，右上角显示「取消收藏」。
+- 收藏状态与路线详情共用同一个 `FavoritesStore`：在详情取消一条后返回，列表立即移除该路线；取消最后一条后立即回到「还没有收藏路线」空态，无残留旧数据。
+- 空态底部「浏览路线」为 52pt 黑色主按钮，点击切到路线标签页；SE 375×667 上按钮完整可见，未被安全区裁切。
+- 错误态（`-favoriteserror`）显示 `NetworkErrorView` 与「重试」，重试仍走同一 `load()`；坐标拉取失败时只在列表上方显示 `InlineRefreshNotice`，不阻断已加载的路线。
+- 路线列表本轮只做结构抽取（`RouteListCard` / `RouteSkeletonList`），视觉与原列表一致，复核截图无回归。
+
+### 改动
+
+- 新增 `Routes/FavoriteRoutesView.swift`：收藏路线独立列表页，支持骨架、错误重试、空态、下拉刷新与坐标失败提示。
+- `RoutesView.swift`：抽出共享的 `RouteListCard`、`RouteSkeletonList`，路线列表与收藏页共用。
+- `ProfileView.swift`：「我的」增加「路线 → 我的收藏」入口。
+- `RootView.swift`：增加 `-favorites` 调试入口，并注入 `NavChoiceCenter`，修复调试入口点路线详情时的 SIGTRAP 崩溃。
+
+### 调试入口
+
+- `-favorites`：直接打开「我的收藏」
+- `-favoritesempty`：强制空态
+- `-favoriteserror`：强制网络错误态
+
+### 证据与构建
+
+- Pro：`outputs/r42/pro/favorites-initial.png`、`favorites-state.png`、`favorites-list.png`、`favorites-empty-after-remove.png`、`profile-favorites-empty.png`、`routes-after-refactor.png`
+- SE：`outputs/r42/se/favorites-list.png`、`favorites-detail.png`、`favorites-empty.png`
+- 测试账号的收藏已恢复为 0 条；云端主账号的 2 条收藏未改动。
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。

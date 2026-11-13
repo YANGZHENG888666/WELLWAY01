@@ -82,6 +82,10 @@ struct RootView: View {
             DebugDepartInfoLoader()
         } else if ProcessInfo.processInfo.arguments.contains("-records") {
             NavigationStack { RecordsView() }
+        } else if ProcessInfo.processInfo.arguments.contains("-favorites") {
+            // 收藏列表点进路线详情要读 NavChoiceCenter，调试入口必须与路线页同样注入
+            NavigationStack { FavoriteRoutesView() }
+                .environment(NavChoiceCenter())
         } else if ProcessInfo.processInfo.arguments.contains("-profilepage") {
             // 调试：「我的」单页复检(不带 Tab 栏)。-profile 仍按 Tab 4 启动
             NavigationStack { ProfileView() }

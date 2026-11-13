@@ -546,90 +546,15 @@ struct RoutesView: View {
         }
     }
 
-    /// 只有后台上传了封面/路线图时才需要压暗层：照片和反色的白底路线图都可能偏亮。
-    private func needsImageScrim(_ route: Route) -> Bool {
-        route.displayImageURL != nil
-    }
-
     private func listRow(_ route: Route) -> some View {
         let checkpoints = checkpointsByRoute[route.id] ?? []
-        return ZStack(alignment: .bottomTrailing) {
-            Color.black
-
-            RouteThumbnailView(route: route, checkpoints: checkpoints)
-
-            // 只压右侧：左半屏保留真实地图/封面的亮度，右半屏逐步压深，
-            // 让白字在浅色地图和摄影封面上都能站住。
-            // 没有上传封面时卡片是深色底(深色地图快照或纯轨迹)，再压一层会把落在右半边的
-            // 终点方块压成灰色，同一列表里终点颜色忽深忽浅，所以这种情况直接省掉。
-            if needsImageScrim(route) {
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0.18),
-                        .init(color: .black.opacity(0.16), location: 0.48),
-                        .init(color: .black.opacity(0.40), location: 0.74),
-                        .init(color: .black.opacity(0.58), location: 1.0)
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            }
-
-            // 没有封面时卡片是深色地图快照：右半边常压着地图自带的白字路名，
-            // 整幅压暗会把终点方块一起压灰，所以只在文字所在的右中区域垫暗角。
-            // 宽度用比例而不是定值：120pt 高的卡片在 SE(335pt 宽) 和 Pro(362pt 宽)
-            // 上都要让「赛道图 → 文字」的过渡落在同一个位置，定值会随卡宽偏移。
-            if !needsImageScrim(route) {
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: .clear, location: 0.34),
-                        .init(color: .black.opacity(0.26), location: 0.50),
-                        .init(color: .black.opacity(0.68), location: 0.74),
-                        .init(color: .black.opacity(0.84), location: 1)
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .allowsHitTesting(false)
-            }
-
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(route.name)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.white)
-                    .lineLimit(1)
-                    .shadow(color: .black.opacity(0.35), radius: 4, y: 1)
-                // 选路线时"在哪、多远、难度"是决策信息，保留一行副标题
-                Text(subtitleText(route))
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.90))
-                    .lineLimit(1)
-                    .shadow(color: .black.opacity(0.30), radius: 3, y: 1)
-            }
-            .frame(maxHeight: .infinity, alignment: .center)
-            .padding(.trailing, 16)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 120)
-        .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityText(route))
-        .overlay(alignment: .topTrailing) {
-            if favorites?.isFavorite(route.id) == true {
-                Image(systemName: "star.fill")
-                    // 9pt 星在深色卡片上几乎看不出形状；抬高一级并换浅色底托住，
-                    // 只做「已收藏」指示，不加点击态，避免暗示这里能直接切换收藏。
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.white)
-                    .frame(width: 24, height: 24)
-                    .background(Color.white.opacity(0.18))
-                    .clipShape(Circle())
-                    .padding(10)
-                    .accessibilityHidden(true)
-            }
-        }
+        return RouteListCard(
+            route: route,
+            checkpoints: checkpoints,
+            subtitle: subtitleText(route),
+            accessibilityLabel: accessibilityText(route),
+            isFavorite: favorites?.isFavorite(route.id) == true
+        )
     }
 
     /// 卡片副标题：省 · 市(两者相同时只显示一次),缺失时回退到起点/终点
@@ -1298,7 +1223,7 @@ struct RouteMapFullscreenView: View {
 
 // MARK: - 加载骨架屏
 
-private struct RouteSkeletonList: View {
+struct RouteSkeletonList: View {
     var dark = false
 
     var body: some View {
@@ -1333,6 +1258,101 @@ private struct RouteSkeletonList: View {
         .scrollDisabled(true)
         .background(Color.white)
         .accessibilityHidden(true)
+    }
+}
+
+
+/// 路线列表卡：路线页与「我的收藏」共用，避免两处视觉和压暗逻辑各写一遍。
+struct RouteListCard: View {
+    let route: Route
+    let checkpoints: [Checkpoint]
+    let subtitle: String
+    let accessibilityLabel: String
+    let isFavorite: Bool
+
+    /// 只有后台上传了封面/路线图时才需要压暗层：照片和反色的白底路线图都可能偏亮。
+    private var needsImageScrim: Bool {
+        route.displayImageURL != nil
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            Color.black
+
+            RouteThumbnailView(route: route, checkpoints: checkpoints)
+
+            // 只压右侧：左半屏保留真实地图/封面的亮度，右半屏逐步压深，
+            // 让白字在浅色地图和摄影封面上都能站住。
+            // 没有上传封面时卡片是深色底(深色地图快照或纯轨迹)，再压一层会把落在右半边的
+            // 终点方块压成灰色，同一列表里终点颜色忽深忽浅，所以这种情况直接省掉。
+            if needsImageScrim {
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0.18),
+                        .init(color: .black.opacity(0.16), location: 0.48),
+                        .init(color: .black.opacity(0.40), location: 0.74),
+                        .init(color: .black.opacity(0.58), location: 1.0)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            }
+
+            // 没有封面时卡片是深色地图快照：右半边常压着地图自带的白字路名，
+            // 整幅压暗会把终点方块一起压灰，所以只在文字所在的右中区域垫暗角。
+            // 宽度用比例而不是定值：120pt 高的卡片在 SE(335pt 宽) 和 Pro(362pt 宽)
+            // 上都要让「赛道图 → 文字」的过渡落在同一个位置，定值会随卡宽偏移。
+            if !needsImageScrim {
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .clear, location: 0.34),
+                        .init(color: .black.opacity(0.26), location: 0.50),
+                        .init(color: .black.opacity(0.68), location: 0.74),
+                        .init(color: .black.opacity(0.84), location: 1)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .allowsHitTesting(false)
+            }
+
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(route.name)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.white)
+                    .lineLimit(1)
+                    .shadow(color: .black.opacity(0.35), radius: 4, y: 1)
+                // 选路线时"在哪、多远、难度"是决策信息，保留一行副标题
+                Text(subtitle)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.90))
+                    .lineLimit(1)
+                    .shadow(color: .black.opacity(0.30), radius: 3, y: 1)
+            }
+            .frame(maxHeight: .infinity, alignment: .center)
+            .padding(.trailing, 16)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 120)
+        .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+        .overlay(alignment: .topTrailing) {
+            if isFavorite {
+                Image(systemName: "star.fill")
+                    // 9pt 星在深色卡片上几乎看不出形状；抬高一级并换浅色底托住，
+                    // 只做「已收藏」指示，不加点击态，避免暗示这里能直接切换收藏。
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.white)
+                    .frame(width: 24, height: 24)
+                    .background(Color.white.opacity(0.18))
+                    .clipShape(Circle())
+                    .padding(10)
+                    .accessibilityHidden(true)
+            }
+        }
     }
 }
 
