@@ -434,7 +434,7 @@ private struct BadgeShareButton: View {
                 condition: conditionText,
                 dateText: dateText
             )
-            ShareSheet(items: image.map { [$0] } ?? [text])
+            ShareSheet(items: image.map { [$0] } ?? [text], fileName: "\(entry.badge.name)-徽章")
         }
     }
 }

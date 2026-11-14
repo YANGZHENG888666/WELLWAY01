@@ -4308,3 +4308,40 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - SE：`outputs/r59/se_selected_625x.png`、`outputs/r59/se_removed_empty.png`
 - Pro：`outputs/r59/pro_rename_panel.png`、`outputs/r59/pro_vehicles.png`
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-14）。
+
+## 逐页巡检（第六十轮）：分享载荷与 SE 剩余状态页
+
+### 复核结论
+
+- 分享面板空白（记录详情 / 骑行总结）：根因不是渲染失败，而是 `[Any]` 载荷与 `showShare` 布尔在同一次状态更新里写入，SwiftUI 可能把旧值交给 `UIActivityViewController`，系统收到空数组。现改为 `SharePayload: Identifiable` 配合 `.sheet(item:)`，载荷与呈现由同一身份驱动，不再出现空面板。
+- 分享卡预览：`ImageRenderer` 产出的内存 `UIImage` 直接进系统面板时，缩略图显示为空白棋盘格；`ShareExport` 现把分享卡转存为临时 PNG 文件、改传文件 URL，系统面板能显示缩略图与文件名。文件名格式 `<页面名>-<MMdd-HHmm>.png`，徽章 / 骑行记录 / 骑行总结按各自语义命名。
+- 品牌分享物例外：分享卡本身是黑底品牌海报，属于「导出物」，不是 App 页面画布；v6 的白底、20pt 边距与发丝线分组只约束 App 内页面，不要求分享卡改白底。
+- 两机型验证：Pro 的徽章详情 / 记录详情 / 骑行总结分享，SE 的骑行总结 / 记录详情分享，均能正常拉起系统面板，缩略图、PNG 文件名与系统「存储到文件」等动作可用；SE 上的长名称（洱海环湖骑行、City Loop R59v2）预览与文件名不再空白。
+- SE 剩余状态页：路线详情「全览」全屏地图、右上关闭与「返回路线详情」均正常，无裁切、无溢出；记录详情与骑行总结的长标题在 SE 上保持单行省略，指标卡与底部主行动完整。
+- 海拔服务不可达属环境问题：本机 `api.open-meteo.com` 被 Clash fake-ip 解析到 `198.18.0.75`，直连 / 代理 / 真实 IP 均超时，同域 `air-quality-api.open-meteo.com` 正常；App 显示「海拔数据暂不可用 / 不影响路线与打卡信息 / 重试」，属预期失败态，不是 SE 回归，本轮未改海拔代码。
+
+### 证据与构建
+
+- Pro：`outputs/r60/pro_badge_share_named.png`、`pro_sharecard_longnames.png`、`pro_record_share_url2.png`（修复前空白对照）、`pro_route_fullscreen_return_check.png`
+- SE：`outputs/r60/se_summary_share_sheet.jpg`、`se_record_share_sheet.jpg`、`se_route_fullscreen_map.jpg`
+- 系统面板：`outputs/r60/photos_system_share_sheet.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-14）。
+
+## 逐页巡检（第六十一轮）：账号漏斗收尾
+
+### 复核结论
+
+- 账号页仍以 v6 为准：白底、20pt 页边距、黑色主行动、发丝线分隔与 44pt 命中区；本轮只验状态，不改视觉。
+- SE：注册默认 / 未勾协议拦截 / 键盘态；密码登录默认 / 填写 / 服务端错误；忘记密码默认 / 无效输入；邮箱验证码登录默认 / 发送成功 / 冷却 / 错误态。全部通过，无小屏溢出或按钮裁切。
+- Pro：注册默认 / 未勾协议拦截 / 输入态；密码登录默认 / 填写 / 本地邮箱格式错误；忘记密码默认态；邮箱验证码登录默认 / 已发送 / 错误态。布局、间距与主行动禁用 / 启用层级正常。
+- Pro 密码服务端失败：「邮箱或密码不正确」已由 AX 树实测确认；系统「保存密码？」面板会盖住页面，宿主 AX / CGEvent 都点不掉「以后」，因此没有干净截图。该状态只以 AX 证据记录，未用本地邮箱校验图替代。
+- 验证码错误态：两机型均为标题「验证码填写错误」+ 副文案「验证码错误或已过期」，验证码框转红；Pro 重建后复核通过。先前「操作失败，请稍后重试」来自旧安装包，当前源码的 `friendlyError` 能命中 `Token has expired or is invalid`，不是映射缺口。
+- 宿主限制：Pro 的 DeviceHub 软键盘不弹出，AX 中能看到系统键盘层但画面不显示；这是模拟器宿主问题，不是 `@FocusState` 回归。键盘态以 SE 截图与 Pro 的 AX 焦点证据记录，不伪造截图。
+- 边界：忘记密码输入 `abc` 时「发送验证码」保持禁用、无错误文案，属 `EmailValidator` 拦截的设计行为，不强行造错。
+- 调试入口：`-signupfocus` / `-passwordloginfocus` / `-forgotfocus` 仅用于调试构建自动聚焦对应邮箱框，生产默认流程不变。
+
+### 证据与构建
+
+- SE：`outputs/r61/se_signup.png`、`se_signup_agreement_error.png`、`se_signup_keyboard.png`、`se_passwordlogin.png`、`se_passwordlogin_error.png`、`se_forgot.png`、`se_forgot_invalid.png`、`se_code_cooldown.png`、`se_code_error.png`
+- Pro：`outputs/r61/pro_signup.png`、`pro_signup_agreement_error.png`、`pro_passwordlogin.png`、`pro_passwordlogin_localerror.png`、`pro_forgot.png`、`pro_codelogin.png`、`pro_codelogin_sent.png`、`pro_codelogin_error.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-14）。

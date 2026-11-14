@@ -451,7 +451,10 @@ struct EmailSignupView: View {
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
         }
-        .task { restoreCooldown() }
+        .task {
+            restoreCooldown()
+            focusDebugFieldIfNeeded()
+        }
     }
 
     private var header: some View {
@@ -592,6 +595,14 @@ struct EmailSignupView: View {
         guard remaining > 0, cooldown == 0 else { return }
         cooldown = remaining
         runCooldownLoop()
+    }
+
+    private func focusDebugFieldIfNeeded() {
+        guard ProcessInfo.processInfo.arguments.contains("-signupfocus") else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(700))
+            emailFocused = true
+        }
     }
 
     private func runCooldownLoop() {
@@ -768,6 +779,7 @@ struct PasswordLoginView: View {
         .fullScreenCover(isPresented: $showForgot) {
             ForgotPasswordView()
         }
+        .task { focusDebugFieldIfNeeded() }
     }
 
     private func forgotButton(height: CGFloat) -> some View {
@@ -832,6 +844,14 @@ struct PasswordLoginView: View {
     private func promptAgree() {
         auth.errorMessage = "请先阅读并同意《用户服务协议》与《隐私政策》"
         withAnimation(.linear(duration: 0.5)) { shakeCount += 2 }
+    }
+
+    private func focusDebugFieldIfNeeded() {
+        guard ProcessInfo.processInfo.arguments.contains("-passwordloginfocus") else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(700))
+            focusedField = .email
+        }
     }
 
     private func login() async {
@@ -932,7 +952,10 @@ struct ForgotPasswordView: View {
         .background(Color.white)
         .pageMark(step == 0 ? 19 : (step == 1 ? (errorText != nil ? 30 : 26) : (step == 2 ? 28 : 29)))
         .toolbar(.hidden, for: .navigationBar)
-        .task { restoreCooldown() }
+        .task {
+            restoreCooldown()
+            focusDebugFieldIfNeeded()
+        }
     }
 
     private var headline: String {
@@ -1142,6 +1165,14 @@ struct ForgotPasswordView: View {
             return "两次输入的密码不一致"
         }
         return errorText
+    }
+
+    private func focusDebugFieldIfNeeded() {
+        guard ProcessInfo.processInfo.arguments.contains("-forgotfocus") else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(700))
+            emailFocused = true
+        }
     }
 
     private func submit() async {

@@ -529,12 +529,72 @@ struct ShareRowButton: View {
 /// 系统分享面板封装；字符串和图片可以一起交给系统，由用户选择存图或分享。
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
+    var fileName: String = "WELLWAY 分享卡"
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        UIActivityViewController(activityItems: ShareExport.items(from: items, fileName: fileName), applicationActivities: nil)
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+/// 分享载荷：用 `sheet(item:)` 承载，避免 `items` 数组与 `isPresented`
+/// 在同一次状态更新里被 SwiftUI 读到旧值、弹出空面板。
+struct SharePayload: Identifiable {
+    let id = UUID()
+    var items: [Any]
+    var fileName: String = "WELLWAY 分享卡"
+}
+
+/// 分享载荷整理：`ImageRenderer` 产出的内存位图直接交给分享面板时，
+/// 缩略图会显示为空白棋盘格；落成临时 PNG 文件、改传文件 URL 则可以正常预览。
+enum ShareExport {
+    static func items(from items: [Any], fileName: String) -> [Any] {
+        return items.map { item in
+            guard let image = item as? UIImage else { return item }
+            return pngFile(for: image, fileName: fileName) ?? image
+        }
+    }
+
+    private static func pngFile(for image: UIImage, fileName: String) -> URL? {
+        guard let data = pngData(for: image) else { return nil }
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("WellwayShare", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let url = directory.appendingPathComponent("\(sanitized(fileName))-\(Self.stamp()).png")
+            try data.write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    private static func pngData(for image: UIImage) -> Data? {
+        if let data = image.pngData() { return data }
+        guard image.size.width > 0, image.size.height > 0 else { return nil }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: image.size, format: format).pngData { _ in
+            image.draw(in: CGRect(origin: .zero, size: image.size))
+        }
+    }
+
+    private static func sanitized(_ name: String) -> String {
+        let invalid = CharacterSet(charactersIn: "/\\:?%*|\"<>")
+        let cleaned = name
+            .components(separatedBy: invalid)
+            .joined(separator: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return cleaned.isEmpty ? "WELLWAY 分享卡" : cleaned
+    }
+
+    private static func stamp() -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "MMdd-HHmm"
+        return formatter.string(from: Date())
+    }
 }
 
 /// 车型真图下载器(内存缓存 + 失败重试),替代 `AsyncImage`。

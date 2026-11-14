@@ -1054,8 +1054,7 @@ struct RecordDetailView: View {
     @State private var isDeleting = false
     @State private var trackLoaded = false
     @State private var recordLookupFinished = false
-    @State private var showShare = false
-    @State private var sharePayload: [Any] = []
+    @State private var sharePayload: SharePayload?
     @State private var showFullScreenTrack = false
 
     var body: some View {
@@ -1170,8 +1169,8 @@ struct RecordDetailView: View {
             message: store.errorMessage ?? "请检查网络后重试",
             buttons: [WellwayDialogButton(title: "知道了", role: .plain) {}]
         )
-        .sheet(isPresented: $showShare) {
-            ShareSheet(items: sharePayload)
+        .sheet(item: $sharePayload) { payload in
+            ShareSheet(items: payload.items, fileName: payload.fileName)
         }
         .pageMark(showRename ? 74 : (showDelete ? 44 : 7))
     }
@@ -1703,7 +1702,7 @@ struct RecordDetailView: View {
                 metrics.append(("爬升", "\(record.elevationGainM) m"))
             }
 
-            sharePayload = [shareText(record)]
+            var payload: [Any] = [shareText(record)]
             if let image = RideShareCardRenderer.image(
                 routeName: store.displayName(for: record),
                 dateText: formatDate(record.startedAt),
@@ -1712,9 +1711,12 @@ struct RecordDetailView: View {
                 unitPoints: trackUnitPoints(coordinates),
                 hasTrack: coordinates.count >= 2
             ) {
-                sharePayload.append(image)
+                payload.append(image)
             }
-            showShare = true
+            sharePayload = SharePayload(
+                items: payload,
+                fileName: "\(store.displayName(for: record))-骑行记录"
+            )
         }
     }
 

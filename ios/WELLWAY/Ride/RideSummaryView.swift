@@ -18,8 +18,7 @@ struct RideSummaryView: View {
     @State private var showLeaveConfirm = false
     /// 徽章弹层是否已经看过:看过之后主按钮改为「完成」,避免反复打开弹层无法结束
     @State private var hasSeenBadge = false
-    @State private var showShare = false
-    @State private var sharePayload: [Any] = []
+    @State private var sharePayload: SharePayload?
     private var screenAppearance: ScreenAppearance { .shared }
 
     var body: some View {
@@ -75,8 +74,8 @@ struct RideSummaryView: View {
             }
         }
         .animation(.easeOut(duration: 0.2), value: showBadge)
-        .sheet(isPresented: $showShare) {
-            ShareSheet(items: sharePayload)
+        .sheet(item: $sharePayload) { payload in
+            ShareSheet(items: payload.items, fileName: payload.fileName)
         }
         .wellwayDialog(
             isPresented: $showLeaveConfirm,
@@ -576,7 +575,7 @@ struct RideSummaryView: View {
 
     /// 分享卡与文字一起进系统面板：没有轨迹时卡片不画路线，指标也只用真实值。
     private func prepareShare() {
-        sharePayload = [shareText]
+        var payload: [Any] = [shareText]
         if let image = RideShareCardRenderer.image(
             routeName: route.name,
             dateText: shareDateText,
@@ -585,9 +584,9 @@ struct RideSummaryView: View {
             unitPoints: trackUnitPoints(coordinates: summary.track),
             hasTrack: summary.track.count >= 2
         ) {
-            sharePayload.append(image)
+            payload.append(image)
         }
-        showShare = true
+        sharePayload = SharePayload(items: payload, fileName: "\(route.name)-骑行记录")
     }
 
     private var shareDateText: String {
