@@ -329,7 +329,7 @@ xcrun simctl launch <UDID> com.wellway.WELLWAY
 - **已验证页面闭环**:#34 绑定邮箱(粘贴 test@test.com → 获取验证码 → 123456 → 保存 → 回个人中心显示已绑定)→ #59 绑定成功瞬态 → #60 解绑确认弹窗(确认后回「匿名账号/去绑定」)→ #80/#82 品牌/车型搜索 → #54/#55 隐私政策/用户协议 → #37 骑行前权限检查(暂时跳过)→ #52 导航方式选择(WELL WAY 骑行模式)→ #2 骑行中(地图/速度/里程/时长/同路横幅)→ #3 骑行总结(总里程/总时长/平均速度/打卡状态/完成)。
 - **#50 同路横幅**:实测出现「该路段当前有 2 名骑士」白色胶囊。
 - **#51 系统通知(同路)**:`RidingView.loadRiders()` 内 `ridersCount>0 && !NotificationHelper.isForeground && notifySameway` 才 post,前台不触发;代码就绪,后台场景生效。
-- **系统权限弹窗 #45-49/#78/#79**:`Info.plist` 已含定位/蓝牙/本地网络/相册用途描述;App 侧逻辑就绪(`RideService.start()` 定位、通知按 notDetermined 请求)。模拟器多次 `simctl privacy reset` + 走骑行流程仍未弹出(系统级授权框),真实设备首次使用会弹出,无需改动。
+- **系统权限 #45-49/#78/#79(2026-11-14 复核)**:当前工程只申请定位(前后台)与通知;照片选择使用 `PhotosPicker`,分享卡通过系统分享面板保存,仅保留相册“仅添加”用途描述。代码未使用 CoreBluetooth、MultipeerConnectivity、NetService 或 Bonjour,蓝牙、Bonjour、本地网络及只读相册权限声明已移除。设计归档中的旧系统弹窗截图不再是当前权限清单。
 - **#4 打卡完成-徽章**:`BadgeEarnedView` 已实现,需 `summary.awardedBadge != nil`(真实打卡数据)才出现;0.0km 无打卡数据时总结页不显示 badgeCard,属正常逻辑。
 - **#61/#62 地图切换-状态A/B(本轮新增)**:`RidingView` 地图卡右上角展开按钮 → 全屏 `MapSwitchView`(深色底 + 339x430 地图 + 底部半透明黑卡:路线名 28 Bold + 里程/爬升/难度 + 导航模式文案)。顶部「地图 A/B」胶囊点按切换:`stateB=false` 显示「WELL WAY 导航中」pageMark 61,`true` 显示「高德/苹果地图导航」pageMark 62。实测 mark 61↔62 切换正常,底部卡文案同步变化。
 - **#29 修改成功(本轮新增)**:`ForgotPasswordView` 增加 `step=3 → successStep`(品牌 + 「修改成功」+ 黑按钮「去登录」),pageMark 按 step 映射(0→19 / 1→26 / 2→28 / 3→29)。实测 忘记密码(任意邮箱)→ 验证码(任意6位)→ 重置密码(任意6位+确认)→ 修改成功 → 去登录回到账号密码登录页,闭环通过。
@@ -427,7 +427,7 @@ xcrun simctl launch <UDID> com.wellway.WELLWAY
 
 - `PrivacyInfo.xcprivacy` 已创建并加入工程资源(NSPrivacyAccessedAPICategoryUserDefaults / CA92.1),构建产物已含该文件。
 - `Info.plist` 新增 `ITSAppUsesNonExemptEncryption=false`(仅 HTTPS,出口合规免审);版本号 0.1.0 → **1.0.0**。
-- 权限用途文案已在位:定位(前后台)/蓝牙/本地网络/相册;`UIBackgroundModes=location`;仅竖屏。
+- 权限用途文案已在位:定位(前后台)/相册仅添加;通知走系统授权;`UIBackgroundModes=location`;仅竖屏。未使用的蓝牙、Bonjour、本地网络及只读相册权限声明已移除。
 - App 图标 1024×1024 已配置;启动屏色已配置。
 - 错误文案已中文化(见上)。
 

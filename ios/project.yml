@@ -32,8 +32,9 @@ targets:
       path: WELLWAY/Resources/Info.plist
       properties:
         CFBundleDisplayName: WELL WAY
-        CFBundleShortVersionString: "0.1.0"
+        CFBundleShortVersionString: "1.0.0"
         CFBundleVersion: "1"
+        ITSAppUsesNonExemptEncryption: false
         # 设计稿为黑白浅色稿,固定浅色模式,避免系统深色模式下出现黑边
         UIUserInterfaceStyle: Light
         UILaunchScreen:
@@ -44,11 +45,7 @@ targets:
           - location
         NSLocationWhenInUseUsageDescription: 用于查看前往路线起点路上的同路骑友,骑行时记录位置生成轨迹。
         NSLocationAlwaysAndWhenInUseUsageDescription: 骑行时需要后台持续记录位置,方便生成完整轨迹。
-        NSPhotoLibraryUsageDescription: 用于保存骑行分享卡图片。
-        NSBluetoothAlwaysUsageDescription: 用于连接车机与同路设备(后置功能)。
-        NSLocalNetworkUsageDescription: 用于查找附近骑行设备与同路提醒(仅本地)。
-        NSBonjourServices:
-          - _wellway._tcp
+        NSPhotoLibraryAddUsageDescription: 用于将骑行分享卡保存到你的相册。
         LSApplicationQueriesSchemes:
           - iosamap
           - baidumap

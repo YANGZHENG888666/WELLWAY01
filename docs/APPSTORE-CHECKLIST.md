@@ -2,7 +2,7 @@
 
 ## 已完成(代码/工程侧)
 
-- [x] `Info.plist` 权限用途描述:定位(前后台)/蓝牙/本地网络/相册,`UIBackgroundModes=location`
+- [x] `Info.plist` 用途描述:定位(前后台)/相册仅添加,`UIBackgroundModes=location`;通知走系统授权;未使用的蓝牙、Bonjour、本地网络声明已移除
 - [x] `ITSAppUsesNonExemptEncryption=false`(仅 HTTPS,出口合规免审)
 - [x] 版本号 `1.0.0 (1)`(2026-08-25 已统一并打进 built 包);仅竖屏
 - [x] App 图标 1024×1024 占位(蓝底白路线);品牌蓝启动屏
@@ -74,7 +74,7 @@
 
 - [x] **管理操作日志**:已实现。执行 `backend/supabase/migrations/0011_admin_audit.sql` 后,内容表任何增删改自动落 `admin_logs`,后台新增「操作日志」只读 Tab(操作人/时间/变更摘要)
 - [x] **用户协议**:`docs/TERMS-OF-SERVICE.md` 已按竞品(高德/Strava/Keep 等)条款补齐风险提示、内容授权、免责、未成年人、法律适用
-- [x] **隐私政策**:`docs/PRIVACY-POLICY.md` 已覆盖定位/相册/蓝牙权限说明;建议同步发布到备案域名
+- [x] **隐私政策**:`docs/PRIVACY-POLICY.md` v2.3 已覆盖定位/相册权限与第三方共享说明;建议同步发布到备案域名
 - [x] App 内协议入口:登录页《用户协议》《隐私政策》完整版;设置页「隐私说明」短版(v2.0,2026-08-25 已在模拟器验证渲染)
 - [x] App 隐私清单 `PrivacyInfo.xcprivacy` 已核对并打进 built 包(含 NSPrivacyCollectedDataTypeOtherUserContent)
 - [x] 注销账号:App 入口+确认弹窗+后端 `0016_delete_account.sql`
@@ -86,4 +86,4 @@
 ## 备注
 - 后端迁移云端状态(2026-08-26 实测):`0008`(route_favorites 3 列)、`0010`(routes.map_url)、`0011`(admin_logs 9 列)已全部生效;`0014` 社交表(activities / activity_registrations / route_chat_messages)已按合规要求删除;`0015`(ride_presence,擦肩而过)已生效。现网 public 共 15 张表:admin_logs / badges / brands / checkpoints / feedback / models / profiles / ride_checkins / ride_points / ride_presence / ride_records / route_favorites / routes / user_badges / vehicles。
 - 后续若重置/重建项目,直接在 Supabase SQL Editor 执行 `backend/supabase/migrations/ALL.sql`(幂等)一次补全。
-- 上架前自检已核对(2026-08-26):built 包版本 1.0.0(1)、`ITSAppUsesNonExemptEncryption=false`、`UIBackgroundModes=[location]`、定位/蓝牙/本地网络/相册权限文案齐全、`PrivacyInfo.xcprivacy` 已入包、App 图标已入包。
+- 上架前自检已复核(2026-11-14):built 包版本 1.0.0(1)、`ITSAppUsesNonExemptEncryption=false`、`UIBackgroundModes=[location]`;仅保留定位(前后台)与相册仅添加用途,蓝牙/Bonjour/本地网络声明已移除;`PrivacyInfo.xcprivacy` 已入包,App 图标已入包。
