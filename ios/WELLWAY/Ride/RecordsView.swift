@@ -1062,7 +1062,7 @@ struct RecordDetailView: View {
         VStack(spacing: 0) {
             DesignPageHeader(title: "记录详情")
 
-            if let record {
+            if let record = currentRecord {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 20) {
                         headerBlock(record)
@@ -1125,6 +1125,11 @@ struct RecordDetailView: View {
                         await store.loadTrack(for: record.id)
                     }
                     trackLoaded = true
+                    // 调试(-recordtrackfull)：直接进全屏轨迹，截图时不用点小地图
+                    if ProcessInfo.processInfo.arguments.contains("-recordtrackfull"),
+                       record.hasRecordedTrack {
+                        showFullScreenTrack = true
+                    }
                 }
                 recordLookupFinished = true
             }
@@ -1169,6 +1174,12 @@ struct RecordDetailView: View {
             ShareSheet(items: sharePayload)
         }
         .pageMark(showRename ? 74 : (showDelete ? 44 : 7))
+    }
+
+    /// 重命名与云端刷新都会改动 `store.records`；本地 State 只是首次进入时的
+    /// 快照，直接用它会让标题停在旧名字上，直到退出详情再进来才更新。
+    private var currentRecord: RideRecord? {
+        store.records.first { $0.id == recordId } ?? record
     }
 
     /// 删除请求可能受网络影响：明确显示进行中，并阻断重复点击。
@@ -1401,7 +1412,8 @@ struct RecordDetailView: View {
                                 .stroke(Theme.separator, lineWidth: 1)
                         }
                         // 190pt 只能看个大概：点开全屏才能看清弯道和起终点。
-                        .overlay(alignment: .bottomTrailing) {
+                        // 放右上角避让地图左下/右下的「高德地图」版权字样。
+                        .overlay(alignment: .topTrailing) {
                             Image(systemName: "arrow.up.left.and.arrow.down.right")
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.white)

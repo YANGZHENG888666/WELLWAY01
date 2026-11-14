@@ -177,15 +177,16 @@ enum AirQualityService {
 }
 
 /// AQI 等级文案(US AQI 标准)
+/// 接口返回的是 `us_aqi`，不能套用中国 HJ 633-2012 的「轻度 / 中度污染」分级。
 enum AirQualityVisuals {
     static func level(_ aqi: Int) -> String {
         switch aqi {
-        case ..<51: return "优"
-        case ..<101: return "良"
-        case ..<151: return "轻度污染"
-        case ..<201: return "中度污染"
-        case ..<301: return "重度污染"
-        default: return "严重污染"
+        case ..<51: return "良好"
+        case ..<101: return "中等"
+        case ..<151: return "敏感人群不健康"
+        case ..<201: return "不健康"
+        case ..<301: return "非常不健康"
+        default: return "危险"
         }
     }
 
@@ -431,23 +432,6 @@ struct RideInfoPanel: View {
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("路况\(Congestion.summary(congestionLevel))")
-
-                    if let aqi = currentAQI {
-                        Rectangle()
-                            .fill(Theme.separator)
-                            .frame(width: 1, height: 10)
-                        HStack(spacing: 5) {
-                            Circle()
-                                .fill(AirQualityVisuals.color(aqi))
-                                .frame(width: 5, height: 5)
-                            Text("空气 \(aqi) \(AirQualityVisuals.level(aqi))")
-                                .font(.system(size: 12, weight: .medium))
-                                .monospacedDigit()
-                                .foregroundStyle(Theme.textSecondary)
-                        }
-                                .accessibilityElement(children: .ignore)
-                                .accessibilityLabel("空气质量指数 \(aqi)，\(AirQualityVisuals.level(aqi))")
-                    }
                 }
                 if collapsible {
                     Button {
@@ -466,6 +450,8 @@ struct RideInfoPanel: View {
             .padding(.horizontal, 2)
 
             weatherCompareCard
+
+            airQualityRow
 
             // 顺序＝出发前的决策顺序：先看天，再看路上堵不堵，然后才是安全规则、
             // 同路热度和逐小时。拥堵原先排在逐小时之后，要翻过大半屏才看得到，
@@ -557,8 +543,9 @@ struct RideInfoPanel: View {
                 }
 
                 if isShortScreen {
-                    // SE 上三列会顶到按钮栏，改成一条横向结论；空气质量留在详情。
+                    // SE 上三列会顶到按钮栏，改成一条横向结论；空气与限行放在下一行。
                     shortSummaryRow
+                    collapsedAuxiliaryRow
                 } else {
                     MetricRowLayout {
                         summaryWeatherColumn
@@ -568,26 +555,7 @@ struct RideInfoPanel: View {
                         summaryCongestionColumn
                     }
 
-                    HStack(spacing: 6) {
-                        if let aqi = currentAQI {
-                            Circle()
-                                .fill(AirQualityVisuals.color(aqi))
-                                .frame(width: 5, height: 5)
-                            Text("空气 \(aqi) \(AirQualityVisuals.level(aqi))")
-                                .font(.system(size: 12))
-                                .foregroundStyle(Theme.textSecondary)
-                        }
-                        // 拿不到空气质量时不再补一句「限行与路线热度可在详情查看」：
-                        // 右上角已经有「查看详情」，这类指路文案属于重复噪声。
-                        Spacer(minLength: 0)
-                        HStack(spacing: 4) {
-                            Image(systemName: "nosign")
-                                .font(.system(size: 11, weight: .semibold))
-                            Text("限行提示")
-                                .font(.system(size: 12))
-                        }
-                        .foregroundStyle(Theme.textSecondary)
-                    }
+                    collapsedAuxiliaryRow
                 }
             }
             .padding(isShortScreen ? 12 : 14)
@@ -625,7 +593,9 @@ struct RideInfoPanel: View {
             Text("·")
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.chevron)
-            Text("适宜度")
+            // 空气质量单列在下一行，这里必须写「天气适宜度」，
+            // 否则 95 分会被读成包含空气质量的综合结论。
+            Text("天气适宜度")
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.textSecondary)
             Text(summaryScore.map { "\($0)" } ?? "--")
@@ -650,24 +620,48 @@ struct RideInfoPanel: View {
             Text(Congestion.short(congestionLevel))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Theme.textSecondary)
-            Text("·")
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.chevron)
-            Image(systemName: "nosign")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Theme.textSecondary)
-            Text("限行提示")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Theme.textSecondary)
             Spacer(minLength: 0)
         }
         .lineLimit(1)
         .minimumScaleFactor(0.8)
     }
 
+    /// 空气与限行同属出发前的安全信息，折叠态也必须露面。
+    /// 空气质量只取当前位置，必须把地点写出来，避免和目的地天气被读成同一地点。
+    private var collapsedAuxiliaryRow: some View {
+        HStack(spacing: 6) {
+            if let aqi = currentAQI {
+                Circle()
+                    .fill(AirQualityVisuals.color(aqi))
+                    .frame(width: 5, height: 5)
+                Text("当前位置空气 \(aqi) \(AirQualityVisuals.level(aqi))")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            // 拿不到空气质量时不再补一句「限行与路线热度可在详情查看」：
+            // 右上角已经有「查看详情」，这类指路文案属于重复噪声。
+            Spacer(minLength: 8)
+            HStack(spacing: 4) {
+                Image(systemName: "nosign")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("限行提示")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(Theme.textSecondary)
+        }
+    }
+
+    private var summaryWeatherTitle: String {
+        if destWeather != nil { return "目的地天气" }
+        if currentWeather != nil { return "当前天气" }
+        return "目的地天气"
+    }
+
     private var summaryWeatherColumn: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("目的地天气")
+            Text(summaryWeatherTitle)
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.textSecondary)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -693,7 +687,7 @@ struct RideInfoPanel: View {
 
     private var summarySuitabilityColumn: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("骑行适宜度")
+            Text("天气适宜度")
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.textSecondary)
             HStack(alignment: .firstTextBaseline, spacing: 5) {
@@ -743,9 +737,14 @@ struct RideInfoPanel: View {
             "\(Int($0.current.temperature2m.rounded())) 度 \(summaryWeatherStyle?.text ?? "")"
         } ?? "天气暂无数据"
         let scoreText = summaryScore.map {
-            "\($0) 分，\(Suitability.label($0))"
-        } ?? "适宜度暂无数据"
-        return "骑行参考，\(weatherText)，\(scoreText)，路况\(Congestion.summary(congestionLevel))"
+            "天气适宜度 \($0) 分，\(Suitability.label($0))"
+        } ?? "天气适宜度暂无数据"
+        var parts = ["骑行参考", weatherText, scoreText, "路况\(Congestion.summary(congestionLevel))"]
+        if let aqi = currentAQI {
+            parts.append("当前位置空气质量指数 \(aqi)，\(AirQualityVisuals.level(aqi))")
+        }
+        parts.append("限行提示")
+        return parts.joined(separator: "，")
     }
 
     // MARK: 双地天气
@@ -825,6 +824,28 @@ struct RideInfoPanel: View {
         }
         .overlay(alignment: .bottom) {
             Rectangle().fill(Theme.separator).frame(height: 1)
+        }
+    }
+
+    @ViewBuilder
+    private var airQualityRow: some View {
+        if let aqi = currentAQI {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(AirQualityVisuals.color(aqi))
+                    .frame(width: 5, height: 5)
+                Text("当前位置空气")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.textSecondary)
+                Text("\(aqi) \(AirQualityVisuals.level(aqi))")
+                    .font(.system(size: 12, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.ink)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 2)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("当前位置空气质量指数 \(aqi)，\(AirQualityVisuals.level(aqi))")
         }
     }
 
@@ -996,7 +1017,7 @@ struct RideInfoPanel: View {
             return Suitability.score(weather)
         }()
         return VStack(alignment: .leading, spacing: 0) {
-            Text("骑行适宜度")
+            Text("天气适宜度")
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(Theme.ink)
             .padding(.bottom, 5)
@@ -1056,7 +1077,7 @@ struct RideInfoPanel: View {
         .frame(maxWidth: .infinity)
         // 环里只有一个裸数字，读屏会单独念出「35」，既不知道是什么分也不知道满分多少
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(score.map { "骑行适宜度 \($0) 分，满分 100" } ?? "骑行适宜度暂无数据")
+        .accessibilityLabel(score.map { "天气适宜度 \($0) 分，满分 100" } ?? "天气适宜度暂无数据")
     }
 
     /// 单色分段，而不是一条彩虹渐变：分数只表达"好/一般/差"三档
@@ -1261,7 +1282,8 @@ struct RideInfoPanel: View {
 // MARK: - 适宜度打分
 
 enum Suitability {
-    /// 100 分制：温度舒适度 + 降水 + 风力
+    /// 100 分制：温度舒适度 + 降水 + 风力 + 气象预警。
+    /// 不包含空气质量；UI 标题必须写「天气适宜度」，空气质量单独展示。
     static func score(_ w: WeatherSnapshot) -> Int {
         var score = 100
         let t = w.current.temperature2m

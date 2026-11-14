@@ -120,7 +120,9 @@ struct RootView: View {
             NavigationStack { AgreementView(kind: .privacyIntro) }
         } else if ProcessInfo.processInfo.arguments.contains("-agreement") {
             NavigationStack { AgreementView(kind: .privacyPolicy) }
-        } else if ProcessInfo.processInfo.arguments.contains("-emailbind") {
+        } else if ProcessInfo.processInfo.arguments.contains("-emailbind")
+                    || ProcessInfo.processInfo.arguments.contains("-emailbindsuccess")
+                    || ProcessInfo.processInfo.arguments.contains("-emailbindrebind") {
             NavigationStack { EmailBindView() }
         } else if ProcessInfo.processInfo.arguments.contains("-networkerror") {
             // 四种错误体验证入口：默认断网，另加 -networkerror-server / -auth / -timeout
@@ -633,6 +635,14 @@ struct DebugRouteDetailLoader: View {
     @State private var failed = false
     @State private var navChoice = NavChoiceCenter()
 
+    private var elevationPreview: RouteDetailElevationPreview {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-elevationpreviewfailed") { return .failed }
+        if args.contains("-elevationpreviewslow") { return .slow }
+        if args.contains("-elevationpreviewnocoords") { return .missingCoordinates }
+        return .live
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -643,7 +653,8 @@ struct DebugRouteDetailLoader: View {
                         RouteDetailView(
                             route: route,
                             checkpoints: checkpoints,
-                            pickDestinationMode: pickDestinationMode
+                            pickDestinationMode: pickDestinationMode,
+                            elevationPreview: elevationPreview
                         )
                     }
                 } else if failed {

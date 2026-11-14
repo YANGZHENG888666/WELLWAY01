@@ -31,6 +31,18 @@ struct EmailBindView: View {
 
     private var isRebinding: Bool {
         auth.profile?.emailBound == true
+            || ProcessInfo.processInfo.arguments.contains("-emailbindrebind")
+    }
+
+    /// 已绑定/更换邮箱的真实邮箱来自会话；调试预览没有登录态，用示例值复检版式。
+    private var currentEmail: String? {
+        if let email = auth.user?.email?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !email.isEmpty {
+            return email
+        }
+        return ProcessInfo.processInfo.arguments.contains("-emailbindrebind")
+            ? "rider@wellway.app"
+            : nil
     }
 
     private var pageTitle: String {
@@ -63,6 +75,7 @@ struct EmailBindView: View {
         .onAppear {
             restoreCountdown()
             focusDebugFieldIfNeeded()
+            showDebugSuccessIfNeeded()
         }
         .onDisappear { timerTask?.cancel() }
         .pageMark(message == "绑定成功" ? 59 : 34)
@@ -82,9 +95,7 @@ struct EmailBindView: View {
                     .padding(.top, 10)
                     .motionAppear(delay: 0.10)
 
-                if isRebinding,
-                   let current = auth.user?.email?.trimmingCharacters(in: .whitespacesAndNewlines),
-                   !current.isEmpty {
+                if isRebinding, let current = currentEmail {
                     HStack(spacing: 6) {
                         Text("当前邮箱")
                             .foregroundStyle(Theme.textSecondary)
@@ -319,6 +330,12 @@ struct EmailBindView: View {
             try? await Task.sleep(for: .milliseconds(700))
             focusedField = .otp
         }
+    }
+
+    private func showDebugSuccessIfNeeded() {
+        guard ProcessInfo.processInfo.arguments.contains("-emailbindsuccess") else { return }
+        successWasRebinding = ProcessInfo.processInfo.arguments.contains("-emailbindrebind")
+        showSuccess = true
     }
 
     private func startCountdown() {

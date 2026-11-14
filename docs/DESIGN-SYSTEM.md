@@ -10,7 +10,7 @@
 - **分隔**：同组列表用 1px 发丝线，缩进到文字起点（如图标列宽 + 间距）；组与组之间只用标题和留白，不画线。
 - **字号**：Tab 页标题 18pt Bold（标题中心 y≈54–70）、区块标题 13pt Semibold、正文 15pt、辅助 12pt、数值 22–64pt Monospaced Digit。
 - **颜色**：主文字 `#0F1115`，次文字灰阶；红/绿只用于默认车辆、成功、错误等语义，不做装饰。
-- **主行动**：一屏一个，52–56pt 高、12pt 圆角、纯黑底白字；底部按钮通过 `safeAreaInset` 摆放，禁止用负 padding 抵消安全区。
+- **主行动**：一屏一个，52–56pt 高、12pt 圆角、纯黑底白字；底部按钮通过 `safeAreaInset` 摆放，且必须直接挂在 `ScrollView` 上——挂在 `ScrollViewReader`、`GeometryReader` 或外层 `VStack` 都不会扣减滚动区高度，页尾内容会被按钮栏压住；禁止用负 padding 抵消安全区。
 - **色值单一来源**：所有中性色只能取 `Theme`（`textPrimary / textSecondary / listGray / separator / cardStroke / lightField / chevron / ink`），页面内禁止再写字面量灰值；新增近似灰会直接造成同一屏出现两种灰。
 - **禁用态**：`Theme.lightField` 浅灰实心 + `Theme.listGray` 灰字；描边只属于输入框，不能拿来当可点按钮的样式。
 - **二级页**：页头返回箭头 44pt 热区，标题 18pt；内容沿用 20pt 边距。
@@ -24,6 +24,7 @@
 - **列表落地（补充）**：骑行记录的日期改为无灰底的日期列，整张记录表去掉外框；徽章页进度改为扁平指标 + 一整条 6pt 细进度条（不按徽章数切白刻度，0/N 时会被读成加载骨架），「全部徽章」使用区块标题层级。
 - **行内对齐**：滚动内容已统一由页面容器加 20pt 边距，行组件内部不得再加第二份横向 padding；编号圆点、操作行必须与区块标题共用同一条左边线。
 - **空态落地**：全局空态统一为裸图标 + 标题 + 说明，不再给图标加灰色圆底；行动按钮为 44pt 高、12pt 圆角，不用胶囊；添加车辆的车型入口为全宽行 + 发丝线，已选车型也按行排列。
+- **出发前置状态落地**：低适宜度确认、无车辆、定位未开启、路线坐标未就绪四类阻塞统一走底部弹层（标题 + 一句说明 + 主行动 + 取消），不再各写一套；低适宜度弹层展示实际分数，禁用态 CTA 仍用 `Theme.lightField` 浅灰实心，不用描边。
 - **地图缩略图落地**：路线列表与出发页的自动地图按卡片实际尺寸（宽高比必须一致）以屏幕倍率渲染，`scaledToFill` 不应再裁掉地图边角，Apple 版权水印完整可见；轨迹线宽按画布宽度换算，大卡片与小卡片上的视觉粗细一致。
 - **路线缩略图落地（v6.1）**：后台上传封面优先；无封面时用 MapKit 生成真实底图快照（深色、低饱和、起点绿点 + 终点方块 + 白色虚线示意），不再用合成折线假装地图。地图上只允许压右侧渐深保证白字可读，Apple/Maps 版权标识必须完整保留。
 - **我的落地**：身份区下方只保留一条账号级骑行摘要（总里程 / 骑行次数 / 累计时长），上下发丝线、三等分；口径与车库首页、记录页一致（仅统计已完成记录）。里程不足 1 km 时用米（如「320 m」）；骑过但一条轨迹里程都没有时显示「未记录」；一次都没骑过时显示 0.0 km，与同排的 0 次 / 0 秒一致；加载失败整条隐藏，不摆一排破折号。
@@ -2691,7 +2692,7 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - 改：`RideInfoPanel` 新增 `onSuitabilityChange` 回调，把摘要里的适宜度（目的地优先、其次当前位置）回传给 `DepartView`；`< 55`（即「不建议骑行」档）时点「开始骑行」先弹确认框「当前不建议骑行 / 骑行适宜度 40 分，天气或气象预警存在风险。如仍要出发，请谨慎慢行。」，主按钮「仍要出发」才进入原有的导航方式选择，次按钮「取消」。55 分以上维持原样，不打扰。
 - 说明：适宜度取不到（天气未返回）时不拦截，避免把网络失败变成阻断出发的理由。
 - 证据：Pro `/tmp/d7_s.png`（40 分弹确认框）、`/tmp/d2_s.png`（改前文案）；SE `/tmp/d6_s.png`（小屏弹层完整，两个按钮都在安全区内）；正常态无回归 `/tmp/dd1_s.png`（适宜度 40 的摘要仍照常显示）、`/tmp/i1_s.png`（展开面板不变）。
-- 调试入口：`-departlate -departlowsuit` 直接复现确认框。
+- 调试入口：`-departlate -departlowsuit` 直接复现确认框（弹层预览 45 分）；`-depart -departnocoords` 复现路线坐标未就绪。
 
 ### 徽章文案去重（本轮修，数据侧）
 
@@ -2788,7 +2789,7 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 
 ### 记录在案（调试态，不是页面缺陷）
 
-- `-departlowsuit` 只负责强制弹出确认框、不伪造天气数据，所以截图里仍是真实适宜度 95 分，看起来像自相矛盾；线上只有低于 55 分才弹。
+- `-departlowsuit` 只强制弹出确认框、不伪造线上天气数据；弹层分数由调试预览值提供（45 分），避免截图与页面真实 95 分自相矛盾；线上仍只在低于 55 分时弹。`-departnocoords` 同理，只覆盖坐标就绪判断，不改动真实打卡点数据。
 - `-teamfailed` / `-teamdenied` / `-teamrows` / `-summaryfailed` / `-dialogprompt` 必须和父级入口参数（`-team` / `-summary` / `-dialogdemo`）同时传才生效，单独传会停在默认页。
 
 
@@ -4046,3 +4047,264 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - Pro：`outputs/r46/pro-r46-wait8.png`、`pro-r46-wait48.png`、`pro-r46-bothfail.png`、`pro-r46-location-denied.png`、`pro-r46-garage-bottom.png`、`pro-r46-parallel-10s.png`、`pro-r46-weatherfail.png`
 - SE：`outputs/r46/se/se-r46-parallel-10s.png`、`se-r46-weatherfail.png`、`se-r46-profile-top.png`、`se-r46-profile-bottom.png`、`se-r46-settings-top.png`、`se-r46-settings-bottom.png`、`se-r46-about.png`
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+
+## 逐页巡检（第四十七轮）：剩余状态页与天气服务商披露
+
+### 复核结论
+
+- 设置、通知、关于与反馈、反馈失败态、邮箱绑定空态：Pro / SE 均通过，无布局回归。
+- 用户协议、隐私说明、隐私政策：顶部与底部均通过；页头渐隐、正文换行、末段留白正常，SE 小屏无裁切。
+- 更换车辆、我的车辆、添加车辆（空态 / 已选）、品牌与车型选择器（含筛选与已选）：Pro / SE 通过。SE「我的车辆」首帧为骨架，约 10 秒后正常加载，属网络慢，不是假空态或布局缺陷。
+- 隐私政策原先只披露和风天气 QWeather，但代码以和风为主、Open-Meteo 兜底天气，空气质量与路线海拔也由 Open-Meteo 提供（`RideInfoModules.swift`、`RouteDetailView.swift`）。已补全 Open-Meteo 披露，版本升至 v2.2。
+
+### 改动
+
+- `Auth/AgreementViews.swift`：隐私政策「四、第三方共享」补 Open-Meteo 及其用途。
+- `docs/PRIVACY-POLICY.md`、`legal/privacy.html`：同步披露与事故记录条目，版本升至 v2.2（2026-11-13）。
+
+### 证据与构建
+
+- Pro：`outputs/r47/pro-privacy-top.png`、`pro-privacy-bottom.png`
+- SE：`outputs/r47/se-privacy-top.png`、`se-privacy-bottom.png`、`se-privacy-thirdparty.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+
+## 逐页巡检（第四十八轮）：剩余状态页与出发页滚动区
+
+### 复核结论
+
+- 骑行 HUD、暂停态、结束保存遮罩：Pro / SE 均通过；速度、三项指标、剩余里程 / 预计到达 / 打卡与底部操作区在两种屏幕上排布一致，遮罩层文案与深色背景符合 v6。
+- 擦肩默认态、有数据（7 位 / 3 对向 / 4 后方同向）、定位拒绝、加载失败：Pro / SE 均通过；统计范围地图、空态与重试按钮未回归。
+- 路线骑手页：Pro / SE 的页头、居中空态与底部匿名说明均正常。
+- 出发页展开「骑行参考」并滚到底时，Pro 只露出免责说明第一行、SE 被按钮栏切断。原因是 `.safeAreaInset` 挂在 `ScrollViewReader` 外层，滚动区宽度/高度没有扣掉底部按钮栏，滚动到底仍把内容对齐到屏幕物理底边。改为直接挂在 `ScrollView` 上后，两机型免责说明完整可见，`pageBottom` 的 24pt 收尾落在按钮栏上方。
+
+### 改动
+
+- `Ride/DepartView.swift`：`.safeAreaInset(edge: .bottom)` 从 `ScrollViewReader` 移到内部 `ScrollView`；`-departbottom` 调试钩子在内容晚到后再补一次滚到底，便于截图复检真实页尾。
+- `docs/DESIGN-SYSTEM.md`：主行动规范补充 `safeAreaInset` 必须直接挂 `ScrollView`。
+
+### 证据与构建
+
+- Pro：`outputs/r48/pro-depart-expanded-bottom-fix3.png`、`pro-riding-hud.png`、`pro-riding-paused.png`、`pro-riding-ending.png`、`pro-team-default.png`、`pro-team-rows.png`、`pro-team-denied.png`、`pro-team-failed.png`、`pro-riders.png`
+- SE：`outputs/r48/se-depart-expanded-bottom-fix3.png`、`se-riding-hud.png`、`se-riding-paused.png`、`se-riding-ending.png`、`se-team-default.png`、`se-team-rows.png`、`se-team-denied.png`、`se-team-failed.png`、`se-riders.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+
+## 逐页巡检（第四十九轮）：底部行动栏归位与剩余状态页
+
+### 复核结论
+
+- 安全救援页：Pro / SE 的顶部、滚到底、无定位与附近救援点加载 / 空 / 失败均通过；无定位时分享按钮保持浅灰禁用，页尾「重要说明」滚到底后完整落在固定栏上方。
+- 事故现场记录：选择类型、500 字输入、键盘抬起、无定位、提交中 / 失败 / 回执在 Pro / SE 均通过；提交栏随键盘上移，正文滚动不受遮挡。
+- 骑行恢复：未结束 / 尚未保存两种文案与「继续记录」「结束并保存」「补存记录」行动区通过，底部无裁切。
+- 添加车辆空态 / 已选、徽章详情顶部 / 底部 / 锁定、登录与忘记密码两阶段、路线骑手、对向空态 / 7 位（3 对向 / 4 同向）/ 定位拒绝 / 加载失败：Pro / SE 均通过。
+- 同类根因：这些页面的 `.safeAreaInset` 仍挂在 `ScrollViewReader`、`GeometryReader` 或外层 `VStack` 上，滚动区没有扣掉底部栏，页尾内容会被压住。本轮把它统一下沉到内部 `ScrollView`，未使用负 padding 规避安全区。
+- 记录详情轨迹缩略图的全屏入口从右下移到右上，避开地图版权字样；真实轨迹页仍通过。
+
+### 改动
+
+- `Auth/AuthView.swift`（登录 / 忘记密码）、`Badge/BadgesView.swift`、`Garage/AddVehicleFlowView.swift`、`Ride/DepartView.swift`、`Ride/IncidentReportView.swift`、`Ride/RideRecoveryView.swift`、`Ride/SafetyRescueView.swift`、`Social/SocialViews.swift`：底部行动栏与匿名说明统一直接挂到内部 `ScrollView`。
+- `Ride/RecordsView.swift`：全屏轨迹入口移到缩略图右上角；补 `-recordtrackfull` 调试入口，便于直接复检真实轨迹页。
+- `docs/DESIGN-SYSTEM.md`：主行动规范明确禁止把 `safeAreaInset` 挂在 `ScrollViewReader`、`GeometryReader` 或外层 `VStack` 上。
+
+### 证据与构建
+
+- Pro：`outputs/r49-verify/pro/forgot.png`、`forgot-step2.png`、`addvehicle-empty.png`、`addvehicle-selected-top.png`、`badge-top.png`、`badge-bottom.png`、`incident-form-top.png`、`incident-form-keyboard.png`、`incident-form-bottom.png`、`riderecovery.png`、`riderecoveryended.png`、`sos-top.png`、`sos-bottom.png`、`sos-nolocation.png`、`riders.png`、`team-top.png`、`team-rows.png`、`team-denied.png`、`team-failed.png`
+- SE：`outputs/r49-verify/se/forgot.png`、`forgot-step2.png`、`addvehicle-empty.png`、`addvehicle-selected.png`、`badge-top.png`、`badge-bottom.png`、`badge-locked.png`、`incident-form-top.png`、`incident-form-bottom.png`、`incident-submitting.png`、`incident-failed.png`、`incident-nolocation.png`、`incident-nolocation-bottom.png`、`incident-receipt.png`、`incident-receipt-bottom.png`、`riderecovery.png`、`riderecoveryended.png`、`sos-top.png`、`sos-bottom.png`、`sos-nolocation.png`、`sos-searchloading.png`、`sos-searchempty.png`、`sos-searchfailed.png`、`riders-top.png`、`team-top.png`、`team-rows-top.png`、`team-denied.png`、`team-failed.png`
+- SE 的 `incident-keyboard-invalid.png` 实际未弹出软键盘，不作为键盘避让证据；键盘抬起以 Pro 的 `incident-form-keyboard.png` 为准。
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+
+## 逐页巡检（第五十轮）：车库次级状态页
+
+### 复核结论
+
+- 本地油价：Pro / SE 均完整展示 92 / 95 / 98、当前标号勾选与省级参考价说明；SE 弹层顶部和底部留白完整，无溢出。
+- 天气详情：真实 Open-Meteo 数据；在 12 小时轨道上可横向滚动，SE 右缘仍保留可继续滑动的渐隐提示，数据来源说明完整可见。
+- 路况预估：明确标注「按当前时段估算，未接入实时路况」，常高峰、午间与出发建议均未伪造实时数据。
+- 车辆详情与车辆操作：信息行发丝线、默认车辆标识、更换照片 / 删除 / 取消层级在 Pro / SE 一致；SE 底部「完成」与「取消」均完整落在弹层内。
+- 车辆照片：空态只有一个黑色主行动「从相册选择」；已选态「重新选择」为次级文字行动，「保存」为唯一黑色主行动；保存中两者均禁用，文字变浅并显示转圈与「正在保存…」。
+- 本轮无 Swift 改动，沿用现有构建；Pro / SE 的截图结论以本轮证据为准。
+
+### 调试入口
+
+- 车库首页四个底部弹层直接用 `-fuel`、`-weathersheet`、`-trafficsheet`、`-vehicledetail`；不要再带 `-vehicles`，否则根视图会切到车辆列表，首页弹层不会出现。
+- 车辆操作与照片三态用 `-vehicles -vehicleactions`、`-vehicles -vehiclephoto`、`-vehicles -vehiclephoto -vehiclephotopicked`、`-vehicles -vehiclephoto -vehiclephotosaving`。
+
+### 证据
+
+- Pro：`outputs/r50/pro/fuel.png`、`weather.png`、`traffic.png`、`vehicledetail.png`、`actions.png`、`photo-empty.png`、`photo-picked.png`、`photo-saving.png`
+- SE：`outputs/r50/se/fuel.png`、`weather.png`、`traffic.png`、`vehicledetail.png`、`actions.png`、`photo-empty.png`、`photo-picked.png`、`photo-saving.png`
+
+## 逐页巡检（第五十一轮）：出发页天气适宜度与空气质量口径
+
+### 复核结论
+
+- 出发页折叠态、展开态、页尾与数据失败态在 Pro / SE 均复验；展开后免责说明完整落在底部按钮栏上方。
+- 真实数据出现「空气 169」与「95 适宜骑行」同屏：评分只计算温度、天气、风、降水与气象预警，不含空气质量，旧标题却让人读成综合结论。
+- 本轮不把 AQI 并入评分：空气质量异步到达，且只覆盖当前位置，合并会造成分数跳变与地点错配。改为把两个口径写清楚。
+
+### 改动
+
+- 评分标题统一为「天气适宜度」（展开卡、折叠摘要、低适宜度确认弹窗、无障碍播报），副标题明确「综合天气、风与降水」；`Suitability` 注释写明不含空气质量。
+- 空气质量独立成行，文案固定为「当前位置空气 AQI xx」，与目的地天气分开；分级改用 US AQI 六档：良好 / 中等 / 敏感人群不健康 / 不健康 / 非常不健康 / 危险，不再套用中国 HJ 633-2012 的「中度污染」等文案。
+- 折叠摘要新增第二行：Pro 显示「当前位置空气 + 限行提示」，SE 显示「当前位置空气」与「限行提示」，之前 SE 折叠态完全看不到 AQI。SE 的紧凑结论行写「天气适宜度」，避免 95 分被读成包含空气质量的综合分。
+- SE 小屏纵向收紧 14pt（车辆行上下留白 14→10、路线区块上边距 16→12、面板上边距 8→6），让两行摘要完整落在按钮栏上方，不再被切掉半行。
+- 无障碍摘要补入当前位置 AQI 与限行提示。
+
+### 调试入口
+
+- 折叠态：`-depart`
+- 展开态 / 页尾：`-depart -departexpanded`、`-depart -departexpanded -departbottom`
+- 数据失败态：`-depart -departexpanded -departdatafail`，至少等 12 秒再截图；5 秒时仍可能停在骨架态。
+- 单独 `-departinfo` 是信息面板调试页，不含底部按钮栏，不能用来验证页尾避让。
+
+### 证据与构建
+
+- Pro：`outputs/r51b/pro/depart-collapsed.png`、`depart-expanded.png`、`depart-expanded-full.png`、`depart-expanded-bottom.png`、`depart-datafail.png`
+- SE：`outputs/r51b/se/depart-collapsed.png`、`depart-expanded.png`、`depart-expanded-full.png`、`depart-expanded-bottom.png`、`depart-datafail.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+
+## 逐页巡检（第五十三轮）：骑行记录统计口径与状态页
+
+### 复核结论
+
+- Pro「我的」与骑行记录口径一致：「我的」显示骑行 6 次、累计 1 分钟、总里程未记录；记录页按近 30 天 / 仅统计已完成显示 6 次、1 分钟，全部记录 7 条，其中 6 条已完成、1 条未完成。
+- Pro 记录列表、已完成筛选、记录详情与空态均通过；空态为裸图标 + 标题 + 说明 + 唯一黑色主行动，底部按钮完整。
+- SE 账号中的旧记录为 8 月 29 日已完成记录；「近 30 天」汇总为 0 次 / 0 km / 0 分钟，而已完成筛选仍显示 1 条，统计范围与记录存在时间不同，不是数据矛盾。
+- SE 记录列表、已完成筛选、详情与空态均通过；详情首屏排布正常，底部「删除记录」向下滚动后完整露出，不属于固定栏永久遮挡。
+- 车库首页在 Pro / SE 复验通过：真实车辆图、两项指标、天气 / 油价 / 路况、上次骑行与主行动无小屏溢出。
+- 本轮无 Swift 改动。`DesignHomeView` 的本地调色板与 `Theme.textPrimary` 的 v6 色值差异是第 38 轮已记录的规范债，需单独视觉统一轮做前后对照，未在巡检中机械替换。
+
+### 调试入口
+
+- 记录列表 / 已完成筛选 / 空态：`-records`、`-records -recordcompleted`、`-records -recordsempty`；空态必须同时带 `-records`，只带 `-recordsempty` 会停在车库首页。
+- 记录详情：`-recorddetail`
+
+### 证据
+
+- Pro：`outputs/r53/pro/records.png`、`records-completed.png`、`record-detail.png`、`records-empty.png`、`garage.png`
+- SE：`outputs/r53/se/records.png`、`records-completed.png`、`record-detail.png`、`record-detail-bottom.png`、`records-empty.png`、`garage.png`
+- 本轮无代码改动，沿用现有 `BUILD SUCCEEDED` 产物（2026-11-13）。
+
+## 逐页巡检（第五十四轮）：法律页导航称谓与 Pro / SE 复验
+
+### 复核结论
+
+- 隐私政策页、用户协议页在 Pro / SE 均复验：顶部页头、第三方共享段、注销段与页尾滚动正常；20pt 页面边距、发丝线分组、正文行长与 v6 一致。
+- 第三方共享段完整列出 Supabase、和风天气、Open-Meteo 与地图应用；Open-Meteo 的备用天气 / 空气质量 / 路线海拔用途与「仅发送经纬度」边界均已写明。
+- 注销段与联系路径统一为「我的 → 注销账号」「我的 → 设置 → 关于与反馈」，与 App 内 Tab 名称一致；不再出现旧导航名「个人中心」。
+- App 内 `AgreementViews.swift` 原本已使用「我的」，本轮只改两份 Markdown 法律文档与两份 GitHub Pages HTML，App 行为不变。
+- 账号操作三条弹窗复验：注销确认（红色「继续注销」）、永久删除确认（红色「永久删除」）、退出登录确认（未绑定邮箱时为红色「退出登录」），Pro / SE 的 52pt 主按钮、发丝线与文字「取消」层级一致，底部安全区完整。
+- 三条弹窗均为 `fullScreenCover` 底部面板，遮罩点击可关闭；两种机型上「取消」都完整落在安全区内，没有被 Tab 栏或屏幕边缘裁切。
+- 本轮无 Swift 改动，沿用现有构建；隐私政策内容与 v2.2 版本号不变。
+
+### 证据
+
+- Pro：`outputs/r54/pro/privacy-top.png`、`privacy-third-party.png`、`privacy-bottom.png`、`delete-confirm.png`、`delete-final.png`、`signout-confirm.png`
+- SE：`outputs/r54/se/privacy-top.png`、`privacy-third-party.png`、`privacy-bottom.png`、`delete-confirm.png`、`delete-final.png`、`signout-confirm.png`
+- 本轮无代码改动，未重新构建（沿用 2026-11-13 `BUILD SUCCEEDED` 产物）。
+
+## 逐页巡检（第五十五轮）：收藏 / 路线 / 徽章状态页
+
+### 复核结论
+
+- 我的收藏页的列表、空态、错误态在 Pro / SE 均复验通过；空态含图标、标题、说明与唯一黑色主行动「浏览路线」。
+- 路线列表、筛选空态、空态、错误态在 Pro / SE 均通过；页头、筛选栏、空态主行动与底部安全区正常。
+- 路线详情首屏与底部在 Pro / SE 复验通过；底栏挂在内部 `ScrollView.safeAreaInset`，滚动内容可完整避让。
+- 徽章详情的已获得态与锁定态在 Pro / SE 均通过；分享 / 锁定说明与底部行动无小屏溢出。
+- 收藏错误态发现一处真实布局问题：`NetworkErrorView` 未撑满剩余高度，外层 `VStack` 在整屏垂直居中，导致页头掉到屏幕中部，与列表态 / 空态不一致。已在 `FavoriteRoutesView` 为错误态加 `.frame(maxWidth: .infinity, maxHeight: .infinity)`，并注明原因。
+- 在 SE 完成真实收藏链路：路线详情收藏 → 杀掉 App 后带 `-favorites` 重启 → 收藏列表显示该路线 → 从收藏进入详情取消收藏 → 返回收藏页立即变为空态，持久化与同步均正常。
+- 路线详情内部的海拔数据错误态没有独立调试入口，本轮未新增生产代码或截图；现有错误处理未改动。
+
+### 调试入口
+
+- 收藏列表 / 空态 / 错误态：`-favorites`、`-favorites -favoritesempty`、`-favorites -favoriteserror`
+- 路线列表 / 筛选空态 / 空态 / 错误态：`-routes`、`-routes -routesfilterempty`、`-routes -routesempty`、`-routes -routeserror`
+- 路线详情：`-routedetail`
+- 徽章详情已获得 / 锁定：`-badgedetail`、`-badgedetail -badgelocked`
+
+### 证据与构建
+
+- Pro：`outputs/r55/pro/favorites-list.png`、`favorites-empty.png`、`favorites-error.png`、`routes.png`、`routes-filter-empty.png`、`routes-empty.png`、`routes-error.png`、`routedetail.png`、`routedetail-bottom.png`、`badgedetail.png`、`badgelocked.png`
+- SE：`outputs/r55/se/favorites-list.png`、`favorites-empty.png`、`favorites-error.png`、`favorites-with-data.png`、`favorites-after-unfavorite.png`、`routes.png`、`routes-filter-empty.png`、`routes-empty.png`、`routes-error.png`、`routedetail.png`、`badgedetail.png`、`badgelocked.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-13）。
+
+## 逐页巡检（第五十六轮）：中性色令牌统一
+
+### 复核结论
+
+- 中性色令牌统一到 v6：`Theme.textPrimary` 改为 `#0F1115`，`Theme.textSecondary` 改为 `#6F7683`，并新增 `textTertiary #7C828C`；正文、辅助文字与说明文字重新形成稳定的三级层级。
+- 补齐车库首页所需的令牌：`bandBackground #F7F8FA`、`hairline #F1F3F5`、`hairlineStrong #E7EAEE`、`dotIdle #B8BEC8`，以及轨迹信号专用 `routeSignal #00A99D`。
+- `Garage/DesignHomeView.swift` 删除页面内本地色板，数据带、发丝线、轮播点与文字全部改取 `Theme`；未改变布局、数据或天气 / 油价 / AQI 的语义色。
+- 深色骑行 HUD 未误用加深后的 `textPrimary`：HUD 继续使用 `darkBackground`、`darkCard`、白色数字与 `darkMeta`，Pro / SE 的骑行中与暂停态均复验通过。
+- Pro / SE 复验车库首页与设置页，SE 复验骑行记录列表 / 详情、路线列表 / 详情、徽章列表 / 详情，Pro 复验骑行记录列表 / 详情；中性色层级正常，没有过浅、过深或布局回归。
+
+### 证据与构建
+
+- 改前：`outputs/r56/before/`
+- 改后：`outputs/r56/after/`（含 `pro-records.png`、`pro-record-detail.png`、`pro-riding.png`、`pro-riding-paused.png`、`se-riding.png`）
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-14）。
+
+## 逐页巡检（第五十七轮）：路线详情海拔失败 / 慢加载 / 缺坐标态
+
+### 复核结论
+
+- 补齐第 55 轮遗留：路线详情海拔卡此前只有生产链路，没有可复现的失败 / 慢加载 / 缺坐标调试入口。
+- 新增仅调试用的 `RouteDetailElevationPreview`（`.live` / `.slow` / `.failed` / `.missingCoordinates`）；`RouteDetailView` 默认 `.live`，所有现有调用方的生产行为不变。
+- 失败态通过：山形图标、标题、说明与右侧「重试」水平对齐且垂直居中，20pt 页面边距、上下发丝线与右侧公里标签一致，Pro / SE 均无溢出。
+- 慢加载态通过：骨架沿用真实剖面图 104pt 高度与位置，说明文字在骨架下方；SE 首屏需向下滚动才能看到说明与途经点，滚动内容未被底部按钮栏压住。
+- 缺坐标态通过：文案为「路线缺少途经点坐标」，且不再渲染注定失败的「重试」；Pro / SE 均正常。
+- 生产 `.live` 链路复验：Pro 加载出 37–53 m 真实剖面，`0 km` / `12.6 km` 两端标签与右侧公里数对齐。
+- 顺带把 `RouteDetailView.swift` 文件头注释中的旧「16 边距、白卡描边」更新为 v6 的「20pt 边距、发丝线分组」，仅注释变更。
+
+### 调试入口
+
+- 失败态：`-routedetail -elevationpreviewfailed`
+- 慢加载：`-routedetail -elevationpreviewslow`
+- 缺坐标：`-routedetail -elevationpreviewnocoords`
+- 生产默认：`-routedetail`
+
+### 证据与构建
+
+- Pro：`outputs/r57/pro/failed.png`、`slow.png`、`nocoords.png`、`live.png`
+- SE：`outputs/r57/se/failed.png`、`slow.png`、`nocoords.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-14）。
+
+## 逐页巡检（第五十八轮）：我的页与账号操作状态
+
+### 复核结论
+
+- 「我的」首屏与页尾（Pro / SE）：头像、昵称 / 账号、三栏统计、分组发丝线与 20pt 页边距一致；SE 的账号操作行保持 48pt 行高，退出登录 / 注销账号完整位于安全区上方，未被悬浮 Tab 胶囊遮挡。
+- 统计口径：`ProfileView.loadRideTotals()` 只聚合 `status == "completed"` 的 `ride_records`；`rideCount > 0 && totalKm == 0` 显示「未记录」是刻意表达「有骑行但没有可用里程」，非遗漏或格式化 bug。
+- 邮箱绑定：空态、更换邮箱（当前邮箱回显）与成功页 Pro / SE 均通过；成功页保持单一主行动，图标、标题与说明居中，20pt 边距与发丝线一致。
+- 账号弹层：退出登录、注销确认、永久删除确认三条弹层 Pro / SE 均通过；按钮层级为「实心主行动 + 文字行次行动」，注销账号是页面上唯一的红字，长文案不超宽、不贴边。
+- 头像更新失败 / 昵称更新失败弹层与「正在注销账号…」遮罩按代码复核：失败弹层走统一 `wellwayDialog`，空按钮自动补「确定」；注销遮罩为居中白色卡片 + 进度环 + 两行说明，带无障碍合并标签，均无生产改动。
+- 昵称编辑发现真实焦点问题：注释声明「出现即聚焦」，实际打开后键盘不弹出，必须再点一次输入框。原因是 `@FocusState` 声明在 `fullScreenCover` 的呈现方，跨呈现边界写入不会驱动被呈现视图的 `TextField`；单纯加长延迟（300ms / 900ms）无效。
+- 修复：把面板抽成独立的 `WellwayPromptPanel`，焦点状态落在被呈现视图内部，转场落位后约 450ms 聚焦。Pro / SE 现在打开即弹键盘、光标停在「骑友」末尾，面板与「取消」整行完整位于键盘上方。该组件同时服务车辆重命名与骑行记录重命名，行为一致。
+
+### 调试入口
+
+- `-profile`：进入「我的」Tab；`-profilepage`：单页复检（不带 Tab 栏）。
+- `-emailbind`：邮箱绑定空态；`-emailbindrebind`：更换邮箱态（调试预览用示例邮箱回显）；`-emailbindsuccess`：直接展示绑定成功页。
+- 以上入口仅在调试构建使用，生产默认流程不变。
+
+### 证据与构建
+
+- Pro：`outputs/r58/pro/profile-top.png`、`profile-bottom.png`、`email-empty.png`、`email-rebind.png`、`email-success.png`、`logout-confirm.png`、`delete-confirm-1.png`、`delete-confirm-final.png`、`nickname-edit.png`、`nickname-edit-autofocus.png`
+- SE：`outputs/r58/se/profile-top.png`、`profile-bottom.png`、`email-success.png`、`logout-confirm.png`、`delete-confirm-1.png`、`delete-confirm-final.png`、`nickname-edit.png`、`nickname-edit-keyboard.png`、`nickname-edit-autofocus.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-14）。
+
+## 逐页巡检（第五十九轮）：车辆添加已选 / 移除与记录重命名
+
+### 复核结论
+
+- 车辆添加已选态（SE）：凯越 625X 选中后显示「已选」徽标；确认卡片为「继续添加车型，已选 1 辆」「凯越 625X」「添加照片」「添加到车库」，v6 白色分组与发丝线正常，SE 无溢出。
+- 移除路径（SE）：点「移除 625X」后卡片消失，恢复「还没有选择车型 / 从车型库挑选，可一次添加多辆」，底部主行动恢复「选择品牌及车辆」；车库仍只有原本田 CB400F，未误写数据。
+- 车辆操作（SE「我的 → 车辆」）：车辆行操作表为「更换照片 / 删除车辆 / 取消」；删除确认弹窗标题「删除这辆车？」，说明「将从车库移除「本田 CB400F」，骑行记录会保留。」，按钮「删除车辆 / 取消」；取消后车辆保留，未出现误删。
+- 记录重命名真实缺陷（本轮修复）：`RecordDetailView` 标题读取进入时的 `@State record` 快照，`store.rename` 只更新 `store.records`，因此详情标题保持旧名。改为 `currentRecord` 按 `recordId` 从 `store.records` 取最新值、取不到再回退快照；SE 改名后标题立即更新，返回列表同步，杀 App 重启仍保留。Pro 打开重命名面板，标题、说明、输入框与「保存 / 取消」布局正常，键盘与焦点落在输入框内（仅验证面板，未提交改名以避免污染真实记录）。
+- Pro 车辆列表（「我的 → 车辆」）：豪爵 / 宝逸 150 / 默认 的单行摘要、20pt 页边距、右上「添加车辆」与发丝线正常。
+- 已知展示语义差异：车库首页「上次骑行」显示路线名「城市穿梭线」，记录列表 / 详情显示记录自定义名；原因是 `RecentRideRow` 只读 route 名。暂不在本轮改动，记为后续口径统一项。
+
+### 证据与构建
+
+- SE：`outputs/r59/se_selected_625x.png`、`outputs/r59/se_removed_empty.png`
+- Pro：`outputs/r59/pro_rename_panel.png`、`outputs/r59/pro_vehicles.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-14）。

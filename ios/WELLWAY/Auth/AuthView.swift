@@ -742,23 +742,23 @@ struct PasswordLoginView: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .scrollDisabled(keyboardVisible && UIScreen.main.bounds.height < 700)
-            }
-            .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 0) {
-                    if keyboardVisible {
-                        forgotButton(height: 30)
+                .safeAreaInset(edge: .bottom) {
+                    VStack(spacing: 0) {
+                        if keyboardVisible {
+                            forgotButton(height: 30)
+                        }
+
+                        loginButton
+                            .padding(.top, keyboardVisible ? 10 : 8)
+
+                        AuthAgreementLine(agreed: $agreed, onAgreement: onAgreement, onPrivacy: onPrivacy)
+                            .modifier(ShakeEffect(shakes: shakeCount))
+                            .padding(.horizontal, 20)
+                            .padding(.top, keyboardVisible ? 8 : 0)
+                            .padding(.bottom, 8)
                     }
-
-                    loginButton
-                        .padding(.top, keyboardVisible ? 10 : 8)
-
-                    AuthAgreementLine(agreed: $agreed, onAgreement: onAgreement, onPrivacy: onPrivacy)
-                        .modifier(ShakeEffect(shakes: shakeCount))
-                        .padding(.horizontal, 20)
-                        .padding(.top, keyboardVisible ? 8 : 0)
-                        .padding(.bottom, 8)
+                    .background(Color.white)
                 }
-                .background(Color.white)
             }
         }
         .tracksKeyboardVisibility($keyboardVisible)
@@ -919,13 +919,13 @@ struct ForgotPasswordView: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .scrollDisabled(keyboardVisible && UIScreen.main.bounds.height < 700)
-            }
-            .safeAreaInset(edge: .bottom) {
-                primaryAction
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
-                    .background(Color.white)
+                .safeAreaInset(edge: .bottom) {
+                    primaryAction
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                        .padding(.bottom, 8)
+                        .background(Color.white)
+                }
             }
         }
         .tracksKeyboardVisibility($keyboardVisible)

@@ -19,8 +19,8 @@
 
 | 接口 | 实现位置 | 说明 | 合规注意 |
 |---|---|---|---|
-| 实时天气 + 逐小时预报 + 气象预警 | `ios/WELLWAY/Core/QWeather.swift`（**和风天气 QWeather**，Key/Host 配置在 `ios/WELLWAY/Resources/Info.plist`） | 出发页「骑行参考」双地天气对比、逐小时预报条、灾害预警条、骑行适宜度 | ✅ 国内持牌数据源。⚠️ Key 内嵌客户端只能算内测方案（可被反编译取出），正式上架前改由后端代理转发；未配置 Key 或和风报错时自动回退 Open-Meteo（`RideInfoModules.swift` 的 `fetchSmart`），不影响功能。预警走新版 `GET /weatheralert/v1/current/{lat}/{lon}`（旧 `/v7/warning/now` 已下线）。 |
-| 空气质量 AQI | `ios/WELLWAY/Ride/RideInfoModules.swift`（Open-Meteo Air Quality） | 「当前地点」天气卡显示 `AQI xx 优/良/…` | 分级文案已按中国 HJ 633-2012 标准（优/良/轻度污染/中度污染/重度污染/严重污染）；**数据源仍是境外公共接口**，正式版建议一并换国内持牌源。 |
+| 实时天气 + 逐小时预报 + 气象预警 | `ios/WELLWAY/Core/QWeather.swift`（**和风天气 QWeather**，Key/Host 配置在 `ios/WELLWAY/Resources/Info.plist`） | 出发页「骑行参考」双地天气对比、逐小时预报条、灾害预警条、天气适宜度 | ✅ 国内持牌数据源。⚠️ Key 内嵌客户端只能算内测方案（可被反编译取出），正式上架前改由后端代理转发；未配置 Key 或和风报错时自动回退 Open-Meteo（`RideInfoModules.swift` 的 `fetchSmart`），不影响功能。预警走新版 `GET /weatheralert/v1/current/{lat}/{lon}`（旧 `/v7/warning/now` 已下线）。天气适宜度只算温度、天气、风、降水与气象预警，**不含空气质量**。 |
+| 空气质量 AQI | `ios/WELLWAY/Ride/RideInfoModules.swift`（Open-Meteo Air Quality） | 「当前位置空气 AQI xx」独立一行，与目的地天气分开 | 文案按 **US AQI** 六档：良好 / 中等 / 敏感人群不健康 / 不健康 / 非常不健康 / 危险（如 169 → 不健康）；不再使用中国 HJ 633-2012 的「中度污染」等文案。AQI 只取当前位置且异步到达，**不并入天气适宜度评分**。**数据源仍是境外公共接口**，正式版建议换国内持牌源。 |
 | 当前位置地名（反向地理编码） | `ios/WELLWAY/Core/LocationFetcher.swift`（系统 CLGeocoder） | 「当前地点」显示真实地名（如「杭州市·西湖区」） | 定位须最小必要原则：仅在用户主动进入「骑行参考」时获取单次位置；已在隐私政策第 4 条说明。CLGeocoder 数据由苹果（国内合作方）提供。 |
 | 定位 | 系统 CoreLocation（`OneShotLocationFetcher` / `RideService`） | 路线起点定位、骑行轨迹 | 后台持续定位需在隐私政策 + 系统弹窗文案中说明用途（已配置 `NSLocationAlwaysAndWhenInUseUsageDescription`）；《个人信息保护法》要求单独同意 + 可撤回。 |
 | 拥堵预估 | `ios/WELLWAY/Routes/RoutesView.swift`（本地启发式） | 「骑行参考·拥堵预估」 | 纯本地算法不采集数据，合规；如需真实路况需高德交通态势 API（企业资质 + key，见上表 #4）。 |

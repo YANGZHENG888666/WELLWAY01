@@ -660,20 +660,20 @@ struct RidersView: View {
                     )
                 }
                 .refreshable { await load() }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    Text("人数为匿名汇总，存在 GPS 延迟与定位误差，不可作为道路会车、避险判断依据。")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineSpacing(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 10)
+                        .padding(.bottom, 10)
+                        .background(Color.white.overlay(alignment: .top) {
+                            Rectangle().fill(Theme.separator).frame(height: 1)
+                        })
+                }
             }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            Text("人数为匿名汇总，存在 GPS 延迟与定位误差，不可作为道路会车、避险判断依据。")
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.textSecondary)
-                .lineSpacing(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-                .padding(.bottom, 10)
-                .background(Color.white.overlay(alignment: .top) {
-                    Rectangle().fill(Theme.separator).frame(height: 1)
-                })
         }
         .background(Color.white)
         .ignoresSafeArea(edges: .top)
@@ -817,16 +817,16 @@ struct TeamRidersView: View {
                 .refreshable { await load() }
             }
             .background(Color.white)
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            disclaimer
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-                .padding(.bottom, 10)
-                .background(Color.white.overlay(alignment: .top) {
-                    Rectangle().fill(Theme.separator).frame(height: 1)
-                })
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                disclaimer
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                    .padding(.bottom, 10)
+                    .background(Color.white.overlay(alignment: .top) {
+                        Rectangle().fill(Theme.separator).frame(height: 1)
+                    })
+            }
         }
         .background(Color.white)
         .toolbar(.hidden, for: .navigationBar)

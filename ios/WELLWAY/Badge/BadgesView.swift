@@ -32,7 +32,10 @@ struct BadgesView: View {
             .task {
                 let service = store ?? BadgesStore(client: auth.client, userId: auth.user?.id ?? UUID())
                 store = service
-                if ProcessInfo.processInfo.arguments.contains("-badgesample") {
+                // 通知调试样例的徽章 id 来自本地样例数据；单独打开徽章页时如果去
+                // 读线上数据，同一个 id 会落到另一枚徽章，通知和详情在巡检时对不上。
+                let args = ProcessInfo.processInfo.arguments
+                if args.contains("-badgesample") || args.contains("-notifsample") {
                     service.applyDebugSample()
                     revealInitialBadge(in: service)
                     return
@@ -873,8 +876,6 @@ struct BadgeDetailView: View {
                 .padding(.bottom, 34)
                 .frame(minHeight: proxy.size.height, alignment: .center)
             }
-            }
-            .frame(maxWidth: .infinity)
             // 分享/再跑一次固定在底部：跟着内容走会让按钮停在屏幕中段、
             // 下方空掉近四成，页面看起来像没加载完
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -883,6 +884,8 @@ struct BadgeDetailView: View {
                     .wellwayBottomBar()
                     .motionAppear(delay: 0.38)
             }
+            }
+            .frame(maxWidth: .infinity)
         }
         .background(Color.white)
         .toolbar(.hidden, for: .navigationBar)

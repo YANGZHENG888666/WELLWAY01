@@ -4,7 +4,14 @@ import CoreLocation
 import MapKit
 
 /// 路线详情：地图主视觉 + 数据卡 + 海拔剖面 + 途经点
-/// 统一设计语言：白底、16 边距、白卡 + 1px 描边、无装饰性小字
+/// 统一设计语言：白底、20pt 边距、发丝线分组、无装饰性小字
+enum RouteDetailElevationPreview {
+    case live
+    case slow
+    case failed
+    case missingCoordinates
+}
+
 struct RouteDetailView: View {
     @Environment(AuthManager.self) private var auth
     @Environment(NavChoiceCenter.self) private var navChoice
@@ -21,6 +28,8 @@ struct RouteDetailView: View {
     /// 路线列表已加载的收藏仓库；列表进入详情时必须共用同一实例，
     /// 否则详情点亮星标后，返回列表的「只看收藏」仍读旧内存。
     var favoritesStore: FavoritesStore? = nil
+    /// 仅调试入口使用：把海拔卡固定到慢加载 / 失败 / 缺坐标态，便于截图评审。
+    var elevationPreview: RouteDetailElevationPreview = .live
 
     @State private var showRiding = false
     @State private var showFullscreenMap = false
@@ -447,6 +456,28 @@ struct RouteDetailView: View {
 
     private func loadElevationProfile() async {
         guard elevationData == nil else { return }
+        switch elevationPreview {
+        case .live:
+            break
+        case .slow:
+            elevationLoading = true
+            elevationFailed = false
+            elevationSlow = true
+            elevationMissingCoordinates = false
+            return
+        case .failed:
+            elevationLoading = false
+            elevationFailed = true
+            elevationSlow = false
+            elevationMissingCoordinates = false
+            return
+        case .missingCoordinates:
+            elevationLoading = false
+            elevationFailed = true
+            elevationSlow = false
+            elevationMissingCoordinates = true
+            return
+        }
         let attempt = UUID()
         elevationAttempt = attempt
         let coordinates = checkpoints

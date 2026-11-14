@@ -201,22 +201,45 @@ private struct WellwayPromptModifier: ViewModifier {
     var confirmTitle: String
     var onConfirm: () -> Void
 
-    /// 弹窗唯一目的就是改名：出现即聚焦，省掉一次点击。
-    @FocusState private var fieldFocused: Bool
-
     func body(content: Content) -> some View {
         // 与 wellwayDialog 一致走全屏呈现：Tab 根页面（「我的」）上的浮层会被
         // 悬浮 Tab 胶囊压住，面板底部「取消」整行落在胶囊后面，点不到。
         content.fullScreenCover(isPresented: $isPresented) {
-            ZStack(alignment: .bottom) {
-                Color.black.opacity(0.35)
-                    .ignoresSafeArea()
-                    .onTapGesture { dismiss() }
-
-                panel
-            }
-            .presentationBackground(.clear)
+            WellwayPromptPanel(
+                isPresented: $isPresented,
+                title: title,
+                placeholder: placeholder,
+                text: $text,
+                confirmTitle: confirmTitle,
+                onConfirm: onConfirm
+            )
         }
+    }
+}
+
+/// 面板必须独占一个视图：`FocusState` 声明在呈现方时，跨
+/// `fullScreenCover` 边界设置不会生效，键盘不会自动弹出。
+private struct WellwayPromptPanel: View {
+    @Binding var isPresented: Bool
+    var title: String
+    var placeholder: String
+    @Binding var text: String
+    var confirmTitle: String
+    var onConfirm: () -> Void
+
+    /// 弹窗唯一目的就是改名：出现即聚焦，省掉一次点击。
+    @FocusState private var fieldFocused: Bool
+    @State private var didAutoFocus = false
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture { dismiss() }
+
+            panel
+        }
+        .presentationBackground(.clear)
     }
 
     private var panel: some View {
@@ -280,7 +303,13 @@ private struct WellwayPromptModifier: ViewModifier {
                 .fill(Color.white)
                 .ignoresSafeArea(edges: .bottom)
         }
-        .onAppear { fieldFocused = true }
+        .task {
+            guard !didAutoFocus else { return }
+            didAutoFocus = true
+            // 等全屏转场落位后再聚焦，否则首帧设置会被键盘服务忽略。
+            try? await Task.sleep(for: .milliseconds(450))
+            fieldFocused = true
+        }
     }
 
     private func dismiss() {

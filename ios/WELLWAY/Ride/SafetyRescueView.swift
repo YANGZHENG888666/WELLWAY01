@@ -196,12 +196,12 @@ struct SafetyRescueView: View {
                 guard scrolled != isScrolled else { return }
                 withAnimation(.easeInOut(duration: 0.15)) { isScrolled = scrolled }
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) { shareBar }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)
         .ignoresSafeArea(edges: .top)
         .toolbar(.hidden, for: .navigationBar)
-        .safeAreaInset(edge: .bottom, spacing: 0) { shareBar }
         .preferredColorScheme(.light)
         .onAppear { screenAppearance.push(.light) }
         .onDisappear { screenAppearance.pop(.light) }

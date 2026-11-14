@@ -48,6 +48,9 @@ struct FavoriteRoutesView: View {
             NetworkErrorView(message: errorMessage) {
                 Task { await load() }
             }
+            // 错误态高度固定；不撑满剩余空间时，外层 VStack 会在整屏居中，
+            // 页头会跟着掉到屏幕中部，与空态/列表态不一致。
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if isLoading, routes.isEmpty {
             RouteSkeletonList(dark: false)
         } else if favoriteRoutes.isEmpty {

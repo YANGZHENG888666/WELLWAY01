@@ -25,8 +25,10 @@ enum Theme {
     static let primary = Color.black
     static let background = Color(red: 0xF5 / 255, green: 0xF7 / 255, blue: 0xFA / 255)
     static let card = Color.white
-    static let textPrimary = Color(red: 0x17 / 255, green: 0x1E / 255, blue: 0x28 / 255)
-    static let textSecondary = Color(red: 0x6B / 255, green: 0x74 / 255, blue: 0x82 / 255)
+    static let textPrimary = Color(red: 0x0F / 255, green: 0x11 / 255, blue: 0x15 / 255)
+    static let textSecondary = Color(red: 0x6F / 255, green: 0x76 / 255, blue: 0x83 / 255)
+    /// 第三层级文字：只用于说明、占位和未选中项，不用于正文或主数据。
+    static let textTertiary = Color(red: 0x7C / 255, green: 0x82 / 255, blue: 0x8C / 255)
     static let separator = Color(red: 0xE6 / 255, green: 0xE9 / 255, blue: 0xEF / 255)
     /// 列表右侧箭头(比分隔线更深一档，保证可见)
     static let chevron = Color(red: 0xC2 / 255, green: 0xC7 / 255, blue: 0xD0 / 255)
@@ -48,6 +50,14 @@ enum Theme {
     static let chipBackground = Color(red: 0xF7 / 255, green: 0xF7 / 255, blue: 0xF7 / 255)
     static let ink = Color(red: 0x24 / 255, green: 0x26 / 255, blue: 0x2B / 255)
     static let cardStroke = Color(red: 0xE9 / 255, green: 0xE9 / 255, blue: 0xEB / 255)
+
+    // 车库首页的数据带、发丝线与轮播点；v6 只允许从这里取中性色。
+    static let bandBackground = Color(red: 0xF7 / 255, green: 0xF8 / 255, blue: 0xFA / 255)
+    static let hairline = Color(red: 0xF1 / 255, green: 0xF3 / 255, blue: 0xF5 / 255)
+    static let hairlineStrong = Color(red: 0xE7 / 255, green: 0xEA / 255, blue: 0xEE / 255)
+    static let dotIdle = Color(red: 0xB8 / 255, green: 0xBE / 255, blue: 0xC8 / 255)
+    /// 真实轨迹与路线信号的专用色，不随文字灰阶变化。
+    static let routeSignal = Color(red: 0x00 / 255, green: 0xA9 / 255, blue: 0x9D / 255)
 
     /// 车辆空态统一使用两轮车图标；iOS 18 起系统提供摩托车，旧系统回退到自行车。
     static var vehicleSymbol: String {

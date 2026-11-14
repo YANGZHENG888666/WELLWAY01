@@ -67,16 +67,17 @@ struct AddVehicleFlowView: View {
                     // 本页是 fullScreenCover，没有悬浮 Tab 栏；沿用 108pt 会让空态整体上浮 50pt 以上
                     .padding(.bottom, 32)
                 }
+                // 主行动恒定在底部：空态是「选择品牌及车辆」，选好之后同一位置变成
+                // 「添加到车库」。原来空态的按钮跟着空文案浮在页面中段，选完车型返回
+                // 后按钮突然掉到底部，同一颗按钮两次出现的位置差 300pt 以上。
+                // 必须直接挂在 ScrollView 上，挂在 GeometryReader 外层不会扣减滚动区高度。
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    bottomBar
+                }
                 }
             }
             .background(Color.white)
             .ignoresSafeArea(edges: .top)
-            // 主行动恒定在底部：空态是「选择品牌及车辆」，选好之后同一位置变成
-            // 「添加到车库」。原来空态的按钮跟着空文案浮在页面中段，选完车型返回
-            // 后按钮突然掉到底部，同一颗按钮两次出现的位置差 300pt 以上。
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                bottomBar
-            }
             .toolbar(.hidden, for: .navigationBar)
             .pageMark(24)
             .task {

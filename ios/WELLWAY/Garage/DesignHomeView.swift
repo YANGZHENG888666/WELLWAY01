@@ -74,18 +74,6 @@ struct DesignHomeView: View {
     @State private var weatherRefreshFailed = false
     @State private var fuelRefreshFailed = false
 
-    // MARK: - 色板(与设计稿一致)
-
-    private let ink = Color(red: 0x0F / 255, green: 0x11 / 255, blue: 0x15 / 255)
-    private let ink65 = Color(red: 0x6F / 255, green: 0x76 / 255, blue: 0x83 / 255)
-    private let ink50 = Color(red: 0x7C / 255, green: 0x82 / 255, blue: 0x8C / 255)
-    private let iconStroke = Color(red: 0x33 / 255, green: 0x38 / 255, blue: 0x3F / 255)
-    private let bandBG = Color(red: 0xF7 / 255, green: 0xF8 / 255, blue: 0xFA / 255)
-    private let hair = Color(red: 0xF1 / 255, green: 0xF3 / 255, blue: 0xF5 / 255)
-    private let hairStrong = Color(red: 0xE7 / 255, green: 0xEA / 255, blue: 0xEE / 255)
-    private let dotIdle = Color(red: 0xB8 / 255, green: 0xBE / 255, blue: 0xC8 / 255)
-    private let routeTeal = Color(red: 0x00 / 255, green: 0xA9 / 255, blue: 0x9D / 255)
-
     // MARK: - 数据
 
     private var currentVehicle: Vehicle? {
@@ -519,7 +507,7 @@ struct DesignHomeView: View {
             Text("车库")
                 .font(.system(size: 18, weight: .bold))
                 .kerning(0.2)
-                .foregroundStyle(ink)
+                .foregroundStyle(Theme.textPrimary)
                 .frame(width: 160, height: 26, alignment: .leading)
                 // 与 DesignPageHeader(compact) 的 20pt 内容边距对齐：
                 // 车库标题写 16pt 时，切到路线/对向/我的会看到标题横跳 4pt
@@ -529,7 +517,7 @@ struct DesignHomeView: View {
                 Button(action: onAddVehicle) {
                     Image(systemName: "plus")
                         .font(.system(size: 20, weight: .regular))
-                        .foregroundStyle(ink)
+                        .foregroundStyle(Theme.textPrimary)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
@@ -572,7 +560,7 @@ struct DesignHomeView: View {
                 ForEach(garage.vehicles.indices, id: \.self) { index in
                     ZStack {
                         Capsule()
-                            .fill(index == vehicleIndex ? ink : dotIdle)
+                            .fill(index == vehicleIndex ? Theme.textPrimary : Theme.dotIdle)
                             .frame(width: index == vehicleIndex ? (compactDots ? 14 : 18) : (compactDots ? 4 : 6), height: 6)
                     }
                     .frame(width: compactDots ? 14 : 18, height: 6)
@@ -693,14 +681,14 @@ struct DesignHomeView: View {
             // motorcycle 是 iOS 18 才有的符号，写死会在 iOS 17 上变成空白
             Image(systemName: Theme.vehicleSymbol)
                 .font(.system(size: 26, weight: .regular))
-                .foregroundStyle(ink50)
+                .foregroundStyle(Theme.textTertiary)
                 .accessibilityHidden(true)
             Text("还没有车型图")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(ink65)
+                .foregroundStyle(Theme.textSecondary)
             Text("点按添加自己的车照")
                 .font(.system(size: 12))
-                .foregroundStyle(ink50)
+                .foregroundStyle(Theme.textTertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -711,7 +699,7 @@ struct DesignHomeView: View {
                 Text(displayName)
                     .font(.system(size: 17, weight: .bold))
                     .kerning(0.1)
-                    .foregroundStyle(ink)
+                    .foregroundStyle(Theme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
 
@@ -720,7 +708,7 @@ struct DesignHomeView: View {
                 if let ordinal = sameModelOrdinal {
                     Text("第 \(ordinal) 辆")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(ink65)
+                        .foregroundStyle(Theme.textSecondary)
                         .padding(.horizontal, 5)
                         .frame(height: 16)
                         .background(Theme.lightField)
@@ -734,14 +722,14 @@ struct DesignHomeView: View {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text("总里程")
                     .font(.system(size: 12))
-                    .foregroundStyle(ink65)
+                    .foregroundStyle(Theme.textSecondary)
                 Text(kmIsUnknown ? "未记录" : kmParts.value)
                     .font(.system(size: 13, weight: kmIsUnknown ? .medium : .semibold).monospacedDigit())
-                    .foregroundStyle(kmIsUnknown ? ink65 : ink)
+                    .foregroundStyle(kmIsUnknown ? Theme.textSecondary : Theme.textPrimary)
                 if !kmParts.unit.isEmpty && !kmIsUnknown {
                     Text(kmParts.unit)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(ink65)
+                        .foregroundStyle(Theme.textSecondary)
                 }
             }
         }
@@ -790,25 +778,25 @@ struct DesignHomeView: View {
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(value)
                     .font(.system(size: missing ? 15 : 17, weight: missing ? .regular : .bold).monospacedDigit())
-                    .foregroundStyle(missing ? ink65 : ink)
+                    .foregroundStyle(missing ? Theme.textSecondary : Theme.textPrimary)
                 if !unit.isEmpty {
                     Text(unit)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(ink65)
+                        .foregroundStyle(Theme.textSecondary)
                 }
             }
             Text(label)
                 // 与「本次出发」数据带的说明文字同为 12pt：
                 // 同一屏两排标签一边 11 一边 12，会读成两个层级。
                 .font(.system(size: 12))
-                .foregroundStyle(ink65)
+                .foregroundStyle(Theme.textSecondary)
         }
         .frame(maxWidth: .infinity)
     }
 
     private var dividerV: some View {
         Rectangle()
-            .fill(hair)
+            .fill(Theme.hairline)
             .frame(width: 1, height: 34)
     }
 
@@ -823,7 +811,7 @@ struct DesignHomeView: View {
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
                 .kerning(0.2)
-                .foregroundStyle(ink)
+                .foregroundStyle(Theme.textPrimary)
             Spacer(minLength: 0)
             trailing()
         }
@@ -861,13 +849,13 @@ struct DesignHomeView: View {
                 TimelineView(.periodic(from: .now, by: 30)) { _ in
                     Text(updatedText)
                         .font(.system(size: 12))
-                        .foregroundStyle(ink65)
+                        .foregroundStyle(Theme.textSecondary)
                 }
                 // 定位被拒时这一行是去系统设置的入口，给个箭头，别让人以为只是状态文字
                 if locationDeniedForWeather {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(ink50)
+                        .foregroundStyle(Theme.textTertiary)
                 }
             }
             .frame(minHeight: 44)
@@ -901,10 +889,10 @@ struct DesignHomeView: View {
             HStack(spacing: 1) {
                 Text("查看记录")
                     .font(.system(size: 12))
-                    .foregroundStyle(ink65)
+                    .foregroundStyle(Theme.textSecondary)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(ink50)
+                    .foregroundStyle(Theme.textTertiary)
             }
             .frame(minHeight: 44)
             .contentShape(Rectangle())
@@ -944,7 +932,7 @@ struct DesignHomeView: View {
         // 会被洗成浅灰，看起来像被裁掉一半。
         .padding(.bottom, 24)
         .frame(width: width, height: bandHeight)
-        .background(bandBG)
+        .background(Theme.bandBackground)
         .position(x: width / 2, y: bandCenterY)
     }
 
@@ -965,11 +953,11 @@ struct DesignHomeView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 1) {
                     Text(value)
                         .font(.system(size: 19, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(ink)
+                        .foregroundStyle(Theme.textPrimary)
                     if let unit, value != "—" {
                         Text(unit)
                             .font(.system(size: 10.5, weight: .medium))
-                            .foregroundStyle(ink65)
+                            .foregroundStyle(Theme.textSecondary)
                     }
                 }
                 .padding(.top, 7)
@@ -977,7 +965,7 @@ struct DesignHomeView: View {
                     // 浅底上的说明性整句按规范用 12pt：11pt 在白底的
                     // 对比与可读性都不够，深色 HUD 才用 11。
                     .font(.system(size: 12))
-                    .foregroundStyle(ink65)
+                    .foregroundStyle(Theme.textSecondary)
                     .padding(.top, 3)
             }
             .frame(maxWidth: .infinity)
@@ -1001,7 +989,7 @@ struct DesignHomeView: View {
     ) -> some View {
         ZStack {
             Circle()
-                .stroke(hairStrong, lineWidth: 4)
+                .stroke(Theme.hairlineStrong, lineWidth: 4)
             if progress > 0 {
                 Circle()
                     .trim(from: 0, to: max(0.08, min(1, progress)))
@@ -1029,11 +1017,11 @@ struct DesignHomeView: View {
                         VStack(spacing: 3) {
                             Text("\(grade)")
                                 .font(.system(size: 12, weight: fuelGrade == grade ? .bold : .regular).monospacedDigit())
-                                .foregroundStyle(fuelGrade == grade ? ink : ink50)
+                                .foregroundStyle(fuelGrade == grade ? Theme.textPrimary : Theme.textTertiary)
                             // 价格固定居中显示，必须有一条短线把数字和当前标号绑定，
                             // 否则切到 95/98 时数字仍停在中间，像是 95 的价格。
                             Capsule()
-                                .fill(fuelGrade == grade ? ink : Color.clear)
+                                .fill(fuelGrade == grade ? Theme.textPrimary : Color.clear)
                                 .frame(width: 14, height: 2)
                         }
                         // 点击区保持 34x44：三个标号挨得近，太小容易点错
@@ -1050,11 +1038,11 @@ struct DesignHomeView: View {
             HStack(alignment: .firstTextBaseline, spacing: 1) {
                 Text(fuelPrimary)
                     .font(.system(size: 19, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(ink)
+                    .foregroundStyle(Theme.textPrimary)
                 if fuelPrice != nil {
                     Text("元/L")
                         .font(.system(size: 10.5, weight: .medium))
-                        .foregroundStyle(ink65)
+                        .foregroundStyle(Theme.textSecondary)
                 }
             }
             .padding(.top, 7)
@@ -1062,7 +1050,7 @@ struct DesignHomeView: View {
             Text("今日油价")
                 // 与同排的「路况预估」「雨」保持一致：同一行三个指标说明不能有两种字号
                 .font(.system(size: 12))
-                .foregroundStyle(ink65)
+                .foregroundStyle(Theme.textSecondary)
                 .padding(.top, 3)
         }
         .frame(maxWidth: .infinity)
@@ -1087,7 +1075,7 @@ struct DesignHomeView: View {
             Image(systemName: weatherSymbol)
                 .font(.system(size: 27, weight: .regular))
                 .symbolRenderingMode(.monochrome)
-                .foregroundStyle(ink)
+                .foregroundStyle(Theme.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .center)
 
             if activeWeatherWarning != nil {
@@ -1109,7 +1097,7 @@ struct DesignHomeView: View {
     }
 
     private var weatherWarningColor: Color {
-        guard let warning = activeWeatherWarning else { return ink }
+        guard let warning = activeWeatherWarning else { return Theme.textPrimary }
         switch warning.severityColor {
         case "Yellow": return Color(red: 0xE6 / 255, green: 0xA5 / 255, blue: 0x00 / 255)
         case "Orange": return Color(red: 0xF2 / 255, green: 0x7A / 255, blue: 0x00 / 255)
@@ -1159,21 +1147,21 @@ struct DesignHomeView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("上次骑行")
                         .font(.system(size: 12))
-                        .foregroundStyle(ink50)
+                        .foregroundStyle(Theme.textTertiary)
                     Text(title)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(ink)
+                        .foregroundStyle(Theme.textPrimary)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 8)
                 if let distance {
                     Text(distance)
                         .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(ink)
+                        .foregroundStyle(Theme.textPrimary)
                 } else if ride != nil, loaded {
                     Text("轨迹未记录")
                         .font(.system(size: 12))
-                        .foregroundStyle(ink50)
+                        .foregroundStyle(Theme.textTertiary)
                 }
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold))
@@ -1205,10 +1193,10 @@ struct DesignHomeView: View {
                             .frame(width: 64, height: 64)
                         VStack(alignment: .leading, spacing: 7) {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(hair)
+                                .fill(Theme.hairline)
                                 .frame(width: 120, height: 12)
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(hair.opacity(0.6))
+                                .fill(Theme.hairline.opacity(0.6))
                                 .frame(width: 74, height: 10)
                         }
                         Spacer(minLength: 8)
@@ -1234,11 +1222,11 @@ struct DesignHomeView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(ride?.routeName ?? (ride == nil ? "这辆车还没有骑行记录" : "自由骑行"))
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(ink)
+                            .foregroundStyle(Theme.textPrimary)
                             .lineLimit(1)
                         Text(lastRideSubtitle(ride, seconds: seconds))
                             .font(.system(size: 12))
-                            .foregroundStyle(ink50)
+                            .foregroundStyle(Theme.textTertiary)
                             .lineLimit(1)
                     }
 
@@ -1249,15 +1237,15 @@ struct DesignHomeView: View {
                             HStack(alignment: .firstTextBaseline, spacing: 2) {
                                 Text(String(format: "%.1f", distance))
                                     .font(.system(size: 25, weight: .bold).monospacedDigit())
-                                    .foregroundStyle(ink)
+                                    .foregroundStyle(Theme.textPrimary)
                                 Text("km")
                                     .font(.system(size: 10.5, weight: .medium))
-                                    .foregroundStyle(ink65)
+                                    .foregroundStyle(Theme.textSecondary)
                             }
                         } else {
                             Text("轨迹未记录")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(ink50)
+                                .foregroundStyle(Theme.textTertiary)
                         }
                     }
                 }
@@ -1268,7 +1256,7 @@ struct DesignHomeView: View {
                 // 这种情况把时长并回副标题，统计行整段不出现。
                 if ride != nil, hasTrack {
                     Rectangle()
-                        .fill(hair)
+                        .fill(Theme.hairline)
                         .frame(height: 1)
                         .padding(.top, 12)
 
@@ -1299,12 +1287,12 @@ struct DesignHomeView: View {
         VStack(alignment: .leading, spacing: 3) {
             Text(value)
                 .font(.system(size: 14, weight: .semibold).monospacedDigit())
-                .foregroundStyle(ink)
+                .foregroundStyle(Theme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             Text(label)
                 .font(.system(size: 10.5))
-                .foregroundStyle(ink65)
+                .foregroundStyle(Theme.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -1321,13 +1309,13 @@ struct DesignHomeView: View {
             if points.count >= 2 {
                 MiniRouteThumb(
                     points: points,
-                    tint: hasTrack ? routeTeal : ink50.opacity(0.85),
+                    tint: hasTrack ? Theme.routeSignal : Theme.textTertiary.opacity(0.85),
                     dashed: !hasTrack
                 )
             } else {
                 Image(systemName: "map")
                     .font(.system(size: 19, weight: .light))
-                    .foregroundStyle(ink50.opacity(0.85))
+                    .foregroundStyle(Theme.textTertiary.opacity(0.85))
             }
         }
     }
@@ -1382,7 +1370,7 @@ struct DesignHomeView: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background(ink)
+                .background(Theme.textPrimary)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(SolidPressStyle())

@@ -114,7 +114,6 @@ struct IncidentReportView: View {
         .background(Color.white)
         .ignoresSafeArea(edges: .top)
         .toolbar(.hidden, for: .navigationBar)
-        .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
         .preferredColorScheme(.light)
         .onAppear { screenAppearance.push(.light) }
         .onDisappear { screenAppearance.pop(.light) }
@@ -165,6 +164,7 @@ struct IncidentReportView: View {
             }
             .padding(.horizontal, 20)
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
         .scrollDismissesKeyboard(.interactively)
     }
 
@@ -369,6 +369,7 @@ struct IncidentReportView: View {
             }
             .padding(.horizontal, 20)
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
     }
 
     private func receiptTime(_ receipt: IncidentReportReceipt) -> String {

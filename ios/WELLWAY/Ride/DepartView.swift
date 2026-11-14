@@ -38,6 +38,13 @@ struct DepartView: View {
     @State private var showArrivedAtStart = false
     /// 骑行参考给出的适宜度：低于 55 分（不建议骑行）时，出发前必须再确认一次
     @State private var suitabilityScore: Int?
+    /// 调试：-departlowsuit 只覆盖确认框里的展示分数，真实天气数据仍按接口返回
+    private var lowSuitabilityPreviewScore: Int? {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-departlowsuit") { return 45 }
+        #endif
+        return nil
+    }
     /// 调试：-departlowsuit 冷启动即弹出确认框，便于截图复检
     @State private var showLowSuitability = ProcessInfo.processInfo.arguments.contains("-departlowsuit")
     private var selectedRoute: Route? {
@@ -112,53 +119,58 @@ struct DepartView: View {
         VStack(spacing: 0) {
             header
             ScrollViewReader { proxy in
-            ScrollView(showsIndicators: false) {
-                vehicleCard
-                    .motionAppear(delay: 0.05)
-                routeSection
-                    .motionAppear(delay: 0.15)
-                if !routes.isEmpty {
-                    RideInfoPanel(
-                        route: displayRoute,
-                        checkpoints: checkpointsByRoute[displayRoute.id] ?? [],
-                        collapsible: true,
-                        // 调试：-departexpanded 直接展开，便于截图复检收起按钮与长内容
-                        initiallyExpanded: ProcessInfo.processInfo.arguments.contains("-departexpanded"),
-                        // 只在小屏自动上滚：大屏本来就容得下摘要，滚到面板反而把
-                        // 车型和路线挤出画面，标题下留下一条空白。要不要往下看交给用户。
-                        onExpand: { if isShortScreen { scrollToInfoPanel(proxy) } },
-                        onSuitabilityChange: { suitabilityScore = $0 }
-                    )
-                    .id("rideInfoPanel")
-                    .padding(.top, isShortScreen ? 8 : 20)
-                    .motionAppear(delay: 0.22)
+                ScrollView(showsIndicators: false) {
+                    vehicleCard
+                        .motionAppear(delay: 0.05)
+                    routeSection
+                        .motionAppear(delay: 0.15)
+                    if !routes.isEmpty {
+                        RideInfoPanel(
+                            route: displayRoute,
+                            checkpoints: checkpointsByRoute[displayRoute.id] ?? [],
+                            collapsible: true,
+                            // 调试：-departexpanded 直接展开，便于截图复检收起按钮与长内容
+                            initiallyExpanded: ProcessInfo.processInfo.arguments.contains("-departexpanded"),
+                            // 只在小屏自动上滚：大屏本来就容得下摘要，滚到面板反而把
+                            // 车型和路线挤出画面，标题下留下一条空白。要不要往下看交给用户。
+                            onExpand: { if isShortScreen { scrollToInfoPanel(proxy) } },
+                            onSuitabilityChange: { suitabilityScore = $0 }
+                        )
+                        .id("rideInfoPanel")
+                        .padding(.top, isShortScreen ? 6 : 20)
+                        .motionAppear(delay: 0.22)
+                    }
+                    // 主按钮用 safeAreaInset 独占底部，Tab 栏不会再压住滚动内容；
+                    // 这里只留 24pt 收尾呼吸，避免滚到底出现一大块空白。
+                    Color.clear.frame(height: 24)
+                        .id("pageBottom")
                 }
-                // 主按钮用 safeAreaInset 独占底部，Tab 栏不会再压住滚动内容；
-                // 这里只留 24pt 收尾呼吸，避免滚到底出现一大块空白。
-                Color.clear.frame(height: 24)
-                    .id("pageBottom")
-            }
-            .onAppear {
-                let args = ProcessInfo.processInfo.arguments
-                // 调试：-departexpanded 复检展开后滚到面板顶部的版式
-                if args.contains("-departexpanded") {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-                        if isShortScreen { scrollToInfoPanel(proxy) }
+                .onAppear {
+                    let args = ProcessInfo.processInfo.arguments
+                    // 调试：-departexpanded 复检展开后滚到面板顶部的版式
+                    if args.contains("-departexpanded") {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+                            if isShortScreen { scrollToInfoPanel(proxy) }
+                        }
+                    }
+                    // 调试：-departbottom 直接滚到页尾，检查逐小时条等长内容的收尾
+                    if args.contains("-departbottom") {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+                            withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo("pageBottom", anchor: .bottom) }
+                        }
+                        // 天气 / 路线热度晚到时内容还会变高，补一次滚到底，
+                        // 否则截图停在旧内容高度算出的位置，看到的不是真正的页尾。
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                            withAnimation(.easeInOut(duration: 0.2)) { proxy.scrollTo("pageBottom", anchor: .bottom) }
+                        }
                     }
                 }
-                // 调试：-departbottom 直接滚到页尾，检查逐小时条等长内容的收尾
-                if args.contains("-departbottom") {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
-                        withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo("pageBottom", anchor: .bottom) }
-                    }
+                // 主行动必须直接挂在 ScrollView 上：挂在 ScrollViewReader 外层时
+                // 滚动区不会扣掉按钮栏高度，滚到底的免责说明会被整条按钮栏压住。
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    startButton
+                        .motionAppear(delay: 0.28)
                 }
-            }
-            }
-            // 主行动用 safeAreaInset 挂在滚动区上：独占底部安全区，
-            // 不能让它用 ignoresSafeArea 的背景去抢滚动区高度。
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                startButton
-                    .motionAppear(delay: 0.28)
             }
         }
         .background(Color.white)
@@ -186,7 +198,7 @@ struct DepartView: View {
         .wellwayDialog(
             isPresented: $showLowSuitability,
             title: "当前不建议骑行",
-            message: "骑行适宜度 \(suitabilityScore.map { "\($0)" } ?? "--") 分，天气或气象预警存在风险。如仍要出发，请谨慎慢行。",
+            message: "天气适宜度 \((lowSuitabilityPreviewScore ?? suitabilityScore).map { "\($0)" } ?? "--") 分，天气或气象预警存在风险。如仍要出发，请谨慎慢行。",
             buttons: [
                 WellwayDialogButton(title: "仍要出发", role: .primary) {
                     PermissionHelper.requestRidePermissions()
@@ -335,7 +347,9 @@ struct DepartView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.chevron)
             }
-            .padding(.vertical, 14)
+            // SE 上折叠摘要多出空气 / 限行一行后，车辆行少留 4pt 纵向余量，
+            // 让第二行完整落在底部按钮栏上方，而不是被切掉半行。
+            .padding(.vertical, isShortScreen ? 10 : 14)
             .contentShape(Rectangle())
             .overlay(alignment: .bottom) {
                 Rectangle()
@@ -458,7 +472,7 @@ struct DepartView: View {
                 }
             }
         }
-        .padding(.top, 16)
+        .padding(.top, isShortScreen ? 12 : 16)
     }
 
     /// 路线卡首次加载骨架：与横向分页卡同尺寸，避免冷启动时页面突然塌成转圈
@@ -600,7 +614,7 @@ struct DepartView: View {
             if hasVehicle {
                 // 天气恶劣/预警时适宜度会被压到 55 分以下：这时不能一点就走，
                 // 让用户先看到结论再决定，避免安全提示只躺在展开面板里没人看。
-                if let score = suitabilityScore, score < 55 {
+                if let score = lowSuitabilityPreviewScore ?? suitabilityScore, score < 55 {
                     showLowSuitability = true
                     return
                 }
@@ -638,6 +652,10 @@ struct DepartView: View {
 
     /// 导航起点与终点至少需要两枚有效坐标。
     private var selectedRouteCoordinatesReady: Bool {
+        #if DEBUG
+        // 调试：-departnocoords 复检「路线坐标未就绪」引导，不改动真实打卡点数据
+        if ProcessInfo.processInfo.arguments.contains("-departnocoords") { return false }
+        #endif
         guard let selectedRoute else { return false }
         return (checkpointsByRoute[selectedRoute.id] ?? []).compactMap { checkpoint -> CLLocationCoordinate2D? in
             guard let lat = checkpoint.lat, let lng = checkpoint.lng,
