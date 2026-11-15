@@ -41,6 +41,11 @@ struct BadgesView: View {
                     return
                 }
                 await service.load()
+                // 调试用(-badgeswarning)：保留真实数据，再挂一条刷新失败提示，
+                // 复检 InlineRefreshNotice 的 44pt 重试热区与单行排版。
+                if args.contains("-badgeswarning") {
+                    service.supplementalError = "部分徽章进度暂时无法加载"
+                }
                 revealInitialBadge(in: service)
             }
     }

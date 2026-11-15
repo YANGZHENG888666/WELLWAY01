@@ -274,12 +274,19 @@ struct InlineRefreshNotice: View {
                 .foregroundStyle(Theme.textSecondary)
                 .lineLimit(1)
             Spacer(minLength: 8)
-            Button("重试", action: retry)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Theme.textPrimary)
+            Button(action: retry) {
+                Text("重试")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.textPrimary)
+                    // 12pt 文字自身只有十几点高，热区必须由内容补齐到 44pt，
+                    // 否则提示条右侧成了一个看得见、点不准的小角落。
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
         }
         .padding(.horizontal, 12)
-        .frame(height: 42)
+        // 固定 42pt 会把重试按钮的 44pt 热区裁掉，改成只给下限。
+        .frame(minHeight: 44)
         .background(Theme.danger.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
