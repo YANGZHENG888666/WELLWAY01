@@ -399,38 +399,46 @@ struct RoutesView: View {
 
     /// 地区筛选：下拉菜单(全部 + 34 省级，进入省份子菜单再选城市),纯文字无图标
     private var regionChip: some View {
-        Menu {
-            Button("全部") {
-                provinceFilter = "全部"
+        AccessibleFilterMenu(
+            title: regionDisplay,
+            accessibilityLabel: regionDisplay,
+            accessibilityHint: "选择省份和城市",
+            fontSize: 12,
+            fontWeight: .bold,
+            color: provinceFilter != "全部" ? Theme.textPrimary : Theme.textSecondary,
+            menu: regionMenu
+        )
+        .frame(height: 44)
+    }
+
+    private var regionMenu: UIMenu {
+        let all = UIAction(
+            title: "全部",
+            state: provinceFilter == "全部" ? .on : .off
+        ) { _ in
+            provinceFilter = "全部"
+            cityFilter = "全部"
+        }
+        let provinces = regions.map { region in
+            let allCities = UIAction(
+                title: "全部城市",
+                state: provinceFilter == region.name && cityFilter == "全部" ? .on : .off
+            ) { _ in
+                provinceFilter = region.name
                 cityFilter = "全部"
             }
-            ForEach(regions, id: \.name) { region in
-                Menu(region.name) {
-                    Button("全部城市") {
-                        provinceFilter = region.name
-                        cityFilter = "全部"
-                    }
-                    ForEach(region.cities, id: \.self) { city in
-                        Button(city) {
-                            provinceFilter = region.name
-                            cityFilter = city
-                        }
-                    }
+            let cities = region.cities.map { city in
+                UIAction(
+                    title: city,
+                    state: provinceFilter == region.name && cityFilter == city ? .on : .off
+                ) { _ in
+                    provinceFilter = region.name
+                    cityFilter = city
                 }
             }
-        } label: {
-            HStack(spacing: 4) {
-                Text(regionDisplay)
-                    .font(.system(size: 12, weight: .bold))
-                    .lineLimit(1)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .bold))
-                    .accessibilityHidden(true)
-            }
-            .foregroundStyle(provinceFilter != "全部" ? Theme.textPrimary : Theme.textSecondary)
-            .frame(height: 44)
-            .contentShape(Rectangle())
+            return UIMenu(title: region.name, children: [allCities] + cities)
         }
+        return UIMenu(children: [all] + provinces)
     }
 
     private var favoriteChip: some View {
@@ -459,39 +467,25 @@ struct RoutesView: View {
     }
 
     private func filterChip(_ label: String, selection: Binding<String>, options: [String]) -> some View {
-        Menu {
-            // 用 Picker 时菜单里第一项「全部 / 不限」不会出现在辅助功能树里，
-            // 读屏用户选过难度后就再也清不掉筛选。改成显式按钮，每一项都独立可点，
-            // 当前项用勾号标出，和无障碍读到的文字一致。
-            ForEach(options, id: \.self) { option in
-                Button {
-                    selection.wrappedValue = option
-                } label: {
-                    if option == selection.wrappedValue {
-                        Label("\(label) \(option)", systemImage: "checkmark")
-                            .accessibilityLabel("\(label) \(spokenDistanceOption(option))，已选")
-                    } else {
-                        Text("\(label) \(option)")
-                            .accessibilityLabel("\(label) \(spokenDistanceOption(option))")
-                    }
-                }
+        let active = selection.wrappedValue != options.first
+        let actions = options.map { option in
+            UIAction(
+                title: "\(label) \(option)",
+                state: option == selection.wrappedValue ? .on : .off
+            ) { _ in
+                selection.wrappedValue = option
             }
-        } label: {
-            let active = selection.wrappedValue != options.first
-            HStack(spacing: 4) {
-                Text("\(label) \(selection.wrappedValue)")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(active ? Theme.textPrimary : Theme.textSecondary)
-                    // 芯片显示「里程 20 km 内」，读屏要念成「里程 20 公里内」。
-                    .accessibilityLabel("\(label) \(spokenDistanceOption(selection.wrappedValue))")
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(active ? Theme.textPrimary : Theme.textSecondary)
-                    .accessibilityHidden(true)
-            }
-            .frame(height: 44)
-            .contentShape(Rectangle())
         }
+        return AccessibleFilterMenu(
+            title: "\(label) \(selection.wrappedValue)",
+            accessibilityLabel: "\(label) \(spokenDistanceOption(selection.wrappedValue))",
+            accessibilityHint: "筛选\(label)",
+            fontSize: 12,
+            fontWeight: .bold,
+            color: active ? Theme.textPrimary : Theme.textSecondary,
+            menu: UIMenu(children: actions)
+        )
+        .frame(height: 44)
     }
 
 

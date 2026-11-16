@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// 品牌/车型选择器：搜索 → 选品牌 → 选车型(类型/排量筛选)
 /// 统一设计语言：白底、16 边距、分组卡 + 分隔线
@@ -349,23 +350,24 @@ struct VehiclePickerView: View {
 
     private func filterMenuChip(_ label: String, selection: Binding<String>, options: [String]) -> some View {
         let active = selection.wrappedValue != options.first
-        return Menu {
-            Picker(label, selection: selection) {
-                ForEach(options, id: \.self) { option in
-                    Text(option).tag(option)
-                }
+        let actions = options.map { option in
+            UIAction(
+                title: option,
+                state: option == selection.wrappedValue ? .on : .off
+            ) { _ in
+                selection.wrappedValue = option
             }
-        } label: {
-            HStack(spacing: 4) {
-                Text(selection.wrappedValue == options.first ? label : selection.wrappedValue)
-                    .font(.system(size: 13, weight: active ? .semibold : .regular))
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
-            }
-            .foregroundStyle(active ? Theme.textPrimary : Theme.textSecondary)
-            .frame(height: 44)
-            .contentShape(Rectangle())
         }
+        return AccessibleFilterMenu(
+            title: selection.wrappedValue == options.first ? label : selection.wrappedValue,
+            accessibilityLabel: selection.wrappedValue == options.first ? label : "\(label) \(selection.wrappedValue)",
+            accessibilityHint: "筛选\(label)",
+            fontSize: 13,
+            fontWeight: active ? .semibold : .regular,
+            color: active ? Theme.textPrimary : Theme.textSecondary,
+            menu: UIMenu(children: actions)
+        )
+        .frame(height: 44)
     }
 
     /// 排量与指导价：有则拼成一行，用「·」分隔，与其它副标题写法一致
