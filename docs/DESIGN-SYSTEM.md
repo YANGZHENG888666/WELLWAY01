@@ -4446,37 +4446,6 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - SE：`outputs/r67/se/`（16 张，文件名对应上述页面）
 - Pro（iPhone 17 Pro）/ SE（SE-test）`xcodebuild` 增量构建：`BUILD SUCCEEDED`（2026-11-16）。
 
-## 逐页巡检（第七十四轮）：骑行收尾与打卡完成徽章
-
-### 复核结论
-
-- 骑行总结：正常态、无轨迹态与长路线名均符合 v6。轨迹卡、四项指标、打卡列表和
-  固定底部行动栏完整；长路线名自动换到两行，指标行不被挤压。
-- 分享卡：正常态与无轨迹态均为 4:5 版式，轨迹、四项指标与无轨迹占位完整可读；
-  长路线名在 Pro / SE 都能在卡面内换行，不越界、不压指标。
-- 同步失败：横幅层级清楚；重试一次仍失败时给出「仍未同步成功，请检查网络后重试」
-  的明确回执，不再表现为「点一下没反应」。
-- 记录未创建：摘要与横幅写明「本次打卡（未保存）」，成功绿降为次要灰；离开确认弹层
-  明确告知里程、轨迹与打卡都无法再查看。
-- 打卡完成徽章：指标、打卡点明细与 52pt「收下徽章」完整；SE 页尾与固定按钮栏无遮挡。
-
-### 修复
-
-- `BadgeEarnedView` 作为骑行总结的覆盖层时仍继承顶部安全区，页头比其它二级页低约
-  62pt。补 `.ignoresSafeArea(edges: .top)` 后，返回箭头与 18pt 标题回到与骑行总结一致的
-  基线；徽章图标、内容居中和底部主行动均不变。
-
-### 证据与构建
-
-- Pro：`outputs/r74/pro/pro-summary.png`、`pro-summary-notrack.png`、
-  `pro-summary-longname.png`、`pro-sharecard.png`、`pro-sharecard-notrack.png`、
-  `pro-sharecard-longname.png`、`pro-summary-failed.png`、`pro-summary-retry-failed.png`、
-  `pro-summary-lost.png`、`pro-summary-leave-confirm.png`、`pro-badge-earned.png`、
-  `pro-badge-earned-fixed.png`
-- SE：`outputs/r74/se/se-sharecard.png`、`se-sharecard-longname.png`、
-  `se-summary-track-longname.png`、`se-summary-notrack.png`、`se-badge-earned.png`
-- Pro（iPhone 17 Pro）/ SE（SE-test）`xcodebuild` 增量构建：`BUILD SUCCEEDED`（2026-11-16）。
-
 ## 逐页巡检（第六十八轮）：车辆选择器页头与键盘态收口
 
 ### 复核结论
@@ -4656,3 +4625,63 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
   `se-global-badge-locked.png`、`se-route-badge-earned.png`、
   `se-route-badge-earned-bottom.png`、`se-route-badge-locked.png`
 - Pro（iPhone 17 Pro）/ SE（SE-test）`xcodebuild` 增量构建：`BUILD SUCCEEDED`（2026-11-16）。
+
+## 逐页巡检（第七十四轮）：骑行收尾与打卡完成徽章
+
+### 复核结论
+
+- 骑行总结：正常态、无轨迹态与长路线名均符合 v6。轨迹卡、四项指标、打卡列表和
+  固定底部行动栏完整；长路线名自动换到两行，指标行不被挤压。
+- 分享卡：正常态与无轨迹态均为 4:5 版式，轨迹、四项指标与无轨迹占位完整可读；
+  长路线名在 Pro / SE 都能在卡面内换行，不越界、不压指标。
+- 同步失败：横幅层级清楚；重试一次仍失败时给出「仍未同步成功，请检查网络后重试」
+  的明确回执，不再表现为「点一下没反应」。
+- 记录未创建：摘要与横幅写明「本次打卡（未保存）」，成功绿降为次要灰；离开确认弹层
+  明确告知里程、轨迹与打卡都无法再查看。
+- 打卡完成徽章：指标、打卡点明细与 52pt「收下徽章」完整；SE 页尾与固定按钮栏无遮挡。
+
+### 修复
+
+- `BadgeEarnedView` 作为骑行总结的覆盖层时仍继承顶部安全区，页头比其它二级页低约
+  62pt。补 `.ignoresSafeArea(edges: .top)` 后，返回箭头与 18pt 标题回到与骑行总结一致的
+  基线；徽章图标、内容居中和底部主行动均不变。
+
+### 证据与构建
+
+- Pro：`outputs/r74/pro/pro-summary.png`、`pro-summary-notrack.png`、
+  `pro-summary-longname.png`、`pro-sharecard.png`、`pro-sharecard-notrack.png`、
+  `pro-sharecard-longname.png`、`pro-summary-failed.png`、`pro-summary-retry-failed.png`、
+  `pro-summary-lost.png`、`pro-summary-leave-confirm.png`、`pro-badge-earned.png`、
+  `pro-badge-earned-fixed.png`
+- SE：`outputs/r74/se/se-sharecard.png`、`se-sharecard-longname.png`、
+  `se-summary-track-longname.png`、`se-summary-notrack.png`、`se-badge-earned.png`
+- Pro（iPhone 17 Pro）/ SE（SE-test）`xcodebuild` 增量构建：`BUILD SUCCEEDED`（2026-11-16）。
+
+## 逐页巡检（第七十五轮）：目的地选择、到达、骑行恢复与网络错误
+
+### 复核结论
+
+- 目的地选择：`-routedetailpicker` 的页头、地图主视觉、里程 / 爬升 / 预计用时 / 难度
+  指标行与海拔剖面完整；底部 52pt「添加到出发页」为唯一主行动，Pro / SE 都未被裁切。
+- 到达页：深色骑行 HUD 中的「已到达」、安全停车提示、三项指标、打卡记录与固定
+  「结束骑行」层级清楚。SE 上打卡回看区按既定设计独立滚动，页脚「还有 N 个打卡点
+  未完成」与行动栏保持固定，第三项可继续下滑查看，没有被遮挡。
+- 骑行恢复：骑行中与已结束未保存两态均使用 `DesignPageHeader`，路线名、里程 / 时长、
+  最后记录时间与说明完整；52pt「继续记录 / 补存记录」为主行动，44pt 文字
+  「结束并保存」为次行动，Pro / SE 命中区与底部安全区正常。
+- 网络错误：四种失败可明确区分。断网为 `wifi.slash` +「网络连接失败」+「请检查网络设置」；
+  服务端失败为警告图标 +「加载失败」+「操作未完成，请稍后重试」；权限问题为锁图标 +
+  「没有操作权限」+「当前账号无权访问该内容」+「重新登录」；超时为时钟图标 +
+  「请求超时」+「服务器响应较慢」。`NetworkErrorView` 的标题 / 说明映射会去掉与标题
+  重复的前缀，并让权限态真正退出会话而不是无效重试，属刻意设计，不是文案错位。
+
+### 证据与构建
+
+- Pro：`outputs/r75/pro/pro-destination-picker.png`、`pro-arrival.png`、
+  `pro-recovery-riding.png`、`pro-recovery-ended.png`、`pro-network-offline.png`、
+  `pro-network-server.png`、`pro-network-auth.png`、`pro-network-timeout.png`
+- SE：`outputs/r75/se/se-destination-picker.png`、`se-arrival.png`、
+  `se-recovery-riding.png`、`se-recovery-ended.png`、`se-network-offline.png`、
+  `se-network-server.png`、`se-network-auth.png`、`se-network-timeout.png`
+- 本轮无源码改动；Pro（iPhone 17 Pro）/ SE（SE-test）增量构建均 `BUILD SUCCEEDED`
+  （2026-11-16）。
