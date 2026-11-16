@@ -292,6 +292,22 @@ private struct AuthVerticalFill: ViewModifier {
     }
 }
 
+/// 调试预填：`-signupemail=test@example.com` / `-passwordloginemail=...`。
+/// 只在 Debug 构建且显式传参时生效，正常启动路径完全不变。
+private enum AuthDebugPrefill {
+    static func value(for key: String) -> String? {
+        #if DEBUG
+        let prefix = key + "="
+        guard let raw = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix(prefix) }) else {
+            return nil
+        }
+        return String(raw.dropFirst(prefix.count))
+        #else
+        return nil
+        #endif
+    }
+}
+
 struct EmailSignupView: View {
     @Environment(AuthManager.self) private var auth
 
@@ -306,7 +322,7 @@ struct EmailSignupView: View {
     /// 勾选状态全局持久化：点过一次之后后续页面不再要求重复勾选
     @AppStorage("agreementAccepted") private var agreed = false
     @State private var shakeCount: CGFloat = 0
-    @State private var email = ""
+    @State private var email = AuthDebugPrefill.value(for: "-signupemail") ?? ""
     @State private var code = ""
     /// 调试：-codelogincooldown 直接停在已验证码、冷却中的状态
     @State private var step = ProcessInfo.processInfo.arguments.contains("-codelogincooldown") ? 1 : 0
@@ -636,8 +652,8 @@ struct PasswordLoginView: View {
     /// 勾选状态全局持久化：点过一次之后后续页面不再要求重复勾选
     @AppStorage("agreementAccepted") private var agreed = false
     @State private var shakeCount: CGFloat = 0
-    @State private var email = ""
-    @State private var password = ""
+    @State private var email = AuthDebugPrefill.value(for: "-passwordloginemail") ?? ""
+    @State private var password = AuthDebugPrefill.value(for: "-passwordloginpassword") ?? ""
     @State private var isLoading = false
     @State private var showForgot = false
     @State private var keyboardVisible = false
