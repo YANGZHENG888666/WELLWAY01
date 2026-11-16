@@ -1832,7 +1832,7 @@ private struct WeatherDetailSheet: View {
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("气象预警")
                                         .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(Color(red: 0.78, green: 0.3, blue: 0.26))
+                                        .foregroundStyle(Theme.danger)
                                     Text(warning.title)
                                         .font(.system(size: 14, weight: .semibold))
                                         .foregroundStyle(Theme.textPrimary)
@@ -1849,7 +1849,7 @@ private struct WeatherDetailSheet: View {
                                                 .font(.system(size: 8, weight: .bold))
                                         }
                                         .font(.system(size: 11, weight: .medium))
-                                        .foregroundStyle(Color(red: 0.78, green: 0.3, blue: 0.26))
+                                        .foregroundStyle(Theme.danger)
                                         .padding(.top, 2)
                                     }
                                 }
@@ -1860,7 +1860,7 @@ private struct WeatherDetailSheet: View {
                             .padding(14)
                             .background(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color(red: 0.78, green: 0.3, blue: 0.26).opacity(0.06))
+                                    .fill(Theme.danger.opacity(0.06))
                             )
                         }
 

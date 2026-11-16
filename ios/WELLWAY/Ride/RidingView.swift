@@ -183,6 +183,8 @@ struct NavChoiceSheet: View {
     var onRetryLocation: (() -> Void)?
     /// 调试入口：直接展示「不在起点附近」确认状态
     var autoConfirmGoToStart = false
+    /// 调试入口：直接展示定位失败状态
+    var autoLocationError = false
     let onWellway: () -> Void
 
     @State private var stage: Stage = .choice
@@ -246,6 +248,9 @@ struct NavChoiceSheet: View {
             if autoConfirmGoToStart {
                 pendingExternalKind = "amap"
                 stage = .confirmStart
+            } else if autoLocationError {
+                pendingExternalKind = "amap"
+                stage = .locationError
             }
         }
     }
@@ -401,7 +406,7 @@ struct NavChoiceSheet: View {
     private var locationErrorContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("无法获取你的位置")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(Theme.textPrimary)
                 .padding(.top, 18)
 

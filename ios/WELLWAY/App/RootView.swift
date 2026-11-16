@@ -209,6 +209,9 @@ struct DebugNavChoiceLoader: View {
     private static var confirmDemo: Bool {
         ProcessInfo.processInfo.arguments.contains("-navchoice-confirm")
     }
+    private static var locationErrorDemo: Bool {
+        ProcessInfo.processInfo.arguments.contains("-navchoice-locationerror")
+    }
 
     private let route = Route(
         id: 0,
@@ -236,10 +239,11 @@ struct DebugNavChoiceLoader: View {
                     startLng: 116.3975,
                     endLat: 39.9097,
                     endLng: 116.4575,
-                    currentLat: Self.isFarDemo ? 39.9330 : 39.9088,
-                    currentLng: Self.isFarDemo ? 116.4200 : 116.3976,
+                    currentLat: Self.locationErrorDemo ? nil : (Self.isFarDemo ? 39.9330 : 39.9088),
+                    currentLng: Self.locationErrorDemo ? nil : (Self.isFarDemo ? 116.4200 : 116.3976),
                     center: center,
                     autoConfirmGoToStart: Self.confirmDemo,
+                    autoLocationError: Self.locationErrorDemo,
                     onWellway: {}
                 )
             }

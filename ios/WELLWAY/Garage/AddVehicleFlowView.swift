@@ -375,7 +375,7 @@ private struct SelectedVehiclePhotoButton: View {
                     .fixedSize()
                 }
             }
-            .frame(minHeight: 44)
+            .frame(minWidth: 44, minHeight: 44, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(CardPressStyle(scale: 0.96))
