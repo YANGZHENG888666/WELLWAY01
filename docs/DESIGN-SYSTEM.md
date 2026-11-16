@@ -4409,3 +4409,22 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - Pro：`outputs/r65/pro-code-cooldown.png`、`pro-forgot-cooldown.png`、`pro-passwordlogin.png`
 - SE：`outputs/r65/se-code-cooldown.png`、`se-forgot-cooldown.png`、`se-passwordlogin-keyboard.png`
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-16）。
+
+## 逐页巡检（第六十六轮）：剩余状态页收尾
+
+### 复核结论
+
+- 逐页复核 `profile`、`settings`、`settings-notify-off`、`about`、`feedback`、`feedback-error`、`loginsuccess`、`emailbind`、`emailbind-rebind`、`team`、`team-rows`、`team-denied`、`team-failed`、`notifications`，Pro / SE 各 14 页全部通过，未发现新的布局或交互问题，本轮无代码改动。
+- `profile` 单页无 Tab 属调试入口的正常表现：`-profilepage` 只渲染「我的」页，不挂生产 Tab 栏，不是漏写。
+- SE `profile` 首屏底部「通知」只露半行，是 667pt 高度下的正常滚动截断，继续下滑可完整看到；不是悬浮 Tab 压住内容。
+- 设置页通知开 / 关两态清楚：关态为红色「未开启」+ 灰化开关 +「去开启」，开态为「已开启」；文案与控件状态一致。
+- 反馈 sheet 在 Pro / SE 上键盘、500 字计数、失败文案与 52pt 黑色主行动均完整，无挤压；登录成功、邮箱绑定 / 换绑都只有一个黑色主行动，SE 页尾说明完整。
+- 对向页：加载态、真实人数、定位拒绝、失败态均符合 v6；免责声明与 Tab 栏完整。
+- 地图署名：SE `team-rows` 左下角看起来像被截断的「Lega」，放大后是高德底图自带的红色标签压住 MapKit 的 `Legal` 文本；Pro 的 `Legal` 完整，两机型右下角「高德地图」署名也完整。该叠加来自底图渲染层，与 12pt 圆角 / 6pt 底部安全区无关，与第 63 轮基线一致；按「平台署名不做遮挡」的既有口径不处理，不为了看清 `Legal` 反向遮住地图或署名。
+
+### 证据与构建
+
+- Pro：`outputs/r66/pro/`（14 张，文件名对应上述页面）
+- SE：`outputs/r66/se/`（14 张，文件名对应上述页面）
+- 角标放大：`outputs/r66/crops/se-team-legal-zoom8.png`、`pro-team-legal-zoom.png`
+- 本轮无源码改动；Pro / SE `xcodebuild` 增量构建均 `BUILD SUCCEEDED`（2026-11-16）。
