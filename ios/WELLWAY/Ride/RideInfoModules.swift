@@ -327,7 +327,7 @@ struct RideInfoPanel: View {
     /// 出发页首屏只露出摘要，避免拥堵卡被底部按钮栏切掉半张；
     /// 调试页 / 其他入口默认仍然展开。
     let collapsible: Bool
-    /// 展开时通知外层把面板滚到顶部，避免小屏上展开后只露出半行内容
+    /// 展开时通知外层把面板滚到顶部，避免展开内容被底部按钮栏裁掉
     let onExpand: (() -> Void)?
     /// 把摘要里的适宜度回传给外层：出发页要据此在「不建议骑行」时先确认再出发
     let onSuitabilityChange: ((Int?) -> Void)?

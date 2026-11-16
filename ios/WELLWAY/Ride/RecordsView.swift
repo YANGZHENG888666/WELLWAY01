@@ -1036,7 +1036,8 @@ final class RecordsStore {
         if let routeId = record.routeId, let route = routesById[routeId] {
             return route.name
         }
-        return "骑行记录"
+        // 有 routeId 但路线名没解析出来(路线接口失败)时不能误标成自由骑行
+        return record.routeId == nil ? "自由骑行" : "骑行记录"
     }
 }
 

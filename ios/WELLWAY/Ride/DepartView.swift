@@ -131,9 +131,9 @@ struct DepartView: View {
                             collapsible: true,
                             // 调试：-departexpanded 直接展开，便于截图复检收起按钮与长内容
                             initiallyExpanded: ProcessInfo.processInfo.arguments.contains("-departexpanded"),
-                            // 只在小屏自动上滚：大屏本来就容得下摘要，滚到面板反而把
-                            // 车型和路线挤出画面，标题下留下一条空白。要不要往下看交给用户。
-                            onExpand: { if isShortScreen { scrollToInfoPanel(proxy) } },
+                            // 展开后统一把面板顶到可视区：大屏上折叠摘要贴近底部按钮栏，
+                            // 展开内容的第一屏会被按钮栏裁掉，点「查看详情」看起来像没反应。
+                            onExpand: { scrollToInfoPanel(proxy) },
                             onSuitabilityChange: { suitabilityScore = $0 }
                         )
                         .id("rideInfoPanel")
@@ -150,7 +150,7 @@ struct DepartView: View {
                     // 调试：-departexpanded 复检展开后滚到面板顶部的版式
                     if args.contains("-departexpanded") {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-                            if isShortScreen { scrollToInfoPanel(proxy) }
+                            scrollToInfoPanel(proxy)
                         }
                     }
                     // 调试：-departbottom 直接滚到页尾，检查逐小时条等长内容的收尾

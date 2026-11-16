@@ -31,7 +31,9 @@ struct RecentRide: Identifiable {
         let record = recordName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if !record.isEmpty { return record }
         let route = routeName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return route.isEmpty ? "自由骑行" : route
+        if !route.isEmpty { return route }
+        // 有 routeId 但路线名没解析出来(路线接口失败)时不能误标成自由骑行
+        return routeId == nil ? "自由骑行" : "骑行记录"
     }
 }
 
