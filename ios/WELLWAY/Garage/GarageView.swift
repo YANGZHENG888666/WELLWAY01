@@ -135,15 +135,7 @@ struct GarageView: View {
             // 一次取回所有车辆的已完成记录，按开始时间倒序后每辆车取第一条。
             // 逐车查询时，任意一条记录解码失败都会让整块「上次骑行」静默变空，
             // 出现「骑行次数 1、上次骑行却为空」的自相矛盾。
-            let rows: [RecentRideRow] = try await auth.client
-                .from("ride_records")
-                .select("id, vehicle_id, route_id, started_at, distance_m, duration_s, avg_speed_kmh, max_speed_kmh")
-                .eq("user_id", value: uid)
-                .eq("status", value: "completed")
-                .in("vehicle_id", values: garage.vehicles.map { $0.id.uuidString })
-                .order("started_at", ascending: false)
-                .execute()
-                .value
+            let rows = try await loadRecentRideRows(uid: uid, vehicleIds: garage.vehicles.map(\.id))
 
             var latestByVehicle: [UUID: RecentRideRow] = [:]
             for row in rows {
@@ -187,6 +179,7 @@ struct GarageView: View {
                 RecentRide(
                     id: row.id,
                     routeName: row.routeId.flatMap { routeNames[$0] },
+                    recordName: row.name ?? UserDefaults.standard.string(forKey: "rideName-\(row.id.uuidString)"),
                     startedAt: row.startedAt.flatMap { ISO8601DateFormatter.wellwayDate(from: $0) },
                     distanceM: Int(row.distanceM.rounded()),
                     durationS: row.durationS,
@@ -199,6 +192,30 @@ struct GarageView: View {
             // 静默失败，保持上一次数据；仍结束加载态，避免一直停在占位
             if recentRidesByVehicle.isEmpty { recentRidesLoaded = true }
         }
+    }
+
+    /// 与记录列表保持同一命名口径；0006 迁移未执行时退回不带 name 的查询。
+    private func loadRecentRideRows(uid: UUID, vehicleIds: [UUID]) async throws -> [RecentRideRow] {
+        do {
+            return try await queryRecentRideRows(uid: uid, vehicleIds: vehicleIds, includeName: true)
+        } catch {
+            return try await queryRecentRideRows(uid: uid, vehicleIds: vehicleIds, includeName: false)
+        }
+    }
+
+    private func queryRecentRideRows(uid: UUID, vehicleIds: [UUID], includeName: Bool) async throws -> [RecentRideRow] {
+        let columns = includeName
+            ? "id, name, vehicle_id, route_id, started_at, distance_m, duration_s, avg_speed_kmh, max_speed_kmh"
+            : "id, vehicle_id, route_id, started_at, distance_m, duration_s, avg_speed_kmh, max_speed_kmh"
+        return try await auth.client
+            .from("ride_records")
+            .select(columns)
+            .eq("user_id", value: uid)
+            .eq("status", value: "completed")
+            .in("vehicle_id", values: vehicleIds.map { $0.uuidString })
+            .order("started_at", ascending: false)
+            .execute()
+            .value
     }
 
     /// 拉取首页推荐路线(与热力轨迹 tab 相同查询，取前 6 条便于横向滑动)
@@ -234,6 +251,7 @@ struct GarageView: View {
 /// 最近骑行行(车库首页)
 private struct RecentRideRow: Decodable {
     let id: UUID
+    let name: String?
     let vehicleId: UUID?
     let routeId: Int?
     let startedAt: String?
@@ -244,6 +262,7 @@ private struct RecentRideRow: Decodable {
 
     enum CodingKeys: String, CodingKey {
         case id
+        case name
         case vehicleId = "vehicle_id"
         case routeId = "route_id"
         case startedAt = "started_at"

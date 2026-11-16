@@ -21,6 +21,7 @@ struct IncidentReportView: View {
     @State private var errorText: String? = IncidentReportView.debugError
     @State private var receipt: IncidentReportReceipt? = IncidentReportView.debugReceipt
     @State private var showShare = false
+    @State private var isScrolled = false
     @FocusState private var noteFocused: Bool
     private var screenAppearance: ScreenAppearance { .shared }
 
@@ -103,6 +104,24 @@ struct IncidentReportView: View {
     var body: some View {
         VStack(spacing: 0) {
             DesignPageHeader(title: "记录事故现场", onBack: { dismiss() })
+                .overlay(alignment: .bottom) {
+                    if isScrolled {
+                        LinearGradient(
+                            stops: [
+                                .init(color: Color.white, location: 0),
+                                .init(color: Color.white, location: 0.55),
+                                .init(color: Color.white.opacity(0), location: 1)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 40)
+                        .offset(y: 40)
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                    }
+                }
+                .zIndex(1)
 
             if let receipt {
                 receiptContent(receipt)
@@ -117,6 +136,7 @@ struct IncidentReportView: View {
         .preferredColorScheme(.light)
         .onAppear { screenAppearance.push(.light) }
         .onDisappear { screenAppearance.pop(.light) }
+        .onChange(of: receipt?.id) { _, _ in isScrolled = false }
         .sheet(isPresented: $showShare) {
             ShareSheet(items: [shareText])
         }
@@ -163,7 +183,16 @@ struct IncidentReportView: View {
                 Color.clear.frame(height: 24)
             }
             .padding(.horizontal, 20)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: IncidentScrollOffsetKey.self,
+                        value: proxy.frame(in: .named("incidentScroll")).minY
+                    )
+                }
+            )
         }
+        .modifier(IncidentScrollTracking(offsetDidChange: updateScrollState))
         .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
         .scrollDismissesKeyboard(.interactively)
     }
@@ -368,8 +397,23 @@ struct IncidentReportView: View {
                 Color.clear.frame(height: 24)
             }
             .padding(.horizontal, 20)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: IncidentScrollOffsetKey.self,
+                        value: proxy.frame(in: .named("incidentScroll")).minY
+                    )
+                }
+            )
         }
+        .modifier(IncidentScrollTracking(offsetDidChange: updateScrollState))
         .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
+    }
+
+    private func updateScrollState(_ contentOffset: CGFloat) {
+        let scrolled = contentOffset > 2
+        guard scrolled != isScrolled else { return }
+        withAnimation(.easeInOut(duration: 0.15)) { isScrolled = scrolled }
     }
 
     private func receiptTime(_ receipt: IncidentReportReceipt) -> String {
@@ -505,6 +549,34 @@ struct IncidentReportView: View {
                 print("Incident report submit failed: \(error)")
                 #endif
             }
+        }
+    }
+}
+
+private struct IncidentScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+private struct IncidentScrollTracking: ViewModifier {
+    let offsetDidChange: (CGFloat) -> Void
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) {
+            content.onScrollGeometryChange(for: CGFloat.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top
+            } action: { _, offset in
+                offsetDidChange(offset)
+            }
+        } else {
+            content
+                .coordinateSpace(name: "incidentScroll")
+                .onPreferenceChange(IncidentScrollOffsetKey.self) { minY in
+                    offsetDidChange(-minY)
+                }
         }
     }
 }

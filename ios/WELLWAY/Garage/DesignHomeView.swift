@@ -15,6 +15,8 @@ struct RideStats {
 struct RecentRide: Identifiable {
     let id: UUID
     let routeName: String?
+    /// 记录页同源的自定义名称；为空时回退到路线名
+    var recordName: String? = nil
     let startedAt: Date?
     let distanceM: Int
     var durationS: Int? = nil
@@ -24,6 +26,13 @@ struct RecentRide: Identifiable {
     var routeId: Int? = nil
 
     var hasRecordedTrack: Bool { distanceM >= 50 }
+
+    var displayName: String {
+        let record = recordName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !record.isEmpty { return record }
+        let route = routeName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return route.isEmpty ? "自由骑行" : route
+    }
 }
 
 /// 车库首页 v19(375×812 坐标)
@@ -1132,8 +1141,7 @@ struct DesignHomeView: View {
         let loaded = recentRidesLoaded
         let title: String = {
             guard let ride else { return loaded ? "这辆车还没有骑行记录" : "载入中" }
-            let name = ride.routeName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return name.isEmpty ? "自由骑行" : name
+            return ride.displayName
         }()
         let distance: String? = {
             guard let ride, ride.hasRecordedTrack else { return nil }
@@ -1220,7 +1228,7 @@ struct DesignHomeView: View {
                         .frame(width: 64, height: 64)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(ride?.routeName ?? (ride == nil ? "这辆车还没有骑行记录" : "自由骑行"))
+                        Text(ride?.displayName ?? "这辆车还没有骑行记录")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Theme.textPrimary)
                             .lineLimit(1)
@@ -1408,7 +1416,7 @@ struct DesignHomeView: View {
     /// 屏幕上的「·」在语音里只是停顿，这里统一用逗号。
     private func lastRideAccessibilityLabel(_ ride: RecentRide?, seconds: Int?) -> String {
         guard let ride else { return "这辆车还没有骑行记录" }
-        var parts = [ride.routeName ?? "自由骑行", dateText(ride.startedAt)]
+        var parts = [ride.displayName, dateText(ride.startedAt)]
         if let seconds, seconds > 0 {
             parts.append("时长 \(durationCompact(seconds))")
         }
