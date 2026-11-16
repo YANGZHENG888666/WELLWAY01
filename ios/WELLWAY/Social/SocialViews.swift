@@ -1221,9 +1221,9 @@ struct TeamRidersView: View {
                     ? "定位权限未开启"
                     : (locationUnavailable ? "暂时无法获取位置" : "附近暂无骑手"),
                 message: locationDenied
-                    ? "开启定位权限后，这里会显示附近的匿名骑手数量"
+                    ? "开启定位权限后，这里会显示\n附近匿名骑手的数量"
                     : (locationUnavailable
-                        ? "请到开阔处或稍后重试，定位恢复后会重新统计"
+                        ? "请到开阔处或稍后重试。\n定位恢复后会自动刷新。"
                         : "开始骑行并保持定位，这里只显示匿名汇总数量")
             )
 
@@ -1263,7 +1263,7 @@ struct TeamRidersView: View {
     }
 
     private var disclaimer: some View {
-        Text("位置统计存在 GPS 延迟与定位误差，骑手数量仅作参考，不可作为道路会车、避险判断依据。")
+        Text("位置统计存在 GPS 延迟与定位误差，骑手数量仅作参考。\n不可作为道路会车、避险判断依据。")
             .font(.system(size: 12))
             .foregroundStyle(Theme.textSecondary)
             .lineSpacing(2)
