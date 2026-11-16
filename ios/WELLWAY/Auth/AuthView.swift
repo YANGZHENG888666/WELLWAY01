@@ -407,7 +407,6 @@ struct EmailSignupView: View {
                             Text(cooldown > 0 ? "\(cooldown) 秒后可重新发送" : "重新发送验证码")
                                 .font(.system(size: 12, weight: cooldown > 0 ? .regular : .medium))
                                 .foregroundColor(cooldown > 0 ? Theme.listGray : .black)
-                                .underline(cooldown == 0)
                                 .frame(maxWidth: .infinity)
                                 .frame(minHeight: 44)
                                 .contentShape(Rectangle())
@@ -893,10 +892,12 @@ struct ForgotPasswordView: View {
     @State private var code = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
-    /// 调试：-forgotstep2 直接停在「创建新密码」这一步；-forgotcooldown 停在验证码冷却态
+    /// 调试：-forgotstep2 直接停在「创建新密码」这一步；-forgotcooldown 停在验证码冷却态；
+    /// -forgotresend 停在验证码重发可用态
     @State private var step = ProcessInfo.processInfo.arguments.contains("-forgotstep2")
         ? 2
-        : ProcessInfo.processInfo.arguments.contains("-forgotcooldown") ? 1 : 0
+        : (ProcessInfo.processInfo.arguments.contains("-forgotcooldown")
+            || ProcessInfo.processInfo.arguments.contains("-forgotresend")) ? 1 : 0
     @State private var isLoading = false
     @State private var cooldown = ProcessInfo.processInfo.arguments.contains("-forgotcooldown") ? 20 : 0
     @State private var errorText: String?
@@ -1031,7 +1032,6 @@ struct ForgotPasswordView: View {
                 Text(cooldown > 0 ? "\(cooldown) 秒后可重新发送" : "重新发送验证码")
                     .font(.system(size: 12, weight: cooldown > 0 ? .regular : .medium))
                     .foregroundColor(cooldown > 0 ? Theme.listGray : .black)
-                    .underline(cooldown == 0)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 44)
                     .contentShape(Rectangle())
