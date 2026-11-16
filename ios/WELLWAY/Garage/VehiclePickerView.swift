@@ -163,8 +163,11 @@ struct VehiclePickerView: View {
     // MARK: - 头部
 
     private var headerBar: some View {
-        HStack(spacing: 12) {
-            Button {
+        // 子页统一走 DesignPageHeader：返回箭头 44pt 热区、标题起点 48pt。
+        // 手写 HStack 会把标题推到 56pt，从「添加车辆」跳进来时标题会横跳 8pt。
+        DesignPageHeader(
+            title: selectedBrandId == nil ? "选择品牌" : garage.brandName(for: selectedBrandId!),
+            onBack: {
                 if selectedBrandId != nil {
                     selectedBrandId = nil
                     searchText = ""
@@ -173,24 +176,8 @@ struct VehiclePickerView: View {
                 } else {
                     dismiss()
                 }
-            } label: {
-                BackChevron()
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(IconPressStyle())
-            .accessibilityLabel("返回")
-
-            Text(selectedBrandId == nil ? "选择品牌" : garage.brandName(for: selectedBrandId!))
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(Theme.textPrimary)
-                .lineLimit(1)
-
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 58)
-        .padding(.bottom, 8)
+        )
     }
 
     private var searchField: some View {
@@ -224,6 +211,7 @@ struct VehiclePickerView: View {
         .background(Theme.lightField)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .padding(.horizontal, 20)
+        .padding(.top, 8)
         .padding(.bottom, 10)
     }
 
@@ -395,6 +383,9 @@ struct VehiclePickerView: View {
             guard !alreadyAdded else { return }
             Haptics.selection()
             selectedModelId = model.id
+            // 本页忽略键盘安全区，键盘弹起时底部「完成选择」会被完全盖住。
+            // 选中即结束搜索：收起键盘让确认栏回到屏幕内，列表保留当前筛选结果。
+            searchFocused = false
         } label: {
             HStack(spacing: 12) {
                 ModelThumbnail(model: model, size: 72)
