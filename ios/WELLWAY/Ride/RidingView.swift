@@ -1093,7 +1093,10 @@ struct RidingView: View {
         .mapStyle(.standard(elevation: .flat, emphasis: .muted, pointsOfInterest: .excludingAll, showsTraffic: false))
         .environment(\.colorScheme, .dark)
         .frame(maxWidth: .infinity)
-        .frame(height: compact ? 190 : 280)
+        // 到达态要在同一块剩余空间里同时放下状态、三项指标、打卡回看和固定
+        // 行动区；SE 上如果仍按骑行态的地图高度排，第三条打卡会被页脚切掉。
+        // 停好车之后地图只用于确认终点，缩短不会丢信息。
+        .frame(height: compact ? (hasArrived ? 168 : 190) : 280)
         // MapKit 把 "Legal / 高德地图" 画在底边 0pt 处，14pt 圆角会把标注下沿切掉；
         // 留 6pt 安全区后标注完整可见，深色底和地图边缘几乎无缝。
         .padding(.bottom, 6)
@@ -1240,11 +1243,11 @@ struct RidingView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         statsHeader(compact: compact)
-                        statsMetrics
+                        statsMetrics(compact: compact)
 
                         if !checkpoints.isEmpty {
-                            checkpointReviewCard
-                                .padding(.top, 14)
+                            checkpointReviewCard(compact: compact)
+                                .padding(.top, compact ? 10 : 14)
                         }
 
                         if let counts = ride?.nearbyRiders, counts.total > 0 {
@@ -1266,7 +1269,7 @@ struct RidingView: View {
                 statsActions(compact: compact)
             } else {
                 statsHeader(compact: compact)
-                statsMetrics
+                statsMetrics(compact: compact)
                 tripProgressStrip(compact: compact)
 
                 if let counts = ride?.nearbyRiders, counts.total > 0 {
@@ -1287,14 +1290,14 @@ struct RidingView: View {
             // 不再额外叠一条同样标题的提示卡。
             VStack(spacing: 8) {
                 Text("已到达")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .font(.system(size: compact ? 30 : 34, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                 Text("请就近安全停车，再结束骑行")
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.55))
             }
-            .padding(.top, 24)
-            .padding(.bottom, 10)
+            .padding(.top, compact ? 16 : 24)
+            .padding(.bottom, compact ? 8 : 10)
         } else {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(currentSpeedKmh, format: .number.precision(.fractionLength(0)))
@@ -1313,7 +1316,7 @@ struct RidingView: View {
         }
     }
 
-    private var statsMetrics: some View {
+    private func statsMetrics(compact: Bool) -> some View {
         MetricRowLayout {
             statCell("里程", value: String(format: "%.1f km", riddenMeters / 1000))
             dividerOnLight
@@ -1321,7 +1324,7 @@ struct RidingView: View {
             dividerOnLight
             statCell("均速", value: averageSpeed + " km/h")
         }
-        .padding(.vertical, 18)
+        .padding(.vertical, compact && hasArrived ? 14 : 18)
         .frame(maxWidth: .infinity)
         .background(Color.white.opacity(0.07))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -1484,7 +1487,7 @@ struct RidingView: View {
     }
 
     /// 到达后回看打卡：这趟到底打全了没有，逐个点位给结论
-    private var checkpointReviewCard: some View {
+    private func checkpointReviewCard(compact: Bool) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
                 Text("打卡记录")
@@ -1498,8 +1501,8 @@ struct RidingView: View {
                                      ? Theme.success
                                      : .white.opacity(0.55))
             }
-            .padding(.top, 12)
-            .padding(.bottom, 4)
+            .padding(.top, compact ? 10 : 12)
+            .padding(.bottom, compact ? 3 : 4)
 
             ForEach(Array(sortedCheckpoints.enumerated()), id: \.element.id) { index, cp in
                 let done = ride?.checkedCheckpointIds.contains(cp.id) ?? false
@@ -1523,7 +1526,7 @@ struct RidingView: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(done ? Theme.success : .white.opacity(0.55))
                 }
-                .frame(height: 42)
+                .frame(height: compact ? 38 : 42)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("\(cp.name)，\(done ? "已打卡" : "未打卡")")
 

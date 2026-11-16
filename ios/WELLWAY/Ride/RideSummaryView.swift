@@ -262,7 +262,20 @@ struct RideSummaryView: View {
     }
 
     /// 区块间距：短屏收到 16，避免最后一个打卡点被底栏切掉半行。
-    private var blockSpacing: CGFloat { isShortScreen ? 16 : 22 }
+    private var blockSpacing: CGFloat {
+        if isCompactWarningSummary { return 10 }
+        return isShortScreen ? 16 : 22
+    }
+
+    /// 失败横幅本身要占约 72pt，如果仍按无横幅的短屏节奏排，第三个打卡点
+    /// 会被底栏切掉（只剩编号圆点的一段弧）。这类页面单独再收紧一档。
+    private var hasSaveWarning: Bool {
+        !saveFixed && summary.saveWarning != nil
+    }
+
+    private var isCompactWarningSummary: Bool {
+        isShortScreen && hasSaveWarning
+    }
 
     /// 路线名最多两行；两行时会多吃约 28pt，示意卡要再让出同样的高度，
     /// 否则 SE 上第三个打卡点又会被底栏压住。
@@ -283,18 +296,27 @@ struct RideSummaryView: View {
     /// SE 收到 144（标题两行时 116），仍能看清起终点方向。
     private var sketchCardHeight: CGFloat {
         guard isShortScreen else { return 200 }
+        if isCompactWarningSummary {
+            return titleNeedsTwoLines ? 88 : 104
+        }
         return titleNeedsTwoLines ? 116 : 144
     }
 
     private func routeSketchCard(width: CGFloat) -> some View {
         let height: CGFloat = sketchCardHeight
+        let compact = isCompactWarningSummary
         return ZStack(alignment: .bottomLeading) {
             Theme.lightField
             TrackPreview(
                 unitPoints: sketchPoints,
-                trackRect: CGRect(x: 28, y: 26, width: max(width - 56, 60), height: height - 74),
-                startDot: CGPoint(x: 34, y: height - 58),
-                endDot: CGPoint(x: width - 40, y: 40),
+                trackRect: CGRect(
+                    x: 28,
+                    y: compact ? 18 : 26,
+                    width: max(width - 56, 60),
+                    height: max(height - (compact ? 56 : 74), 24)
+                ),
+                startDot: CGPoint(x: 34, y: height - (compact ? 34 : 58)),
+                endDot: CGPoint(x: width - 40, y: compact ? 30 : 40),
                 dotSize: 8,
                 // 0.45 在 #F2F2F4 上只有约 1.6:1，虚线几乎看不见；0.58 仍弱于真实轨迹，
                 // 但能一眼读出路线走向（「示意」语义靠虚线本身表达，不靠变淡）。
@@ -310,7 +332,7 @@ struct RideSummaryView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.textSecondary)
                 .padding(.leading, 14)
-                .padding(.bottom, 12)
+                .padding(.bottom, compact ? 8 : 12)
         }
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -503,7 +525,7 @@ struct RideSummaryView: View {
                 .foregroundStyle(done && summary.canRetrySave ? Theme.successText : Theme.textSecondary)
         }
         .padding(.horizontal, 0)
-        .padding(.vertical, isShortScreen ? 10 : 14)
+        .padding(.vertical, isCompactWarningSummary ? 6 : (isShortScreen ? 10 : 14))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("第 \(index + 1) 个打卡点，\(cp.name.withoutEmoji)，\(done ? "已打卡" : "未打卡")")
     }
