@@ -433,12 +433,9 @@ struct RouteDetailView: View {
                     }
                     Spacer(minLength: 8)
                     if !elevationMissingCoordinates {
-                        Button("重试") {
+                        InlineActionButton(title: "重试", fontSize: 13, alignment: .trailing) {
                             Task { await loadElevationProfile() }
                         }
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Theme.textPrimary)
-                        .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -631,12 +628,9 @@ struct RouteDetailView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(Theme.textSecondary)
                     } else if checkinLoadFailed {
-                        Button("重试") {
+                        InlineActionButton(title: "重试", fontSize: 12, alignment: .trailing) {
                             Task { await loadMyCheckins() }
                         }
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Theme.textPrimary)
-                        .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
                     } else {
                         Text("\(checkedCheckpointIds.count)/\(checkpoints.count) 已打卡")
                             .font(.system(size: 12))

@@ -1060,13 +1060,21 @@ struct DebugRecordDetailLoader: View {
             let service = RecordsStore(client: auth.client, userId: uid)
             await service.load()
             store = service
-            recordId = service.records.first?.id
+            if ProcessInfo.processInfo.arguments.contains("-recorddetailmissing") {
+                recordId = UUID()
+            } else {
+                recordId = service.records.first?.id
+            }
             if let id = recordId,
                ProcessInfo.processInfo.arguments.contains("-recordtrackpreview") {
                 service.applyDebugTrackPreview(for: id)
             } else if let id = recordId,
                       ProcessInfo.processInfo.arguments.contains("-recordtracksample") {
                 service.applyDebugTrack(for: id)
+            } else if let id = recordId,
+                      ProcessInfo.processInfo.arguments.contains("-recorddetailtrackfailed") {
+                // 确保进入详情时轨迹卡是可见的，再让 loadTrack 落到失败态。
+                service.applyDebugTrackPreview(for: id)
             }
         }
     }

@@ -292,6 +292,26 @@ struct InlineRefreshNotice: View {
     }
 }
 
+/// 行内文字动作（重试、返回等）：视觉仍保持 12–14pt，
+/// 但点击区域必须补齐 44pt，避免小字看得见、点不准。
+struct InlineActionButton: View {
+    let title: String
+    var fontSize: CGFloat = 13
+    var alignment: Alignment = .center
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: fontSize, weight: .semibold))
+                .foregroundStyle(Theme.textPrimary)
+                .frame(minWidth: 44, minHeight: 44, alignment: alignment)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
+    }
+}
+
 /// 设计稿子页头部：返回箭头(中心 28,74) + 左对齐标题 20 Bold(文字起点 x=52,中心 y=74)
 /// 固定坐标，不依赖 safeAreaInsets,保证所有页面(含 ignoresSafeArea 的空态页)位置完全一致
 /// compact:Tab 根页面使用(容器从安全区顶部开始),标题上移到状态栏正下方(中心 y≈70),头部高度 72

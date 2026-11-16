@@ -4345,3 +4345,44 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - SE：`outputs/r61/se_signup.png`、`se_signup_agreement_error.png`、`se_signup_keyboard.png`、`se_passwordlogin.png`、`se_passwordlogin_error.png`、`se_forgot.png`、`se_forgot_invalid.png`、`se_code_cooldown.png`、`se_code_error.png`
 - Pro：`outputs/r61/pro_signup.png`、`pro_signup_agreement_error.png`、`pro_passwordlogin.png`、`pro_passwordlogin_localerror.png`、`pro_forgot.png`、`pro_codelogin.png`、`pro_codelogin_sent.png`、`pro_codelogin_error.png`
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-14）。
+
+## 逐页巡检（第六十三轮）：内联刷新提示条命中区
+
+### 复核结论
+
+- `ProfileView` 头像 76pt、`PhotosPicker` 命中区充足；`BadgesView` 的 9pt 字号只用于对勾 / 锁角标；`TeamRidersView` 在 SE 上地图、版权、免责说明与 Tab 栏完整；`AboutFeedbackView` 品牌区克制，发丝线延伸到屏幕边，与「我的」等全局账本一致。
+- 修复全局 `InlineRefreshNotice`：12pt「重试」原先只有文字大小，没有 44pt 热区；现内容补 `minWidth/minHeight 44` + `contentShape`，提示条由固定 42pt 改为 `minHeight 44`，避免外框反过来裁掉热区。9 处使用页共用同一组件。
+- Pro / SE 提示条仍单行，图标 / 文案 / 重试对齐，SE 无截断。
+
+### 调试入口
+
+- `-badgeswarning`：徽章页内联刷新提示条失败态；仅调试构建使用，生产默认流程不变。
+
+### 证据与构建
+
+- Pro：`outputs/r63/pro-badges.png`、`pro-badges-warning.png`、`pro-team.png`
+- SE：`outputs/r63/se-profile.png`、`se-badges-warning.png`、`se-team.png`、`se-about.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-16）。
+
+## 逐页巡检（第六十四轮）：行内文字动作统一 44pt 命中区
+
+### 复核结论
+
+- 新增共享 `InlineActionButton`：默认 13pt，可选 12–14pt 与左右对齐；内容补 `minWidth/minHeight 44`、`contentShape(Rectangle())` 与 `IconPressStyle`，视觉字号不变。
+- 接入路线详情海拔失败态「重试」、途经点打卡失败态「重试」；记录详情「返回记录列表」、轨迹失败「重试」、打卡失败「重试」；出发页同路线骑手统计失败态「重试」。骑手统计原按钮只有 `frame(height: 44)`，宽度仍等于文字宽度，是最后一条宽度不足的内联动作。
+- Pro / SE 复验：路线海拔失败、记录轨迹失败、记录打卡失败、记录不存在空态、出发页骑手失败态均保持单行、右对齐，未把所在区块撑高，无溢出或裁切；记录详情的返回动作仍与页面左侧账本对齐。
+- 边界说明：协议链接有上下 15pt padding，整体约 44pt；`RidingView.segmentButton` 高 34pt 但横向满宽，属分段控件而非小文字动作；天气「开启 / 重试」已有 44pt——以上均不改。
+
+### 调试入口
+
+- `-recorddetailtrackfailed`：记录详情轨迹加载失败态
+- `-recorddetailcheckinsfailed`：记录详情打卡加载失败态
+- `-recorddetailmissing`：记录不存在空态
+- `-departdatafail`（既有）：出发页天气 / 油价 / 骑手统计失败态
+- 以上入口仅在调试构建使用，生产默认流程不变。
+
+### 证据与构建
+
+- Pro：`outputs/r64/pro-route-elevation-failed.png`、`pro-record-track-failed.png`、`pro-record-checkins-failed.png`、`pro-record-missing.png`、`pro-depart-riders-failed.png`
+- SE：`outputs/r64/se-route-elevation-failed.png`、`se-record-track-failed.png`、`se-record-checkins-failed.png`、`se-record-missing.png`、`se-depart-riders-failed.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-16）。

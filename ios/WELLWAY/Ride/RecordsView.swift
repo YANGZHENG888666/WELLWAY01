@@ -896,6 +896,11 @@ final class RecordsStore {
 
     func loadCheckins(for rideId: UUID) async {
         // 打卡明细为尽力而为的补充数据：失败不应破坏列表主流程，也不覆盖主错误
+        if ProcessInfo.processInfo.arguments.contains("-recorddetailcheckinsfailed") {
+            checkinsByRide[rideId] = []
+            checkinLoadFailedForRide.insert(rideId)
+            return
+        }
         do {
             let loaded: [RideCheckin] = try await client
                 .from("ride_checkins")
@@ -915,6 +920,11 @@ final class RecordsStore {
     func loadTrack(for rideId: UUID) async {
         // 调试预览注入的轨迹不写库，重新拉取会用空结果把它覆盖掉
         if ProcessInfo.processInfo.arguments.contains("-recordtrackpreview") { return }
+        if ProcessInfo.processInfo.arguments.contains("-recorddetailtrackfailed") {
+            trackByRide[rideId] = []
+            trackLoadFailedForRide.insert(rideId)
+            return
+        }
         guard trackByRide[rideId] == nil || trackLoadFailedForRide.contains(rideId) else { return }
         do {
             var loaded: [RidePoint] = []
@@ -1086,10 +1096,7 @@ struct RecordDetailView: View {
                         title: "记录不存在",
                         message: "这条记录可能已被删除，或尚未同步到当前账号"
                     )
-                    Button("返回记录列表") { dismiss() }
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Theme.textPrimary)
-                        .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
+                    InlineActionButton(title: "返回记录列表", fontSize: 14) { dismiss() }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -1453,12 +1460,9 @@ struct RecordDetailView: View {
                     }
                     Spacer(minLength: 0)
                     if failed {
-                        Button("重试") {
+                        InlineActionButton(title: "重试", fontSize: 13, alignment: .trailing) {
                             Task { await store.loadTrack(for: record.id) }
                         }
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Theme.textPrimary)
-                        .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
                     }
                 }
                 .padding(.vertical, 6)
@@ -1515,12 +1519,9 @@ struct RecordDetailView: View {
                         .font(.system(size: 13))
                         .foregroundStyle(Theme.textSecondary)
                     Spacer(minLength: 8)
-                    Button("重试") {
+                    InlineActionButton(title: "重试", fontSize: 13, alignment: .trailing) {
                         Task { await store.loadCheckins(for: record.id) }
                     }
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.textPrimary)
-                    .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
                 }
                 .padding(.horizontal, 14)
                 .frame(height: 52)

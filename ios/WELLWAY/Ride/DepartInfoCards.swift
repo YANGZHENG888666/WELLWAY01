@@ -180,14 +180,7 @@ struct RiderPlanCard: View {
                 }
                 Spacer(minLength: 8)
                 if failed, let onRetry {
-                    Button(action: onRetry) {
-                        Text("重试")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Theme.ink)
-                            .frame(height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
+                    InlineActionButton(title: "重试", fontSize: 12, alignment: .trailing, action: onRetry)
                     .accessibilityLabel("重试加载同路线骑手统计")
                 }
             }
