@@ -74,7 +74,7 @@ enum Theme {
     }
 }
 
-/// 通用空态：浅灰圆形图标 + 17 semibold 标题 + 13 说明(全站统一，不用系统 ContentUnavailableView)
+/// 通用空态：裸图标 + 16 semibold 标题 + 13 说明(全站统一，不用系统 ContentUnavailableView)
 struct DesignEmptyState: View {
     let icon: String
     let title: String
@@ -390,7 +390,7 @@ struct DesignPageHeader: View {
 
             Text(title)
                 .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.black)
+                .foregroundColor(Theme.textPrimary)
                 .frame(width: 240, height: 24, alignment: .leading)
                 .position(x: titleX, y: titleY)
         }

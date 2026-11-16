@@ -4428,3 +4428,20 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - SE：`outputs/r66/se/`（14 张，文件名对应上述页面）
 - 角标放大：`outputs/r66/crops/se-team-legal-zoom8.png`、`pro-team-legal-zoom.png`
 - 本轮无源码改动；Pro / SE `xcodebuild` 增量构建均 `BUILD SUCCEEDED`（2026-11-16）。
+
+## 逐页巡检（第六十七轮）：共享页头与徽章主行动收口
+
+### 复核结论
+
+- `DesignPageHeader` 标题色由纯黑 `.black` 改为 `Theme.textPrimary`（`#0F1115`），与 v6 主文字令牌及列表标题、设置行标题一致；页头 18pt bold、返回箭头 44pt 热区、24pt 标题行高均不变。
+- 徽章详情 `BadgeShareButton` 的「分享」由 15pt bold + 14pt 纵向内边距（实际约 48pt）改为 16pt semibold + 固定 52pt 高，和全站 52–56pt 主行动对齐；圆角 12pt、纯黑底、白字与满宽布局保持不变。
+- `DesignEmptyState` 的过期注释由「17 semibold 标题」修正为实际的「16 semibold 标题」，并注明为裸图标；组件视觉与调用点未改。
+- 审计结论：`LoadingPageView` 与 `ShareButton` 当前均无调用点，属死代码，本轮不做借机删除或重构。`RoutesView`、`FavoriteRoutesView`、`BadgesView`、`SocialViews` 等的 `safeAreaInset` 已逐处核对，空态 / 免责声明与真实长列表均未被 Tab 栏遮挡。
+- 边界说明：大量 16pt 用于列表行标题、设置行与空态标题，不批量改成 15pt；首页 CTA 的 15pt + kerning 属刻意设计；`Theme.primary` / `Color.black` 主行动仍在 v6 允许范围内。以上均不改。
+- Pro / SE 复验 `home`、`routes`、`records`、`badges`、`depart`、`vehicles`、`profile`、`about`、`feedback`、徽章详情已获得 / 锁定态及六类空态：页头、主行动、空态层级与滚动截断正常，无新回归。
+
+### 证据与构建
+
+- Pro：`outputs/r67/pro/`（16 张，覆盖上述页面与空态）
+- SE：`outputs/r67/se/`（16 张，文件名对应上述页面）
+- Pro（iPhone 17 Pro）/ SE（SE-test）`xcodebuild` 增量构建：`BUILD SUCCEEDED`（2026-11-16）。

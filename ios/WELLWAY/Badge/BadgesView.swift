@@ -424,9 +424,9 @@ private struct BadgeShareButton: View {
             showShare = true
         } label: {
             Text("分享")
-                .font(.system(size: 15, weight: .bold))
+                .font(.system(size: 16, weight: .semibold))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .frame(height: 52)
                 .background(Theme.primary)
                 .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
