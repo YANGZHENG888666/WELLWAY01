@@ -782,6 +782,7 @@ struct BadgeDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let entry: BadgeEntry
     let store: BadgesStore
+    @State private var bottomBarHeight: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -888,7 +889,7 @@ struct BadgeDetailView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 34)
-                .frame(minHeight: proxy.size.height, alignment: .center)
+                .frame(minHeight: max(proxy.size.height - bottomBarHeight, 0), alignment: .center)
             }
             // 分享/再跑一次固定在底部：跟着内容走会让按钮停在屏幕中段、
             // 下方空掉近四成，页面看起来像没加载完
@@ -896,6 +897,13 @@ struct BadgeDetailView: View {
                 bottomActions
                     .padding(.bottom, 8)
                     .wellwayBottomBar()
+                    .background {
+                        GeometryReader { barProxy in
+                            Color.clear.preference(key: BadgeBottomBarHeightKey.self,
+                                                   value: barProxy.size.height)
+                        }
+                    }
+                    .onPreferenceChange(BadgeBottomBarHeightKey.self) { bottomBarHeight = $0 }
                     .motionAppear(delay: 0.38)
             }
             }
@@ -1076,5 +1084,12 @@ struct BadgeDetailView: View {
             ? "M月d日 HH:mm"
             : "yyyy年M月d日 HH:mm"
         return formatter.string(from: date)
+    }
+}
+
+private struct BadgeBottomBarHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
