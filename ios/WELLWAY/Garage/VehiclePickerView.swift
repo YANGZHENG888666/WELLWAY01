@@ -133,6 +133,14 @@ struct VehiclePickerView: View {
             if selectedBrandId == nil, args.contains("-pickerbrandempty") {
                 searchText = "不存在的品牌"
             }
+            if selectedBrandId == nil, args.contains("-pickerbrandsuccess") {
+                searchText = "不存在的品牌"
+                showBrandRequested = true
+            }
+            if selectedBrandId == nil, args.contains("-pickerbrandfailure") {
+                searchText = "不存在的品牌"
+                showBrandRequestFailed = true
+            }
             if selectedBrandId == nil, args.contains("-pickerpinyin") {
                 searchText = "ben"
             }

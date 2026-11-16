@@ -180,6 +180,12 @@ struct AddVehicleFlowView: View {
 
             Button {
                 withAnimation { modelIds.removeAll { $0 == model.id } }
+                // 选择器高亮与待添加列表是分开的状态：只移除列表项会留下「幽灵选中」，
+                // 再次打开选择器时这辆车仍带勾选、底部仍出现「完成选择」，
+                // 点完成后却什么也不会加回列表。
+                if pickerSelection == model.id {
+                    pickerSelection = nil
+                }
             } label: {
                 Text("移除")
                     .font(.system(size: 13))
@@ -302,6 +308,7 @@ struct AddVehicleFlowView: View {
             // save() 也会因为 selectedModels 为空直接返回，不会写出第二条重复车辆。
             modelIds.removeAll()
             photoData.removeAll()
+            pickerSelection = nil
             isSaving = false
             dismiss()
         } else if success > 0 {
@@ -310,6 +317,9 @@ struct AddVehicleFlowView: View {
             // 已成功的车型从选择列表移除，避免重试时重复插入。
             await garage.loadVehicles(userId: userId)
             modelIds.removeAll { successfulIds.contains($0) }
+            if let pickerSelection, successfulIds.contains(pickerSelection) {
+                self.pickerSelection = nil
+            }
             let failed = total - success
             let reason = failureMessage.map { "（\($0)）" } ?? ""
             errorText = "已添加 \(success) 辆，\(failed) 辆添加失败\(reason)。请重试剩余车辆。"
