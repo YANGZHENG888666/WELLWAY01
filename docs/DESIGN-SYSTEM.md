@@ -4581,3 +4581,47 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
   `outputs/r72/se-team-failed.jpg`、`outputs/r72/se-team-unavailable.jpg`
 - 本轮无源码改动；Pro（iPhone 17 Pro）/ SE（SE-test）增量构建 `BUILD SUCCEEDED`
   （2026-11-16）。
+
+## 逐页巡检（第七十三轮）：车库到徽章详情的剩余状态复核
+
+### 复核结论
+
+- 车库：顶部车辆主视觉、数据板、分页点与页尾账单行符合 v6；Pro / SE 均无横向溢出，
+  底部 Tab 栏不压内容。
+- 路线列表：全宽地图封面、右侧渐深白字与 20pt 边距正常；香山路线卡右侧文字区实测
+  对比度约 7.5–12:1，达到可读性要求，不改。路线卡高度与列表节奏一致，无裁切。
+- 出发页：折叠摘要、展开后的天气 / 限行 / 骑手 / 免责说明层级符合 v6；Pro / SE 的
+  52pt 主行动与底部 Tab 栏完整。SE 展开态顶部无挤压，滚到页尾后免责说明完整停在
+  固定行动栏上方，没有被压住。
+- 「我的」：头像、车辆入口、路线 / 记录 / 徽章入口与页尾账号操作均可完整滚动；
+  首尾层级和页边距一致，无 SE 裁切。
+- 骑行记录：汇总指标、记录行与已完成筛选沿用既定口径；短时长记录的 0 秒字段省略，
+  已完成记录不重复显示状态，均不作为缺陷修改。
+- 徽章列表：路线徽章与通用徽章的已获得 / 锁定态层级清楚，进度条与完成明细符合 v6。
+- 徽章详情：路线徽章已获得时为「分享」52pt 主行动 + 44pt「再跑一次这条路线」文字次行动，
+  锁定时为「查看这条路线」单一黑色主行动；通用徽章已获得时为「分享」主行动 + 44pt
+  「继续骑行」文字次行动，锁定时为「去骑一条路线」单一黑色主行动。SE 的顶部、进度明细
+  与页尾均无裁切。
+
+### 修复与调试入口
+
+- 修复通用徽章已获得态的 CTA 同权问题：`BadgeDetailView` 的「继续骑行」由 52pt 黑底
+  主按钮改为 44pt 文字次行动，和路线徽章的「再跑一次这条路线」统一；未获得时仍保留
+  唯一的 52pt 黑色主行动。
+- 新增仅调试参数 `-badgeglobal`（可配 `-badgelocked`）：在徽章样例中追加无路线的
+  「新手首骑」，用于验证通用徽章的 CTA 与进度版式；只在启动参数下生效，不改变生产路径。
+- 出发页 Pro 点击「查看详情」后不会自动滚到展开面板，SE 的小屏逻辑会自动定位。大屏是否
+  统一自动滚动仍为待定候选，本轮不扩大改动范围。
+
+### 证据与构建
+
+- Pro：`outputs/r73/pro/pro-garage.png`、`pro-routes.png`、`pro-routes-card4.png`、
+  `pro-depart-collapsed.jpg`、`pro-depart-expanded.jpg`、`pro-depart-expanded-scrolled.jpg`、
+  `pro-profile-top.jpg`、`pro-profile-bottom.jpg`、`pro-records.jpg`、`pro-badges.jpg`、
+  `pro-route-badge-earned.jpg`、`pro-route-badge-locked.jpg`、
+  `pro-global-badge-earned.jpg`、`pro-global-badge-locked.jpg`
+- SE：`outputs/r73/se/se-depart-collapsed-guest.jpg`、`se-depart-expanded-top.png`、
+  `se-depart-expanded-pagebottom.png`、`se-global-badge-earned.jpg`、
+  `se-global-badge-locked.png`、`se-route-badge-earned.png`、
+  `se-route-badge-earned-bottom.png`、`se-route-badge-locked.png`
+- Pro（iPhone 17 Pro）/ SE（SE-test）`xcodebuild` 增量构建：`BUILD SUCCEEDED`（2026-11-16）。

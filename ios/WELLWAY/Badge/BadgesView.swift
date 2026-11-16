@@ -749,7 +749,7 @@ final class BadgesStore {
         checkpointsById = Dictionary(uniqueKeysWithValues: sampleCheckpoints.map { ($0.id, $0) })
         checkedCheckpointIds = [1, 2, 3, 4, 6, 7]
 
-        let samples: [(Badge, String?)] = [
+        var samples: [(Badge, String?)] = [
             (Badge(id: 1, routeId: 1, name: "洱海初见", imageUrl: nil, conditionDesc: "完成洱海环湖线全部打卡点", seq: 1), "2026-10-12T08:20:00Z"),
             (Badge(id: 2, routeId: 1, name: "风花雪月", imageUrl: nil, conditionDesc: "累计骑行洱海环湖线 3 次", seq: 2), "2026-10-26T09:05:00Z"),
             (Badge(id: 3, routeId: 1, name: "环湖夜骑", imageUrl: nil, conditionDesc: "夜间完成洱海环湖线", seq: 3), nil),
@@ -759,6 +759,15 @@ final class BadgesStore {
             (Badge(id: 7, routeId: 3, name: "日出出发", imageUrl: nil, conditionDesc: "日出前出发完成通勤线", seq: 7), nil),
             (Badge(id: 8, routeId: 3, name: "百公里", imageUrl: nil, conditionDesc: "累计骑行 100 公里", seq: 8), nil)
         ]
+        if ProcessInfo.processInfo.arguments.contains("-badgeglobal") {
+            let earnedAt = ProcessInfo.processInfo.arguments.contains("-badgelocked")
+                ? nil
+                : "2026-10-12T08:20:00Z"
+            samples.append((
+                Badge(id: 9, routeId: nil, name: "新手首骑", imageUrl: nil, conditionDesc: "完成第一次骑行", seq: 9),
+                earnedAt
+            ))
+        }
         entries = samples.map { BadgeEntry(badge: $0.0, earnedAt: $0.1) }
     }
 
@@ -928,12 +937,13 @@ struct BadgeDetailView: View {
                     dismiss()
                 } label: {
                     Text(entry.earnedAt == nil ? "去骑一条路线" : "继续骑行")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: entry.earnedAt == nil ? 16 : 15, weight: .semibold))
+                        .foregroundStyle(entry.earnedAt == nil ? Color.white : Theme.textPrimary)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(Color.black)
+                        .frame(height: entry.earnedAt == nil ? 52 : 44)
+                        .background(entry.earnedAt == nil ? Color.black : Color.clear)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(SolidPressStyle())
             }

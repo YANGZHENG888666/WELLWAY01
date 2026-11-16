@@ -784,6 +784,10 @@ struct DebugBadgeDetailLoader: View {
 
     private var selectedEntry: BadgeEntry? {
         guard let store, let first = store.entries.first else { return nil }
+        if ProcessInfo.processInfo.arguments.contains("-badgeglobal"),
+           let global = store.entries.first(where: { $0.badge.routeId == nil }) {
+            return global
+        }
         return earned ? first : (store.entries.count > 2 ? store.entries[2] : first)
     }
 
