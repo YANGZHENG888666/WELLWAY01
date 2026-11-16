@@ -4549,3 +4549,35 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
   不引用 `se-feedback-submitting.png` 作为该状态证据）
 - 本轮无源码改动；Pro（iPhone 17 Pro）/ SE（SE-test）`xcodebuild` 增量构建：
   `BUILD SUCCEEDED`（2026-11-16）。
+
+## 逐页巡检（第七十二轮）：骑行地图、路线骑手与对向四态
+
+### 复核结论
+
+- 骑行地图 A 态：深色底图、路线折线与起终点标记清晰，「骑行模式 / 外部地图」为右下角
+  次行动，不抢主视觉；「剩余 12.6 km / 爬升 120 m · 难度 简单」与状态提示条符合 v6。
+- 外部地图弹层：两行选择（高德地图 / 苹果地图）+ 独立取消层级，24pt 顶部圆角、52pt 行高；
+  Pro 实测选高德后成功打开 `amap.com`，返回 App 转为 B 态并显示
+  「高德地图导航中，返回 App 继续记录」；再点「骑行模式」回到 A 态，提示恢复为
+  「WellWay 正在记录本次骑行」。
+- 路线骑手：有数据时按列表展示骑手行；定位拒绝、加载失败、加载后无法获取位置三种边界态
+  均为裸图标 + 标题 + 说明，没有灰卡包裹；Pro / SE 文案与层高一致，无裁切。
+- 路线详情：里程 / 爬升 / 预计用时 / 难度为一条无卡片指标行，海拔剖面与途经点直接落在
+  白底上，底部「开始骑行」52pt 黑色主行动，均符合 v6。
+- 返回层级：真实链路 `-riding` → 骑行 HUD →「全屏查看路线」→ 返回可回到 HUD。
+  `-mapswitch` 调试入口把地图页作为根视图，`dismiss()` 无上级可退属调试形态预期，
+  不按产品缺陷处理（与第 68 轮 `-picker` 同类）。
+
+### 证据与构建
+
+- Pro：`outputs/r72/pro-mapswitch-a.jpg`、`outputs/r72/pro-mapswitch-dialog.jpg`、
+  `outputs/r72/pro-mapswitch-b.jpg`、`outputs/r72/pro-mapswitch-a-returned.jpg`、
+  `outputs/r72/pro-riders-empty.jpg`、`outputs/r72/pro-team-rows.jpg`、
+  `outputs/r72/pro-team-denied.jpg`、`outputs/r72/pro-team-failed.jpg`、
+  `outputs/r72/pro-team-unavailable.jpg`
+- SE：`outputs/r72/se-mapswitch-a.jpg`、`outputs/r72/se-mapswitch-dialog.jpg`、
+  `outputs/r72/se-mapswitch-b.jpg`、`outputs/r72/se-riders-empty.jpg`、
+  `outputs/r72/se-team-rows.jpg`、`outputs/r72/se-team-denied.jpg`、
+  `outputs/r72/se-team-failed.jpg`、`outputs/r72/se-team-unavailable.jpg`
+- 本轮无源码改动；Pro（iPhone 17 Pro）/ SE（SE-test）增量构建 `BUILD SUCCEEDED`
+  （2026-11-16）。
