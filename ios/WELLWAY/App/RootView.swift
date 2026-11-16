@@ -683,6 +683,26 @@ struct DebugRouteDetailLoader: View {
                     failed = true
                     return
                 }
+                // -longnames：真实路线数据不变，只替换展示名称，验证长标题换行。
+                let displayRoute: Route
+                if ProcessInfo.processInfo.arguments.contains("-longnames") {
+                    displayRoute = Route(
+                        id: first.id,
+                        name: "大理古城到双廊的环洱海长距离耐力骑行挑战路线",
+                        startName: first.startName,
+                        endName: first.endName,
+                        distanceM: first.distanceM,
+                        elevationM: first.elevationM,
+                        difficulty: first.difficulty,
+                        durationMin: first.durationMin,
+                        mapUrl: first.mapUrl,
+                        coverImageUrl: first.coverImageUrl,
+                        province: first.province,
+                        city: first.city
+                    )
+                } else {
+                    displayRoute = first
+                }
                 let cps: [Checkpoint] = try await auth.client
                     .from("checkpoints")
                     .select("*")
@@ -690,7 +710,7 @@ struct DebugRouteDetailLoader: View {
                     .order("seq", ascending: true)
                     .execute()
                     .value
-                route = first
+                route = displayRoute
                 checkpoints = cps
             } catch {
                 failed = true
