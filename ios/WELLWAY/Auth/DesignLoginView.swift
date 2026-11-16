@@ -38,7 +38,7 @@ struct DesignLoginView: View {
                             .padding(.top, 10)
                             .onAppear { showAgreeHint = false }
                     } else if showAgreeHint {
-                        Text("请先阅读并同意《用户服务协议》与《隐私政策》")
+                        Text("请先阅读并同意《用户服务协议》及《隐私政策》")
                             .font(.system(size: 12))
                             .foregroundColor(Theme.danger)
                             .multilineTextAlignment(.center)
@@ -57,6 +57,10 @@ struct DesignLoginView: View {
         }
         .background(Color.white)
         .ignoresSafeArea(edges: .top)
+        .onChange(of: agreed) { _, newValue in
+            // 勾选即代表提示已解决，不让红色错误一直压在协议行上方。
+            if newValue { showAgreeHint = false }
+        }
         .pageMark(17)
     }
 

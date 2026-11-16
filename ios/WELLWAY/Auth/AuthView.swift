@@ -455,6 +455,11 @@ struct EmailSignupView: View {
             restoreCooldown()
             focusDebugFieldIfNeeded()
         }
+        .onChange(of: agreed) { _, newValue in
+            if newValue, errorText == "请先阅读并同意《用户服务协议》及《隐私政策》" {
+                errorText = nil
+            }
+        }
     }
 
     private var header: some View {
@@ -515,7 +520,7 @@ struct EmailSignupView: View {
     }
 
     private func promptAgree() {
-        errorText = "请先阅读并同意《用户服务协议》与《隐私政策》"
+        errorText = "请先阅读并同意《用户服务协议》及《隐私政策》"
         withAnimation(.linear(duration: 0.5)) { shakeCount += 2 }
     }
 
@@ -782,6 +787,11 @@ struct PasswordLoginView: View {
             ForgotPasswordView()
         }
         .task { focusDebugFieldIfNeeded() }
+        .onChange(of: agreed) { _, newValue in
+            if newValue, auth.errorMessage == "请先阅读并同意《用户服务协议》及《隐私政策》" {
+                auth.errorMessage = nil
+            }
+        }
     }
 
     private var forgotButton: some View {
@@ -844,7 +854,7 @@ struct PasswordLoginView: View {
     }
 
     private func promptAgree() {
-        auth.errorMessage = "请先阅读并同意《用户服务协议》与《隐私政策》"
+        auth.errorMessage = "请先阅读并同意《用户服务协议》及《隐私政策》"
         withAnimation(.linear(duration: 0.5)) { shakeCount += 2 }
     }
 

@@ -27,7 +27,7 @@ struct AuthAgreementLine: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(IconPressStyle(pressedOpacity: 0.6))
-            .accessibilityLabel("同意用户服务协议与隐私政策")
+            .accessibilityLabel("同意用户服务协议及隐私政策")
             .accessibilityValue(agreed ? "已勾选" : "未勾选")
 
             AgreementCopyLinks(onAgreement: onAgreement, onPrivacy: onPrivacy)
