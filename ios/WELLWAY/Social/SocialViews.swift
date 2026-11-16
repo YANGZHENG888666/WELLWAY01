@@ -30,6 +30,7 @@ struct NotificationsView: View {
     @State private var isLoading = true
     @State private var loadFailed = false
     @State private var refreshFailed = false
+    @State private var loadErrorMessage = "通知加载失败，请稍后重试"
     @State private var lastSeenAt: Date?
 
     private static let lastSeenKey = "notificationsLastSeenAt"
@@ -47,6 +48,35 @@ struct NotificationsView: View {
     private struct CheckpointNameRow: Decodable {
         let id: Int
         let name: String
+    }
+
+    /// 三个数据源分别保留成功 / 失败：全部失败时要能说出真实原因，
+    /// 不能把服务端或权限错误一律写成「请检查网络连接」。
+    private struct NotifLoadOutcome {
+        private enum Payload {
+            case items([NotifItem])
+            case failed(String)
+        }
+
+        private let payload: Payload
+
+        var items: [NotifItem]? {
+            if case .items(let items) = payload { return items }
+            return nil
+        }
+
+        var failureMessage: String? {
+            if case .failed(let message) = payload { return message }
+            return nil
+        }
+
+        static func success(_ items: [NotifItem]) -> NotifLoadOutcome {
+            NotifLoadOutcome(payload: .items(items))
+        }
+
+        static func failure(_ error: Error) -> NotifLoadOutcome {
+            NotifLoadOutcome(payload: .failed(error.wellwayUserMessage))
+        }
     }
 
     var body: some View {
@@ -75,16 +105,19 @@ struct NotificationsView: View {
                 if isLoading {
                     notificationsSkeleton
                 } else if loadFailed {
-                    NetworkErrorView(message: "通知加载失败，请检查网络连接") {
+                    NetworkErrorView(message: loadErrorMessage) {
                         Task { await load() }
                     }
                 } else if items.isEmpty {
-                    VStack {
-                        Spacer(minLength: 0)
+                    // 通知随时间变化，空态也必须能下拉刷新；
+                    // 否则用户停在「暂无通知」上只能退出页面再进来。
+                    ScrollView(showsIndicators: false) {
                         DesignEmptyState(icon: "bell", title: "暂无通知", message: "骑行完成、打卡和徽章会出现在这里")
-                        Spacer(minLength: 0)
+                            .frame(maxWidth: .infinity)
+                            .containerRelativeFrame(.vertical)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .refreshable { await load(showLoading: false) }
+                    .scrollBounceBehavior(.always, axes: .vertical)
                 } else {
                     ScrollViewReader { proxy in
                     ScrollView {
@@ -289,16 +322,26 @@ struct NotificationsView: View {
             }
             return
         }
-        guard let uid = auth.user?.id else { return }
+        guard let uid = auth.user?.id else {
+            loadErrorMessage = "登录状态已失效，请重新登录"
+            loadFailed = true
+            return
+        }
         let client = auth.client
         async let badgeTask = loadBadgeItems(client: client, userId: uid)
         async let rideTask = loadRideItems(client: client, userId: uid)
         async let checkinTask = loadCheckinItems(client: client, userId: uid)
-        let (badges, rides, checkins) = await (badgeTask, rideTask, checkinTask)
+        let (badgeResult, rideResult, checkinResult) = await (badgeTask, rideTask, checkinTask)
+        let badges = badgeResult.items
+        let rides = rideResult.items
+        let checkins = checkinResult.items
         let allFailed = badges == nil && rides == nil && checkins == nil
         let partiallyFailed = badges == nil || rides == nil || checkins == nil
         let result = (badges ?? []) + (rides ?? []) + (checkins ?? [])
         if allFailed {
+            loadErrorMessage = [badgeResult, rideResult, checkinResult]
+                .compactMap(\.failureMessage)
+                .first ?? "通知加载失败，请稍后重试"
             if items.isEmpty {
                 loadFailed = true
             } else {
@@ -394,7 +437,7 @@ struct NotificationsView: View {
         UserDefaults.standard.set(stamp, forKey: Self.lastSeenKey)
     }
 
-    private func loadBadgeItems(client: SupabaseClient, userId: UUID) async -> [NotifItem]? {
+    private func loadBadgeItems(client: SupabaseClient, userId: UUID) async -> NotifLoadOutcome {
         let badges: [UserBadge]
         do {
             badges = try await client
@@ -406,9 +449,9 @@ struct NotificationsView: View {
                 .execute()
                 .value
         } catch {
-            return nil
+            return .failure(error)
         }
-        guard !badges.isEmpty else { return [] }
+        guard !badges.isEmpty else { return .success([]) }
 
         let badgeIds = Array(Set(badges.map(\.badgeId)))
         let badgeNames: [BadgeNameRow] = (try? await client
@@ -419,7 +462,7 @@ struct NotificationsView: View {
             .value) ?? []
         let names = Dictionary(uniqueKeysWithValues: badgeNames.map { ($0.id, $0.name) })
 
-        return badges.map { badge in
+        return .success(badges.map { badge in
             let date = ISO8601DateFormatter.wellwayDate(from: badge.earnedAt)
             return NotifItem(
                 id: "badge-\(badge.id)",
@@ -430,10 +473,10 @@ struct NotificationsView: View {
                 date: date,
                 targetBadgeId: badge.badgeId
             )
-        }
+        })
     }
 
-    private func loadRideItems(client: SupabaseClient, userId: UUID) async -> [NotifItem]? {
+    private func loadRideItems(client: SupabaseClient, userId: UUID) async -> NotifLoadOutcome {
         let rides: [RideRecord]
         do {
             rides = try await selectCompletedRides(client: client, userId: userId, includeName: true)
@@ -441,10 +484,10 @@ struct NotificationsView: View {
             do {
                 rides = try await selectCompletedRides(client: client, userId: userId, includeName: false)
             } catch {
-                return nil
+                return .failure(error)
             }
         }
-        guard !rides.isEmpty else { return [] }
+        guard !rides.isEmpty else { return .success([]) }
 
         let routeIds = Array(Set(rides.compactMap(\.routeId)))
         let routeRows: [RouteNameRow] = routeIds.isEmpty ? [] : ((try? await client
@@ -457,7 +500,7 @@ struct NotificationsView: View {
 
         // 一分钟内、没轨迹也没移动的骑行多半是误触开始/停止，记录列表里保留即可；
         // 放进通知流会变成一屏「骑行已结束 · 未记录有效轨迹」，把真正的打卡和徽章挤下去。
-        return rides.filter { ride in
+        return .success(rides.filter { ride in
             !(ride.distanceM < 100 && ride.durationS < 60 && !ride.hasRecordedTrack)
         }.map { ride in
             let rawDate = ride.endedAt ?? ride.startedAt
@@ -486,7 +529,7 @@ struct NotificationsView: View {
                 date: date,
                 targetRecordId: ride.id
             )
-        }
+        })
     }
 
     private func selectCompletedRides(
@@ -508,7 +551,7 @@ struct NotificationsView: View {
             .value
     }
 
-    private func loadCheckinItems(client: SupabaseClient, userId: UUID) async -> [NotifItem]? {
+    private func loadCheckinItems(client: SupabaseClient, userId: UUID) async -> NotifLoadOutcome {
         let checkins: [RideCheckin]
         do {
             checkins = try await client
@@ -520,9 +563,9 @@ struct NotificationsView: View {
                 .execute()
                 .value
         } catch {
-            return nil
+            return .failure(error)
         }
-        guard !checkins.isEmpty else { return [] }
+        guard !checkins.isEmpty else { return .success([]) }
 
         let checkpointIds = Array(Set(checkins.map(\.checkpointId)))
         let checkpointRows: [CheckpointNameRow] = (try? await client
@@ -533,7 +576,7 @@ struct NotificationsView: View {
             .value) ?? []
         let names = Dictionary(uniqueKeysWithValues: checkpointRows.map { ($0.id, $0.name) })
 
-        return checkins.map { checkin in
+        return .success(checkins.map { checkin in
             let date = ISO8601DateFormatter.wellwayDate(from: checkin.checkedAt)
             let name = names[checkin.checkpointId] ?? "打卡点"
             return NotifItem(
@@ -545,7 +588,7 @@ struct NotificationsView: View {
                 date: date,
                 targetRecordId: checkin.rideId
             )
-        }
+        })
     }
 
     private func relativeTime(_ iso: String) -> String {

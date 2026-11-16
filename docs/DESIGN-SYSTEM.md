@@ -4468,3 +4468,84 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - Pro：`outputs/r68/pro/`（路线详情、收藏、添加车辆、选择器键盘 / 选中 / 空态 / 拼音态）
 - SE：`outputs/r68/se/`（同上关键页）
 - Pro（iPhone 17 Pro）/ SE（SE-test）`xcodebuild` 增量构建：`BUILD SUCCEEDED`（2026-11-16）。
+
+## 逐页巡检（第六十九轮）：共享弹层与导航方式选择
+
+### 复核结论
+
+- 共享多按钮弹层（`-dialogdemo`）：单一黑色主行动 + 文字次行动 + 独立取消，层级正确；52pt 主按钮、24pt 顶部圆角、grabber 与 20pt 边距均符合 v6，Pro / SE 无裁切。
+- 重命名输入弹层（`-dialogdemo -dialogprompt`）：输入框、52pt「保存」与取消行完整；SE 键盘弹起后「取消」仍完整可见，未被键盘遮挡。
+- 导航方式首层（`-navchoice`）：三种方式及后果文案清楚，「WellWay 骑行模式 / 高德地图 / 苹果地图」均无歧义，Pro / SE 无换行挤压或裁切。
+- 异地状态（`-navchoice -navchoice-far`）：正确显示「距起点 3.3 km，先导航至起点」，WellWay 行副文案切为「从当前位置开始记录，可先骑到路线起点」。
+- 起点确认态（`-navchoice -navchoice-far -navchoice-confirm`）：黑色「导航到该路线起点」+ 浅灰「导航到该路线终点」+ 文字取消，没有两个同权黑色按钮；SE 底部安全区正常。
+- SE 交互：确认态点「取消」正确回到方式选择层；方式层点「取消」正确关闭整个弹层。
+- `WellwayPromptPanel` 的「取消」使用 `SolidPressStyle()`，通用弹层使用 `RowPressStyle()`；视觉与按压反馈均无明显问题，不作为缺陷修改。
+
+### 证据与构建
+
+- Pro：`outputs/r69/pro/`（`dialogdemo`、`dialogprompt`、`navchoice`、`navchoice_far`、`navchoice_confirm`）
+- SE：`outputs/r69/se/`（同名 5 张）
+- 本轮无源码改动；Pro / SE 安装同一构建产物，`xcodebuild` 均 `BUILD SUCCEEDED`（2026-11-16）。
+
+## 逐页巡检（第七十轮）：通知列表与空态可刷新
+
+### 复核结论
+
+- 通知列表的分组标题（今天 / 昨天 / 具体日期）、裸图标、标题、时间与正文层级符合 v6；
+  标题经 `Theme.textPrimary`、正文经 `Theme.textSecondary`，未读只靠标题字重表达，
+  不再额外挂绿点。Pro / SE 均无裁切，长列表底部最后一条完整，页头渐隐正常。
+- 加载骨架、空态、生产真实数据态均正常；AX 快照中未读项读作单个「未读」，
+  没有重复朗读。Pro / SE 的通知列表与空态均已复验。
+- 修复空态不能下拉刷新：原先空态只是普通 `VStack`，用户停在「暂无通知」时无法重新拉取。
+  现改为 `ScrollView` + `containerRelativeFrame(.vertical)` 保持居中，并加
+  `.refreshable` 与 `.scrollBounceBehavior(.always, axes: .vertical)`。
+- 修复错误文案硬编码：原先所有加载失败都显示「通知加载失败，请检查网络连接」，
+  会绕过 `NetworkErrorView` 的分类。现三个数据源分别返回 `NotifLoadOutcome`，
+  全部失败时取第一条真实 `error.wellwayUserMessage`，由 `NetworkErrorView` 区分
+  网络 / 超时 / 权限 / 通用加载失败；未登录时显示「登录状态已失效，请重新登录」。
+- 点击落点已确认：徽章通知进入对应徽章详情，打卡与骑行通知进入记录页；
+  真实骑行通知可定位到对应记录详情。返回按 push 层级先回列表页、再回通知页。
+
+### 证据与构建
+
+- Pro / SE：`outputs/r70/pro-empty-r70.png`、`outputs/r70/se-empty-r70.png`、
+  `outputs/r70/pro-sample-r70.png`、`outputs/r70/pro-bottom-r70.png`、
+  `outputs/r70/se-bottom-r70.png`；另有本轮早段截取的加载 / 空态 / 真实数据证据。
+- 错误态边界：把测试包 `SUPABASE_URL` 指向不可达地址后，会话校验先失败，
+  页面正确显示「没有操作权限 / 登录状态已失效，请重新登录」
+  （`outputs/r70/pro-error-r70.png`）；该证据只覆盖登录态失效，不冒充网络错误。
+  运行环境随后已恢复为正常构建（`outputs/r70/pro-restored-r70.png`）。
+- Pro（iPhone 17 Pro）/ SE（SE-test）`xcodebuild` 增量构建：`BUILD SUCCEEDED`（2026-11-16）。
+
+## 逐页巡检（第七十一轮）：设置、关于反馈与协议页收尾
+
+### 复核结论
+
+- 设置页（Pro / SE）：顶部、通知分区与页尾均可完整滚动，没有裁切；20pt 页边距、
+  56 / 68pt 行高、13pt 区块标题、16pt 行标题与发丝线分组均符合 v6。
+- 通知权限拒绝态：设置项显示红色「未开启」，提醒开关置灰；点击后弹出
+  「通知权限未开启」底部弹层，SE 实测「取消」可正常关闭。
+- 关于与反馈（SE）：图标、Wordmark、版本号、三条全宽行、免责说明与版权在首屏 / 页尾
+  均完整可见；Pro 顶部同口径已复验。
+- 反馈空态：弹层打开后自动聚焦并弹出键盘，提交按钮保持禁用，`0/500` 计数完整。
+  输入 684 字符后截断为 `500/500`，按钮切换为黑色可提交态。
+- SE 实测提交成功并显示「反馈已提交」回执；`-feedbackerror` 错误态显示红色
+  「提交失败，请检查网络后重试」，按钮与键盘均无遮挡。
+- 从关于页进入「用户服务协议」「隐私政策」均正常，返回后回到「关于与反馈」。
+- 自动化提交曾出现两次首点无反应，随后关闭弹层、重新打开并输入短文本，
+  连续三次单点提交均成功；当前无法复现，暂按 AXe 注入 / 键盘宿主 / 网络请求时序排查，
+  不改 `AboutFeedbackView` 的按钮命中逻辑。
+
+### 证据与构建
+
+- Pro：`outputs/r71/pro-settings-top.png`、`outputs/r71/pro-settings-notify-dialog.png`、
+  `outputs/r71/pro-about-top.png`
+- SE：`outputs/r71/se-settings-top.png`、`outputs/r71/se-settings-bottom.png`、
+  `outputs/r71/se-about-top.png`、`outputs/r71/se-feedback-empty.png`、
+  `outputs/r71/se-feedback-limit.png`、`outputs/r71/se-feedback-success.png`、
+  `outputs/r71/se-feedback-error.png`、`outputs/r71/se-agreement-top.png`、
+  `outputs/r71/se-privacy-top.png`
+- 交互录像：`outputs/r71/se-feedback-submit.mp4`（提交中加载帧未单独确认，
+  不引用 `se-feedback-submitting.png` 作为该状态证据）
+- 本轮无源码改动；Pro（iPhone 17 Pro）/ SE（SE-test）`xcodebuild` 增量构建：
+  `BUILD SUCCEEDED`（2026-11-16）。
