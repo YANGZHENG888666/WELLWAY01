@@ -25,6 +25,8 @@
 #      -focusotp                 → -emailbind
 #      -mapchoice                → -riding
 #      -ridingpaused / -ridingending → -riding
+#      -profilebottom            → -profile
+#      -recordsbottom / -notificationsbottom 同理，分别必须带父级入口
 # 2. 车库四个底部弹窗（车辆详情 / 油价 / 天气 / 路况）是代码里 4.5s 后才展开的，
 #    油价/天气失败态也必须带父级入口（-fuel -fuelerror / -weathersheet -weathererror）；
 #    这段用 8s 等待，否则只能截到首页。
@@ -82,6 +84,8 @@ COMBOS=(
   "-records -recordsempty"
   "-records -recordtrackpreview"
   "-records -recordsbottom"
+  "-profile -profilebottom"
+  "-guest -profile -profilebottom"
   "-summary -summaryfailed"
   "-summary -summarynotrack"
   "-summary -summarylost"

@@ -227,6 +227,10 @@ struct ProfileView: View {
                     }
                     .padding(.top, 24)
                     .motionAppear(delay: 0.30)
+                    // 调试：-profilebottom 滚到页尾，检查最后一行是否被悬浮 Tab 胶囊压住
+                    if ProcessInfo.processInfo.arguments.contains("-profilebottom") {
+                        Color.clear.frame(height: 1).id("profile-bottom")
+                    }
                 }
                 // 悬浮 Tab 胶囊会盖住内容：按全 App 统一的 108pt 预留，滚到底时最后一行仍能完整露出
                 .padding(.bottom, 108)
@@ -240,7 +244,13 @@ struct ProfileView: View {
             .onAppear {
                 // 从子页返回时 ScrollView 会停在错误的偏移上（头像被页头裁掉），
                 // 回到这一页时把位置拉回顶部，保证头像与昵称完整可见。
+                guard !ProcessInfo.processInfo.arguments.contains("-profilebottom") else { return }
                 DispatchQueue.main.async { proxy.scrollTo("profile-top", anchor: .top) }
+            }
+            .task {
+                guard ProcessInfo.processInfo.arguments.contains("-profilebottom") else { return }
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                proxy.scrollTo("profile-bottom", anchor: .bottom)
             }
             }
             }
