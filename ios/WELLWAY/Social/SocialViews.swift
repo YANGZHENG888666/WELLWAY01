@@ -797,19 +797,19 @@ struct TeamRidersView: View {
                                     .font(.system(size: 12))
                                     .foregroundStyle(Theme.textSecondary)
                             }
+                            .padding(.horizontal, 20)
                             .padding(.top, 16)
                         } else if loadFailed {
                             NetworkErrorView(message: "附近骑手统计暂时无法更新") {
                                 Task { await load() }
                             }
-                            // NetworkErrorView 自带 20pt 边距；本页外层已有 20pt，
-                            // 直接放会让「重试」比同页空态的 52pt 主行动窄 40pt。
-                            .padding(.horizontal, -20)
                         } else if let counts {
                             summaryCard(counts, compact: isShort)
+                                .padding(.horizontal, 20)
                                 .motionAppear(delay: 0.05)
                             if counts.total == 0 {
                                 emptyRidersRow
+                                    .padding(.horizontal, 20)
                                     .motionAppear(delay: 0.10)
                             }
                             // 有数字时地图同样吃掉剩余高度：200pt 的固定高度会在
@@ -823,6 +823,7 @@ struct TeamRidersView: View {
                                 // 否则首屏底部会空出 100pt 以上。
                                 roomy: counts.total == 0
                             )
+                                .padding(.horizontal, 20)
                                 .padding(.top, 8)
                                 .frame(maxHeight: .infinity, alignment: .top)
                                 .motionAppear(delay: 0.14)
@@ -845,9 +846,9 @@ struct TeamRidersView: View {
                                 // 会比可视区高 80pt，空态被顶到偏上、整页还能空滚一段。
                                 minHeight: max(0, proxy.size.height - 124)
                             )
+                            .padding(.horizontal, 20)
                         }
                     }
-                    .padding(.horizontal, 20)
                     .padding(.top, 8)
                     // 对向是 Tab 根页面；统计范围地图可能滚到悬浮 Tab 栏下方。
                     .padding(.bottom, 108)

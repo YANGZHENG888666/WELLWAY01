@@ -436,41 +436,45 @@ struct AboutFeedbackView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .fill(Theme.darkCard)
-                        Image("BrandMarkLight")
+                    VStack(spacing: 0) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .fill(Theme.darkCard)
+                            Image("BrandMarkLight")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 52, height: 52)
+                        }
+                        .frame(width: 80, height: 80)
+                        .motionAppear(delay: 0.08)
+                        .motionPop(delay: 0.10)
+                        .accessibilityHidden(true)
+
+                        Image("Wordmark")
+                            .renderingMode(.template)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 52, height: 52)
+                            .foregroundStyle(Theme.textPrimary)
+                            .frame(width: 160, height: 49)
+                            .accessibilityHidden(true)
+                            .padding(.top, 20)
+                            .motionAppear(delay: 0.18)
+
+                        Text("版本 \(AppBuildInfo.version)")
+                            .font(.system(size: 12))
+                            .foregroundColor(Theme.textSecondary)
+                            .padding(.top, 6)
+                            .motionAppear(delay: 0.24)
+
+                        Text("好路当骑 同行当悉")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(Theme.textSecondary)
+                            .padding(.top, 18)
+                            .padding(.bottom, 6)
+                            .motionAppear(delay: 0.30)
                     }
-                    .frame(width: 80, height: 80)
-                    .motionAppear(delay: 0.08)
-                    .motionPop(delay: 0.10)
-                    .accessibilityHidden(true)
-
-                    Image("Wordmark")
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundStyle(Theme.textPrimary)
-                        .frame(width: 160, height: 49)
-                        .accessibilityHidden(true)
-                        .padding(.top, 20)
-                        .motionAppear(delay: 0.18)
-
-                    Text("版本 \(AppBuildInfo.version)")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.textSecondary)
-                        .padding(.top, 6)
-                        .motionAppear(delay: 0.24)
-
-                    Text("好路当骑 同行当悉")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
-                        .padding(.top, 18)
-                        .padding(.bottom, 6)
-                        .motionAppear(delay: 0.30)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
 
                     VStack(spacing: 0) {
                         Button {
@@ -499,30 +503,30 @@ struct AboutFeedbackView: View {
                         .buttonStyle(RowPressStyle())
                     }
                     // 与设置页一致：整宽账本行 + 发丝线，不再套一层描边卡片
-                    .padding(.horizontal, -20)
                     .padding(.top, 12)
 
-                    // 关于页落款：免责提示是产品硬性要求，放在页脚比塞进协议正文更容易被看到
-                    // 左对齐跟上面的账本行同一条网格线；居中时末行只剩「为准。」两个字，非常碎。
-                    Text("路线、限行与天气信息仅供参考，请以官方公告为准。")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.textSecondary)
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 24)
-                        .motionAppear(delay: 0.34)
+                    VStack(spacing: 0) {
+                        // 关于页落款：免责提示是产品硬性要求，放在页脚比塞进协议正文更容易被看到
+                        // 左对齐跟上面的账本行同一条网格线；居中时末行只剩「为准。」两个字，非常碎。
+                        Text("路线、限行与天气信息仅供参考，请以官方公告为准。")
+                            .font(.system(size: 12))
+                            .foregroundColor(Theme.textSecondary)
+                            .multilineTextAlignment(.leading)
+                            .lineSpacing(4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 24)
+                            .motionAppear(delay: 0.34)
 
-                    Text("© 2026 WellWay")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 12)
+                        Text("© 2026 WellWay")
+                            .font(.system(size: 12))
+                            .foregroundColor(Theme.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 12)
 
-                    Color.clear.frame(height: 24)
+                        Color.clear.frame(height: 24)
+                    }
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 18)
             }
         }
         .background(Color.white)

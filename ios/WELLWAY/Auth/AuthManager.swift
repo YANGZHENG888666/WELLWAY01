@@ -59,6 +59,23 @@ final class AuthManager {
     let client: SupabaseClient
 
     init() {
+        #if DEBUG
+        // 无签名的模拟器构建写不进 Keychain，登录后 REST 请求会退化为匿名身份。
+        // 截图流程使用环境变量注入一次性测试账号时，改用内存存储保住会话。
+        if ProcessInfo.processInfo.environment["WELLWAY_TEST_EMAIL"] != nil {
+            client = SupabaseClient(
+                supabaseURL: AppConfig.supabaseURL,
+                supabaseKey: AppConfig.supabaseAnonKey,
+                options: SupabaseClientOptions(
+                    auth: .init(
+                        storage: MemoryAuthLocalStorage(),
+                        emitLocalSessionAsInitialSession: true
+                    )
+                )
+            )
+            return
+        }
+        #endif
         client = SupabaseClient(supabaseURL: AppConfig.supabaseURL, supabaseKey: AppConfig.supabaseAnonKey)
     }
 
@@ -408,3 +425,29 @@ final class AuthManager {
         pendingLoginSuccess = false
     }
 }
+
+#if DEBUG
+/// 仅用于模拟器截图：无签名构建写不进 Keychain，用内存存储保留登录会话。
+final class MemoryAuthLocalStorage: AuthLocalStorage, @unchecked Sendable {
+    private var values: [String: Data] = [:]
+    private let lock = NSLock()
+
+    func store(key: String, value: Data) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        values[key] = value
+    }
+
+    func retrieve(key: String) throws -> Data? {
+        lock.lock()
+        defer { lock.unlock() }
+        return values[key]
+    }
+
+    func remove(key: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        values[key] = nil
+    }
+}
+#endif

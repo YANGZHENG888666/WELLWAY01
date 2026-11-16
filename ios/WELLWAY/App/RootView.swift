@@ -1060,6 +1060,18 @@ struct DebugRecordDetailLoader: View {
         }
         .task {
             defer { isLoading = false }
+            #if DEBUG
+            // 截图流程没有键盘输入通道：等启动会话定态后，可用环境变量传入一次性测试账号
+            for _ in 0..<80 where auth.state == .loading {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            // 模拟器可能残留上一次的登录会话，账号不一致时也要强制切换
+            if let email = ProcessInfo.processInfo.environment["WELLWAY_TEST_EMAIL"],
+               let password = ProcessInfo.processInfo.environment["WELLWAY_TEST_PASSWORD"],
+               auth.user?.email != email {
+                await auth.signInWithPassword(email: email, password: password)
+            }
+            #endif
             guard let uid = auth.user?.id else { return }
             let service = RecordsStore(client: auth.client, userId: uid)
             await service.load()

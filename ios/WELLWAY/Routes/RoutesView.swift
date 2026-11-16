@@ -1277,7 +1277,7 @@ struct RouteListCard: View {
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            Color.black
+            Theme.darkBackground
 
             RouteThumbnailView(route: route, checkpoints: checkpoints)
 

@@ -2054,7 +2054,7 @@ private struct TrafficEstimateSheet: View {
             HStack(spacing: 14) {
                 ZStack {
                     Circle()
-                        .stroke(Color(red: 0.91, green: 0.93, blue: 0.95), lineWidth: 4)
+                        .stroke(Theme.separator, lineWidth: 4)
                     Circle()
                         .trim(from: 0, to: progress)
                         .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
