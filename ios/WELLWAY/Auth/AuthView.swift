@@ -308,9 +308,10 @@ struct EmailSignupView: View {
     @State private var shakeCount: CGFloat = 0
     @State private var email = ""
     @State private var code = ""
-    @State private var step = 0
+    /// 调试：-codelogincooldown 直接停在已验证码、冷却中的状态
+    @State private var step = ProcessInfo.processInfo.arguments.contains("-codelogincooldown") ? 1 : 0
     @State private var isLoading = false
-    @State private var cooldown = 0
+    @State private var cooldown = ProcessInfo.processInfo.arguments.contains("-codelogincooldown") ? 20 : 0
     @State private var errorText: String?
     @State private var codeError = false
     @State private var kbActive = false
@@ -408,7 +409,7 @@ struct EmailSignupView: View {
                                 .foregroundColor(cooldown > 0 ? Theme.listGray : .black)
                                 .underline(cooldown == 0)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 36)
+                                .frame(minHeight: 44)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
@@ -711,6 +712,7 @@ struct PasswordLoginView: View {
                                     Text("忘记密码")
                                         .font(.system(size: 13, weight: .medium))
                                         .foregroundColor(Theme.textSecondary)
+                                        .frame(minHeight: 44)
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
@@ -723,6 +725,7 @@ struct PasswordLoginView: View {
                                     Text("创建新账户")
                                         .font(.system(size: 13, weight: .medium))
                                         .foregroundColor(Theme.textPrimary)
+                                        .frame(minHeight: 44)
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
@@ -756,7 +759,7 @@ struct PasswordLoginView: View {
                 .safeAreaInset(edge: .bottom) {
                     VStack(spacing: 0) {
                         if keyboardVisible {
-                            forgotButton(height: 30)
+                            forgotButton
                         }
 
                         loginButton
@@ -782,7 +785,7 @@ struct PasswordLoginView: View {
         .task { focusDebugFieldIfNeeded() }
     }
 
-    private func forgotButton(height: CGFloat) -> some View {
+    private var forgotButton: some View {
         Button {
             showForgot = true
         } label: {
@@ -790,7 +793,7 @@ struct PasswordLoginView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(Theme.textSecondary)
                 .frame(maxWidth: .infinity)
-                .frame(height: height)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
@@ -890,10 +893,12 @@ struct ForgotPasswordView: View {
     @State private var code = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
-    /// 调试：-forgotstep2 直接停在「创建新密码」这一步
-    @State private var step = ProcessInfo.processInfo.arguments.contains("-forgotstep2") ? 2 : 0
+    /// 调试：-forgotstep2 直接停在「创建新密码」这一步；-forgotcooldown 停在验证码冷却态
+    @State private var step = ProcessInfo.processInfo.arguments.contains("-forgotstep2")
+        ? 2
+        : ProcessInfo.processInfo.arguments.contains("-forgotcooldown") ? 1 : 0
     @State private var isLoading = false
-    @State private var cooldown = 0
+    @State private var cooldown = ProcessInfo.processInfo.arguments.contains("-forgotcooldown") ? 20 : 0
     @State private var errorText: String?
     @State private var isResending = false
     @State private var keyboardVisible = false
@@ -1028,7 +1033,7 @@ struct ForgotPasswordView: View {
                     .foregroundColor(cooldown > 0 ? Theme.listGray : .black)
                     .underline(cooldown == 0)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 36)
+                    .frame(minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(IconPressStyle(pressedOpacity: 0.5))

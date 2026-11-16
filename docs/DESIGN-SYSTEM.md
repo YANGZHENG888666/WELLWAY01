@@ -4386,3 +4386,26 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 - Pro：`outputs/r64/pro-route-elevation-failed.png`、`pro-record-track-failed.png`、`pro-record-checkins-failed.png`、`pro-record-missing.png`、`pro-depart-riders-failed.png`
 - SE：`outputs/r64/se-route-elevation-failed.png`、`se-record-track-failed.png`、`se-record-checkins-failed.png`、`se-record-missing.png`、`se-depart-riders-failed.png`
 - `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-16）。
+
+## 逐页巡检（第六十五轮）：认证页小文字动作命中区
+
+### 复核结论
+
+- `EmailSignupView` 与 `ForgotPasswordView` 的「重新发送验证码」：12pt 文字行的固定 36pt 高度改为 `minHeight 44`，文字仍居中，冷却文案、下划线与禁用态不变。
+- `PasswordLoginView` 非键盘态「忘记密码」「创建新账户」补 44pt 高命中区，仍与 44pt 行高同行；键盘态底部「忘记密码」由 30pt 改为 `minHeight 44`，位于 52pt「登录」按钮上方，SE 上未压缩协议行。
+- 认证页视觉不引入新字号、色值或按钮样式；仍为白底、20pt 边距、单一黑色主行动，符合 v6。
+- 边界：记录页「全部 / 已完成」是 76×30 的分段控件，外层胶囊 36pt，点击区域为整段而非小文字，按 `RidingView.segmentButton` 的既有口径保留，不做 44pt 改造。
+- 协议版本：用户协议 v2.0、隐私政策 v2.3，本轮不变。
+
+### 调试入口
+
+- `-codelogin -codelogincooldown`：验证码登录冷却态（静态 20 秒预览，不预填邮箱）
+- `-forgot -forgotcooldown`：忘记密码验证码冷却态（静态 20 秒预览，不预填邮箱，因此「已发送至」后为空）
+- `-passwordlogin -passwordloginfocus`：密码登录并聚焦邮箱（SE 键盘态）
+- 以上入口仅在调试构建使用，生产默认流程不变。
+
+### 证据与构建
+
+- Pro：`outputs/r65/pro-code-cooldown.png`、`pro-forgot-cooldown.png`、`pro-passwordlogin.png`
+- SE：`outputs/r65/se-code-cooldown.png`、`se-forgot-cooldown.png`、`se-passwordlogin-keyboard.png`
+- `xcodebuild`（iPhone 17 Pro / SE 模拟器）：`BUILD SUCCEEDED`（2026-11-16）。
