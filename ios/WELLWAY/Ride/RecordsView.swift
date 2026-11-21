@@ -1061,6 +1061,17 @@ final class RecordsStore {
         errorMessage = nil
         isSampleData = true
         applyDebugTrack(for: recordId)
+        // 样例详情默认是完整数据；失败态参数只作用于调试入口，
+        // 让补充数据失败提示能在无网络、无真实记录时单独复检。
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-recorddetailcheckinsfailed") {
+            checkinsByRide[recordId] = []
+            checkinLoadFailedForRide.insert(recordId)
+        }
+        if arguments.contains("-recorddetailtrackfailed") {
+            trackByRide[recordId] = []
+            trackLoadFailedForRide.insert(recordId)
+        }
         return recordId
     }
 

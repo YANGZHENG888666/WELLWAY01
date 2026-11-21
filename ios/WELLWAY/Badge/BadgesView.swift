@@ -37,6 +37,9 @@ struct BadgesView: View {
                 let args = ProcessInfo.processInfo.arguments
                 if args.contains("-badgesample") || args.contains("-notifsample") {
                     service.applyDebugSample()
+                    if args.contains("-badgeswarning") {
+                        service.supplementalError = "部分徽章进度暂时无法加载"
+                    }
                     revealInitialBadge(in: service)
                     return
                 }
