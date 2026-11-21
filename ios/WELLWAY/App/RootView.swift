@@ -112,6 +112,10 @@ struct RootView: View {
                 .environment(NavChoiceCenter())
         } else if ProcessInfo.processInfo.arguments.contains("-recorddetail") {
             DebugRecordDetailLoader()
+        } else if ProcessInfo.processInfo.arguments.contains("-recorddetailsample") {
+            DebugRecordDetailSampleLoader()
+        } else if ProcessInfo.processInfo.arguments.contains("-garagesample") {
+            DebugGarageHomeLoader()
         } else if ProcessInfo.processInfo.arguments.contains("-notifications") {
             NavigationStack { NotificationsView() }
         } else if ProcessInfo.processInfo.arguments.contains("-agreement-user") {
@@ -1167,6 +1171,106 @@ struct DebugGarageFlowLoader: View {
             // 先加载目录再挂载视图：否则预选车型时目录还是空的
             await service.loadCatalog()
             garage = service
+        }
+    }
+}
+
+/// 调试入口(-garagesample)：无账号渲染有车车库，覆盖车辆、统计和最近骑行正常态
+struct DebugGarageHomeLoader: View {
+    @Environment(AuthManager.self) private var auth
+    @State private var garage: GarageService?
+    @State private var showAddVehicle = false
+    @State private var showDestinations = false
+    @State private var sample: (userId: UUID, vehicleId: UUID, secondVehicleId: UUID)?
+
+    var body: some View {
+        Group {
+            if let garage, let sample {
+                DesignHomeView(
+                    garage: garage,
+                    onAddVehicle: { showAddVehicle = true },
+                    onPickDestination: { showDestinations = true },
+                    checkpointsByRoute: Self.sampleCheckpoints,
+                    rideStatsByVehicle: [
+                        sample.vehicleId: RideStats(totalKm: 1_286.4, rideCount: 23, totalSeconds: 165_240)
+                    ],
+                    rideStatsLoaded: true,
+                    recentRidesByVehicle: [
+                        sample.vehicleId: RecentRide(
+                            id: UUID(uuidString: "00000000-0000-0000-0000-000000010703")!,
+                            routeName: "洱海环湖",
+                            startedAt: Date(timeIntervalSinceNow: -2 * 24 * 60 * 60),
+                            distanceM: 8_240,
+                            durationS: 1_284,
+                            avgSpeed: 23.1,
+                            maxSpeed: 46.8,
+                            routeId: 9001
+                        )
+                    ],
+                    recentRidesLoaded: true
+                )
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        .task {
+            guard garage == nil else { return }
+            let service = GarageService(client: auth.client)
+            sample = service.applyDebugSample()
+            garage = service
+        }
+        .fullScreenCover(isPresented: $showAddVehicle) {
+            if let garage {
+                AddVehicleFlowView(garage: garage)
+            }
+        }
+        .fullScreenCover(isPresented: $showDestinations) {
+            NavigationStack {
+                RoutesView(onClose: { showDestinations = false })
+            }
+        }
+    }
+
+    private static let sampleCheckpoints: [Int: [Checkpoint]] = [
+        9001: [
+            Checkpoint(id: 9101, routeId: 9001, name: "才村码头", seq: 1,
+                       lat: 25.7060, lng: 100.1580, radiusM: 120),
+            Checkpoint(id: 9102, routeId: 9001, name: "喜洲古镇", seq: 2,
+                       lat: 25.7660, lng: 100.1430, radiusM: 120),
+            Checkpoint(id: 9103, routeId: 9001, name: "双廊观景台", seq: 3,
+                       lat: 25.8520, lng: 100.1610, radiusM: 120),
+            Checkpoint(id: 9104, routeId: 9001, name: "小普陀", seq: 4,
+                       lat: 25.9070, lng: 100.2190, radiusM: 120)
+        ]
+    ]
+}
+
+/// 调试入口(-recorddetailsample)：无账号渲染完整记录详情（指标 + 轨迹 + 打卡）
+struct DebugRecordDetailSampleLoader: View {
+    @Environment(AuthManager.self) private var auth
+    @State private var store: RecordsStore?
+    @State private var recordId: UUID?
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let store, let recordId {
+                    RecordDetailView(store: store, recordId: recordId)
+                } else {
+                    ProgressView()
+                }
+            }
+        }
+        .task {
+            guard store == nil else { return }
+            let service = RecordsStore(
+                client: auth.client,
+                userId: UUID(uuidString: "00000000-0000-0000-0000-000000010700")!
+            )
+            recordId = service.applyDebugSampleDetail()
+            store = service
         }
     }
 }

@@ -748,6 +748,9 @@ final class RecordsStore {
     private(set) var checkinLoadFailedForRide: Set<UUID> = []
     var errorMessage: String?
 
+    /// 调试样例数据不写库，详情页进入时不能再拉取网络把样例覆盖掉。
+    private var isSampleData = false
+
     private let client: SupabaseClient
     private let userId: UUID
 
@@ -901,6 +904,7 @@ final class RecordsStore {
     }
 
     func loadCheckins(for rideId: UUID) async {
+        guard !isSampleData else { return }
         // 打卡明细为尽力而为的补充数据：失败不应破坏列表主流程，也不覆盖主错误
         if ProcessInfo.processInfo.arguments.contains("-recorddetailcheckinsfailed") {
             checkinsByRide[rideId] = []
@@ -924,6 +928,7 @@ final class RecordsStore {
 
     /// 轨迹回放数据：失败或为空都只影响地图卡，不覆盖记录页主错误。
     func loadTrack(for rideId: UUID) async {
+        guard !isSampleData else { return }
         // 调试预览注入的轨迹不写库，重新拉取会用空结果把它覆盖掉
         if ProcessInfo.processInfo.arguments.contains("-recordtrackpreview") { return }
         if ProcessInfo.processInfo.arguments.contains("-recorddetailtrackfailed") {
@@ -997,6 +1002,66 @@ final class RecordsStore {
                 recordedAt: "2026-11-05T10:\(String(format: "%02d", index)):00Z"
             )
         }
+    }
+
+    /// 调试入口(-recorddetailsample)：构造一条完整的已完成骑行，覆盖正常详情
+    /// 的全部区块（指标 / 轨迹 / 打卡 / 车辆 / 操作行），无需账号和网络。
+    @discardableResult
+    func applyDebugSampleDetail() -> UUID {
+        let recordId = UUID(uuidString: "00000000-0000-0000-0000-000000010703")!
+        let vehicleId = UUID(uuidString: "00000000-0000-0000-0000-000000010701")!
+        let routeId = 9001
+
+        let cfmoto = Brand(id: 1, name: "春风", nameEn: "CFMOTO", isHot: true, sort: 1)
+        let model = VehicleModel(
+            id: 101, brandId: 1, name: "春风 450NK", series: "NK", modelType: "街车",
+            displacementCc: 450, priceMin: 23_980, priceMax: 26_580,
+            rating: 4.8, isNew: false, sort: 1, imageUrl: nil
+        )
+        let route = Route(
+            id: routeId, name: "洱海环湖", startName: "大理古城", endName: "双廊古镇",
+            distanceM: 8240, elevationM: 138, difficulty: "适中", durationMin: 45,
+            mapUrl: nil, coverImageUrl: nil, province: "云南", city: "大理"
+        )
+        let checkpoints = [
+            Checkpoint(id: 9101, routeId: routeId, name: "才村码头", seq: 1,
+                       lat: 25.7060, lng: 100.1580, radiusM: 120),
+            Checkpoint(id: 9102, routeId: routeId, name: "喜洲古镇", seq: 2,
+                       lat: 25.7660, lng: 100.1430, radiusM: 120),
+            Checkpoint(id: 9103, routeId: routeId, name: "双廊观景台", seq: 3,
+                       lat: 25.8520, lng: 100.1610, radiusM: 120),
+            Checkpoint(id: 9104, routeId: routeId, name: "小普陀", seq: 4,
+                       lat: 25.9070, lng: 100.2190, radiusM: 120)
+        ]
+        records = [
+            RideRecord(
+                id: recordId, userId: userId, routeId: routeId, vehicleId: vehicleId,
+                name: nil, startedAt: "2026-11-05T09:10:00Z", endedAt: "2026-11-05T09:31:24Z",
+                distanceM: 8240, durationS: 1284, avgSpeedKmh: 23.1, maxSpeedKmh: 46.8,
+                elevationGainM: 138, status: "completed"
+            )
+        ]
+        routesById = [routeId: route]
+        checkpointsById = Dictionary(uniqueKeysWithValues: checkpoints.map { ($0.id, $0) })
+        vehiclesById = [
+            vehicleId: Vehicle(id: vehicleId, userId: userId, brandId: 1, modelId: 101,
+                               nickname: nil, color: "星光白", photoUrl: nil, isDefault: true)
+        ]
+        brandsById = [1: cfmoto]
+        modelsById = [101: model]
+        checkinsByRide = [
+            recordId: [
+                RideCheckin(id: 9201, rideId: recordId, checkpointId: 9101, checkedAt: "2026-11-05T09:18:00Z"),
+                RideCheckin(id: 9202, rideId: recordId, checkpointId: 9102, checkedAt: "2026-11-05T09:26:00Z"),
+                RideCheckin(id: 9203, rideId: recordId, checkpointId: 9103, checkedAt: "2026-11-05T09:30:00Z")
+            ]
+        ]
+        trackLoadFailedForRide = []
+        checkinLoadFailedForRide = []
+        errorMessage = nil
+        isSampleData = true
+        applyDebugTrack(for: recordId)
+        return recordId
     }
 
     @discardableResult
@@ -1079,22 +1144,50 @@ struct RecordDetailView: View {
             DesignPageHeader(title: "记录详情")
 
             if let record = currentRecord {
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 20) {
-                        headerBlock(record)
-                        statsCard(record)
-                        if record.hasRecordedTrack {
-                            trackSection(record)
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 20) {
+                            headerBlock(record)
+                            statsCard(record)
+                            if record.hasRecordedTrack {
+                                trackSection(record)
+                            }
+                            checkpointsSection(record)
+                            actionsCard(record)
+                            if !record.hasRecordedTrack {
+                                noTrackFootnote(record)
+                            }
+                            Color.clear.frame(height: 1).id("record-detail-bottom")
                         }
-                        checkpointsSection(record)
-                        actionsCard(record)
-                        if !record.hasRecordedTrack {
-                            noTrackFootnote(record)
-                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 40)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, 40)
+                    // 固定页头下沿是硬裁切线：滚动到页尾时，正好切在指标行上会露出半截文字。
+                    // 与底部按钮栏同一判据，用 16pt 白→透明过渡把内容读成“滑到页头下”。
+                    .overlay(alignment: .top) {
+                        LinearGradient(
+                            stops: [
+                                .init(color: .white, location: 0),
+                                .init(color: .white, location: 0.45),
+                                .init(color: .white.opacity(0), location: 1)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 16)
+                        .allowsHitTesting(false)
+                    }
+                    .task(id: recordId) {
+                        guard ProcessInfo.processInfo.arguments.contains("-recorddetailbottom") else { return }
+                        try? await Task.sleep(nanoseconds: 650_000_000)
+                        withAnimation(.easeOut(duration: 0.24)) {
+                            proxy.scrollTo("record-detail-bottom", anchor: .bottom)
+                        }
+                        // 小屏首帧布局未定态时第一次 scrollTo 可能被忽略，落定后再对齐一次。
+                        try? await Task.sleep(nanoseconds: 350_000_000)
+                        proxy.scrollTo("record-detail-bottom", anchor: .bottom)
+                    }
                 }
             } else if recordLookupFinished {
                 VStack(spacing: 18) {

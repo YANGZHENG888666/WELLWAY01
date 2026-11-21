@@ -128,6 +128,45 @@ final class GarageService {
         try? data.write(to: catalogCacheURL, options: .atomic)
     }
 
+    /// 调试入口(-garagesample)：注入一辆有目录、有车照的车，供无账号时复检
+    /// 车库正常态。和真实加载共用同一套展示路径，不改生产网络逻辑。
+    @discardableResult
+    func applyDebugSample() -> (userId: UUID, vehicleId: UUID, secondVehicleId: UUID) {
+        let userId = UUID(uuidString: "00000000-0000-0000-0000-000000010700")!
+        let primaryId = UUID(uuidString: "00000000-0000-0000-0000-000000010701")!
+        let secondaryId = UUID(uuidString: "00000000-0000-0000-0000-000000010702")!
+
+        let cfmoto = Brand(id: 1, name: "春风", nameEn: "CFMOTO", isHot: true, sort: 1)
+        let honda = Brand(id: 2, name: "本田", nameEn: "HONDA", isHot: true, sort: 2)
+        let nk450 = VehicleModel(
+            id: 101, brandId: 1, name: "春风 450NK", series: "NK", modelType: "街车",
+            displacementCc: 450, priceMin: 23_980, priceMax: 26_580,
+            rating: 4.8, isNew: false, sort: 1, imageUrl: nil
+        )
+        let cb400f = VehicleModel(
+            id: 201, brandId: 2, name: "本田 CB400F", series: "CB", modelType: "街车",
+            displacementCc: 399, priceMin: 33_000, priceMax: 37_000,
+            rating: 4.6, isNew: false, sort: 1, imageUrl: nil
+        )
+
+        brands = [cfmoto, honda]
+        modelsByBrand = [1: [nk450], 2: [cb400f]]
+        vehicles = [
+            Vehicle(id: primaryId, userId: userId, brandId: 1, modelId: 101,
+                    nickname: nil, color: "星光白", photoUrl: nil, isDefault: true),
+            Vehicle(id: secondaryId, userId: userId, brandId: 2, modelId: 201,
+                    nickname: nil, color: "曜石黑", photoUrl: nil, isDefault: false)
+        ]
+        photos = [:]
+        // 内置产品照没有网络依赖，截图和真机离线复检都能稳定出图。
+        if let image = UIImage(named: "ConceptBike") {
+            photos[primaryId] = image
+        }
+        errorMessage = nil
+        isLoading = false
+        return (userId, primaryId, secondaryId)
+    }
+
     func loadVehicles(userId: UUID) async {
         // 调试入口：-garageempty 时不请求车辆，用于复检「还没有车辆」首屏
         if ProcessInfo.processInfo.arguments.contains("-garageempty") {
