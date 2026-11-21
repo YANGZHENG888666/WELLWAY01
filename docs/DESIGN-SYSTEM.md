@@ -11,6 +11,7 @@
 - **字号**：Tab 页标题 18pt Bold（标题中心 y≈54–70）、区块标题 13pt Semibold、正文 15pt、辅助 12pt、数值 22–64pt Monospaced Digit。
 - **颜色**：主文字 `#0F1115`，次文字灰阶；红/绿只用于默认车辆、成功、错误等语义，不做装饰。
 - **主行动**：一屏一个，52–56pt 高、12pt 圆角、纯黑底白字；底部按钮通过 `safeAreaInset` 摆放，且必须直接挂在 `ScrollView` 上——挂在 `ScrollViewReader`、`GeometryReader` 或外层 `VStack` 都不会扣减滚动区高度，页尾内容会被按钮栏压住；禁止用负 padding 抵消安全区。
+- **键盘态主行动**：车型选择器等会弹键盘的页面，确认栏同样用 `safeAreaInset` 直接挂在 `ScrollView` 上，随键盘上移；禁止整页 `.ignoresSafeArea(.keyboard)` 把确认栏压在键盘下面。
 - **色值单一来源**：所有中性色只能取 `Theme`（`textPrimary / textSecondary / listGray / separator / cardStroke / lightField / chevron / ink`），页面内禁止再写字面量灰值；新增近似灰会直接造成同一屏出现两种灰。
 - **禁用态**：`Theme.lightField` 浅灰实心 + `Theme.listGray` 灰字；描边只属于输入框，不能拿来当可点按钮的样式。
 - **二级页**：页头返回箭头 44pt 热区，标题 18pt；内容沿用 20pt 边距。

@@ -148,7 +148,6 @@ struct VehiclePickerView: View {
                 searchText = "不存在的车型"
             }
         }
-        .modifier(KeyboardPageFix())
         .toolbar(.hidden, for: .navigationBar)
         .wellwayDialog(
             isPresented: $showBrandRequested,
@@ -316,6 +315,9 @@ struct VehiclePickerView: View {
                 // 空态不能放进 ScrollView：ScrollView 只按内容高度布局，
                 // 主行动会贴在筛选条下面，下方留出一整屏空白。
                 noResultView(isBrandMode: false)
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        if selectedModelId != nil { confirmBar }
+                    }
             } else {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
@@ -338,10 +340,11 @@ struct VehiclePickerView: View {
                 }
                 .refreshable { await garage.loadCatalog(force: true) }
                 .scrollDismissesKeyboard(.immediately)
-            }
-
-            if selectedModelId != nil {
-                confirmBar
+                // 直接挂在 ScrollView 上，键盘弹起时确认栏随滚动区一起收到键盘上方；
+                // 挂在 modelPane 外层 VStack 会被整页忽略键盘安全区顶到屏幕底部而遮住。
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if selectedModelId != nil { confirmBar }
+                }
             }
         }
     }
@@ -393,8 +396,7 @@ struct VehiclePickerView: View {
             guard !alreadyAdded else { return }
             Haptics.selection()
             selectedModelId = model.id
-            // 本页忽略键盘安全区，键盘弹起时底部「完成选择」会被完全盖住。
-            // 选中即结束搜索：收起键盘让确认栏回到屏幕内，列表保留当前筛选结果。
+            // 选中即结束搜索：收起键盘让确认栏回到常规位置，列表保留当前筛选结果。
             searchFocused = false
         } label: {
             HStack(spacing: 12) {
