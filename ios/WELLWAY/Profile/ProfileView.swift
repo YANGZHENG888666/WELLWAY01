@@ -251,6 +251,10 @@ struct ProfileView: View {
                 guard ProcessInfo.processInfo.arguments.contains("-profilebottom") else { return }
                 try? await Task.sleep(nanoseconds: 600_000_000)
                 proxy.scrollTo("profile-bottom", anchor: .bottom)
+                try? await Task.sleep(nanoseconds: 2_200_000_000)
+                proxy.scrollTo("profile-bottom", anchor: .bottom)
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                proxy.scrollTo("profile-bottom", anchor: .bottom)
             }
             }
             }
