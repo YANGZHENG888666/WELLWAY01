@@ -11,8 +11,8 @@
 # 1. 有些 flag 是「修饰符」，单跑只会落到首页，必须带上父级入口：
 #      -badgesample/-badgesempty → -badges
 #      -badgelocked              → -badgedetail
-#      -vehicleactions           → -vehicles
-#      -vehiclephoto / -vehiclephotopicked / -vehiclephotosaving → -vehicles
+#      -vehicleactions           → -vehicles -vehiclesample
+#      -vehiclephoto / -vehiclephotopicked / -vehiclephotosaving → -vehicles -vehiclesample
 #      -notificationsempty/-notifsample → -notifications
 #      -teamrows/-teamdenied/-teamfailed → -team
 #      -routesempty/-routeserror/-routesfilterempty → -routes
@@ -57,10 +57,10 @@ COMBOS=(
   "-navchoice -navchoice-far"
   "-navchoice -navchoice-confirm"
   "-navchoice -navchoice-locationerror"
-  "-vehicles -vehicleactions"
-  "-vehicles -vehiclephoto"
-  "-vehicles -vehiclephoto -vehiclephotopicked"
-  "-vehicles -vehiclephoto -vehiclephotosaving"
+  "-vehicles -vehiclesample -vehicleactions"
+  "-vehicles -vehiclesample -vehiclephoto"
+  "-vehicles -vehiclesample -vehiclephoto -vehiclephotopicked"
+  "-vehicles -vehiclesample -vehiclephoto -vehiclephotosaving"
   "-notifications -notificationsempty"
   "-notifications -notifsample"
   "-notifications -notifsample -notificationsbottom"

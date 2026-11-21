@@ -206,6 +206,16 @@ struct MyVehiclesView: View {
         .task {
             let service = garage ?? GarageService(client: auth.client)
             garage = service
+            // 调试：-vehiclesample 注入样例车辆并跳过网络，避免旧登录会话覆盖样例
+            if ProcessInfo.processInfo.arguments.contains("-vehiclesample") {
+                service.applyDebugSample()
+                isLoading = false
+                // 调试：-vehicleactions 直接展开第一辆车的操作弹窗，不等目录网络请求
+                if ProcessInfo.processInfo.arguments.contains("-vehicleactions") {
+                    actionVehicle = service.vehicles.first
+                }
+                return
+            }
             await service.loadCatalog()
             await reload(service)
             // session 刚启动时可能还没把 token 挂上请求(此时 RLS 会静默返回空列表且不报错),
@@ -215,10 +225,6 @@ struct MyVehiclesView: View {
                 await reload(service)
             }
             isLoading = false
-            // 调试：-vehicleactions 直接展开第一辆车的操作弹窗
-            if ProcessInfo.processInfo.arguments.contains("-vehicleactions") {
-                actionVehicle = service.vehicles.first
-            }
             // 调试：-vehiclephoto 直接展开第一辆车的照片弹窗
             if ProcessInfo.processInfo.arguments.contains("-vehiclephoto") {
                 editVehicle = service.vehicles.first
