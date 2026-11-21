@@ -28,6 +28,7 @@ struct FavoriteRoutesView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)
+        .ignoresSafeArea(edges: .top)
         .toolbar(.hidden, for: .navigationBar)
         .hidesAppTabBar()
         .safeAreaInset(edge: .bottom, spacing: 0) {

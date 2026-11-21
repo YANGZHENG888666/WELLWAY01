@@ -71,6 +71,7 @@ struct RideRecoveryView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) { actionBar }
         }
         .background(Color.white)
+        .ignoresSafeArea(edges: .top)
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(.light)
         .interactiveDismissDisabled(isSaving)
