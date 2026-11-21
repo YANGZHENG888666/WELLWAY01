@@ -914,7 +914,9 @@ struct ForgotPasswordView: View {
     @Environment(AuthManager.self) private var auth
     @Environment(\.dismiss) private var dismiss
 
-    @State private var email = ""
+    @State private var email = ProcessInfo.processInfo.arguments.contains("-forgotcooldown")
+        || ProcessInfo.processInfo.arguments.contains("-forgotresend")
+        ? "rider@wellway.app" : ""
     @State private var code = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""

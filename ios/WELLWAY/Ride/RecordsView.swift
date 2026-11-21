@@ -1201,15 +1201,34 @@ struct RecordDetailView: View {
                     }
                 }
             } else if recordLookupFinished {
-                VStack(spacing: 18) {
+                VStack {
                     DesignEmptyState(
                         icon: "doc.text.magnifyingglass",
                         title: "记录不存在",
                         message: "这条记录可能已被删除，或尚未同步到当前账号"
                     )
-                    InlineActionButton(title: "返回记录列表", fontSize: 14) { dismiss() }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // 与记录列表空态、无车辆空态保持同一层级：说明在页面中部，
+                // 唯一行动落在页底 52pt 主按钮，不在说明下面留一颗悬空的文字按钮。
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("返回记录列表")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Color.black)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                    .buttonStyle(SolidPressStyle())
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 20)
+                    .wellwayBottomBar()
+                }
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

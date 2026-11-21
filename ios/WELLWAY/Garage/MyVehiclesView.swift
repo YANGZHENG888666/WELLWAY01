@@ -214,6 +214,10 @@ struct MyVehiclesView: View {
                 if ProcessInfo.processInfo.arguments.contains("-vehicleactions") {
                     actionVehicle = service.vehicles.first
                 }
+                // 调试：-vehiclephoto 直接展开第一辆车的照片弹窗
+                if ProcessInfo.processInfo.arguments.contains("-vehiclephoto") {
+                    editVehicle = service.vehicles.first
+                }
                 return
             }
             await service.loadCatalog()

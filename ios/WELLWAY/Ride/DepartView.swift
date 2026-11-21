@@ -646,7 +646,9 @@ struct DepartView: View {
     private var ctaTitle: String {
         if vehicleLoadFailed { return "重新加载车辆" }
         if selectedRoute == nil { return "选择路线后开始骑行" }
-        if !selectedRouteCoordinatesReady { return "路线坐标未就绪" }
+        // 路线详情页的同名文案是禁用按钮；出发页这里是可点重载的主行动，
+        // 所以用动词文案，避免同一个标签在两页表示不同交互。
+        if !selectedRouteCoordinatesReady { return "重新载入路线坐标" }
         return hasVehicle ? "开始骑行" : "添加车辆后开始骑行"
     }
 
