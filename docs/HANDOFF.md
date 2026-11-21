@@ -67,8 +67,8 @@
   **发起下载的那个 `.task` 被取消也不影响结果**，图片到货后视图自动刷新。
   排查这类问题时，可临时给各分支加 `accessibilityLabel` 探针（`DBG-PHOTO`/`DBG-FAIL`/…），
   然后用模拟器的 AX 树看实际走了哪个分支 —— 比截图比对快得多。
-  遗留：`ios/WELLWAY/Routes/RoutesView.swift` 的路线图仍在用 `AsyncImage`，
-  若以后出现同类「只显示回落」再同样替换。
+  路线缩略图已改为 `RouteCoverPhotoLoader`（与 `ModelPhotoLoader` 同样的缓存 + 去重 +
+  退避重试），不再使用 `AsyncImage`；无封面时绘制深色赛道线稿。
 - **还有 10 台无真图**：都是老 `backend/supabase/seed.sql` 里的手写车型（如「本田 PCX160」），
   新目录里没有完全对应的款（目录里是「五羊本田 PCX」），按「留空好过写错」继续回落插画。
   如需补齐，要人工把它们映射到目录里最接近的车系再刷 `image_url`。

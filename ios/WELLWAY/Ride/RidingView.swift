@@ -1166,7 +1166,7 @@ struct RidingView: View {
                         .foregroundStyle(.white.opacity(0.55))
                 }
                     .foregroundStyle(.white.opacity(0.9))
-                    .frame(height: 44)
+                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(IconPressStyle(pressedOpacity: 0.5))

@@ -244,10 +244,19 @@ struct SettingsView: View {
 
     private func switchRow(_ title: String, isOn: Binding<Bool>) -> some View {
         HStack(spacing: 8) {
-            Text(title)
-                .font(.system(size: 16))
-                .foregroundStyle(Theme.textPrimary)
-                .accessibilityHidden(true)
+            // 整行左侧都可点：系统设置也是点标题即切换。开关本体保持原生，
+            // 文字侧单独做成按钮，避免父级手势和 UISwitch 同时触发造成双翻转。
+            Button {
+                isOn.wrappedValue.toggle()
+            } label: {
+                Text(title)
+                    .font(.system(size: 16))
+                    .foregroundStyle(Theme.textPrimary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHidden(true)
             Spacer(minLength: 8)
             // iOS 26 的 SwiftUI Toggle 会在辅助功能树里同时暴露带标签的包装节点
             // 和内部无标签 UISwitch，读屏要停两次。直接用系统 UISwitch：
@@ -573,7 +582,9 @@ struct AboutFeedbackView: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Theme.textSecondary)
-                        .frame(width: 44, height: 44)
+                        // iOS 26 在键盘弹起时会把半屏 sheet 内容整体缩到 0.96；
+                        // 44pt 会变成 42.2pt，这里多留 2pt 保证实际命中区仍不小于 44pt。
+                        .frame(width: 46, height: 46)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(IconPressStyle())

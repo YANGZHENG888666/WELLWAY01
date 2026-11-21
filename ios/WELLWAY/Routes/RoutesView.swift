@@ -452,7 +452,7 @@ struct RoutesView: View {
                     .font(.system(size: 12, weight: .bold))
             }
             .foregroundStyle(favoritesOnly ? Theme.textPrimary : Theme.textSecondary)
-            .frame(height: 44)
+            .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(CardPressStyle(scale: 0.96))
@@ -519,25 +519,8 @@ struct RoutesView: View {
             .padding(.bottom, 120)
         }
         .scrollBounceBehavior(.always, axes: .vertical)
+        .modifier(RoutesBottomScrollEdgeEffect())
         .refreshable { await load() }
-        // 遮罩直接作用在滚动层：内容进入底部系统玻璃区前先变透明，
-        // 玻璃采样到的是页面白底，而不是下一张深色路线卡。
-        .mask {
-            if onClose == nil {
-                LinearGradient(
-                    stops: [
-                        .init(color: .white, location: 0),
-                        .init(color: .white, location: 0.76),
-                        .init(color: .clear, location: 0.96)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            } else {
-                // 选择目的地是全屏页，没有悬浮 Tab 栏，不需要为玻璃层让出底部空间。
-                Color.white
-            }
-        }
     }
 
     private func listRow(_ route: Route) -> some View {
@@ -702,6 +685,20 @@ struct RoutesView: View {
         } else {
             ridersByRoute = [:]
             ridersLoaded = false
+        }
+    }
+}
+
+/// iOS 26 的底部滚动边缘效果默认把内容软化成灰雾，
+/// 深色路线卡滑到悬浮 Tab 上方时会被读成「没加载出来」。
+/// 用 hard 边缘只做实边裁切、不再淡化内容；不要改回自定义 `.mask`。
+private struct RoutesBottomScrollEdgeEffect: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.scrollEdgeEffectStyle(.hard, for: .bottom)
+        } else {
+            content
         }
     }
 }

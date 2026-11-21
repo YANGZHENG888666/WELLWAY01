@@ -159,9 +159,13 @@ struct RecordsView: View {
             segment("全部", isSelected: filter == "全部") { filter = "全部" }
             segment("已完成", isSelected: filter == "已完成") { filter = "已完成" }
         }
-        .padding(3)
-        .background(Theme.lightField)
-        .clipShape(Capsule())
+        .padding(.horizontal, 3)
+        .frame(height: 44)
+        .background {
+            Capsule()
+                .fill(Theme.lightField)
+                .frame(height: 36)
+        }
     }
 
     private func segment(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
@@ -172,6 +176,8 @@ struct RecordsView: View {
                 .frame(width: 76, height: 30)
                 .background(isSelected ? Theme.textPrimary : Color.clear)
                 .clipShape(Capsule())
+                .frame(width: 76, height: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(CardPressStyle(scale: 0.96))
         // 选中态只靠黑底白字表达时，旁白读不出当前筛选；补上系统选中特征。
