@@ -75,6 +75,7 @@ COMBOS=(
   "-pickermodels -pickermodelempty"
   "-settings -settingsnotifyoff"
   "-settings -settingsnotifydialog"
+  "-settings -settingsbottom"
   "-feedback -feedbackerror"
   "-agreement-user -agreement-bottom"
   "-depart -departexpanded"

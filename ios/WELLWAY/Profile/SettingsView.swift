@@ -19,6 +19,7 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             DesignPageHeader(title: "设置")
+            ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
                     sectionTitle("后台运行与权限", top: 16)
@@ -106,6 +107,15 @@ struct SettingsView: View {
                     .motionAppear(delay: 0.30)
                 }
                 .padding(.bottom, 40)
+                // 调试：-settingsbottom 滚到页尾，锚点放在底部留白之后，
+                // 确认「关于与反馈」不贴屏幕底边、完整可见
+                .id("settings-bottom")
+            }
+            .task {
+                guard ProcessInfo.processInfo.arguments.contains("-settingsbottom") else { return }
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                proxy.scrollTo("settings-bottom", anchor: .bottom)
+            }
             }
         }
         .background(Color.white)
