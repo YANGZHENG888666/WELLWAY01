@@ -31,6 +31,15 @@
 #      -ridersloading            → -team（骑手统计 Tab；-riders 是路线内的骑手页）
 #      -routemapfull             → -routedetail
 #      -vehicledeleting          → -vehicles -vehiclesample
+#      -badgeglobal              → -badges / -badgedetail
+#      -codelogincooldown        → -codelogin
+#      -forgotcooldown/-forgotresend/-forgotstep2/-forgotfocus → -forgot
+#      -signupfocus → -signup；-passwordloginfocus → -passwordlogin
+#      -dialogprompt             → -dialogdemo
+#      -badgesharelong/-badgesharenodate → -badgesharepreview
+#      -sharecardnotrack/-longnames → -sharecard / -summary / -routedetail
+#      -recorddetailbottom/-recordtrackfull → -recorddetailsample
+#      -sosaccident* → -sosaccident；-sosnolocation → -sos
 # 2. 车库四个底部弹窗（车辆详情 / 油价 / 天气 / 路况）是代码里 4.5s 后才展开的，
 #    油价/天气失败态也必须带父级入口（-fuel -fuelerror / -weathersheet -weathererror）；
 #    这段用 8s 等待，否则只能截到首页。
@@ -44,14 +53,15 @@ WAIT="${WAIT:-3.2}"
 SLOW_WAIT="${SLOW_WAIT:-8}"
 
 PAGES=(
-  -about -addvehicle -addvehicleselected -agreement -arrival -badgedetail -badgeearned
-  -badges -depart -departdraftdemo -departinfo -destinationpicker -dialogdemo -emailbind -feedback -forgot -gallery
+  -about -addvehicle -addvehicleselected -agreement -agreement-intro -arrival -badgedetail -badgeearned
+  -badges -badgesharepreview -codelogin -depart -departdraftdemo -departinfo -destinationpicker -dialogdemo
+  -emailbind -favorites -feedback -forgot -gallery
   -garageempty -garageskeleton -guest -login -loginsuccess -mapswitch -navchoice
   -networkerror -notifications -pagenumbers -passwordlogin -picker -pickermodels
-  -profile -profilepage -recorddetail -records -riders -riding -routedetail
-  -routedetailpicker -routes
-  -settings -sharecard -signup -summary -team -tiltdemo -toastdemo -vehicles
-  -vehicleswitch
+  -profile -profilepage -recorddetail -recorddetailsample -records -riderecovery -riderecoveryended
+  -riders -riding -routedetail
+  -routedetailpicker -routes -settings -sharecard -signup -sos -sosaccident -summary
+  -team -tiltdemo -toastdemo -vehicles -vehicleswitch
 )
 
 COMBOS=(
@@ -103,6 +113,30 @@ COMBOS=(
   "-riding -mapchoice"
   "-riding -ridingpaused"
   "-riding -ridingending"
+  "-codelogin -codelogincooldown"
+  "-forgot -forgotcooldown"
+  "-forgot -forgotresend"
+  "-forgot -forgotstep2"
+  "-depart -departnocoords"
+  "-emailbind -emailbindrebind"
+  "-badges -badgedeeplink"
+  "-badges -badgeglobal"
+  "-badgedetail -badgeglobal"
+  "-badgesharepreview -badgesharelong"
+  "-badgesharepreview -badgesharenodate"
+  "-sharecard -sharecardnotrack"
+  "-sharecard -longnames"
+  "-summary -longnames"
+  "-routedetail -longnames"
+  "-recorddetailsample -recorddetailcheckinsfailed"
+  "-recorddetailsample -recorddetailtrackfailed"
+  "-sos -sosnolocation"
+  "-sosaccident -sosaccidentfailed"
+  "-sosaccident -sosaccidentnolocation"
+  "-sosaccident -sosaccidentreceipt"
+  "-sosaccident -sosaccidentsubmitting"
+  # 模拟器没有真实记录时 -recorddetail 会落到空态；-recorddetailmissing 才会进入「记录不存在」
+  "-recorddetail -recorddetailmissing"
 )
 
 SLOW=( -arrival )
@@ -117,6 +151,16 @@ SLOW_COMBOS=(
   # 「我的」页尾依赖骑行合计异步加载后再定位，3.2 秒会截到第一次滚动的中间态
   "-profile -profilebottom"
   "-guest -profile -profilebottom"
+  # 焦点态依赖键盘动画；弹层与确认框依赖展开动画
+  "-signup -signupfocus"
+  "-passwordlogin -passwordloginfocus"
+  "-forgot -forgotfocus"
+  "-dialogdemo -dialogprompt"
+  "-depart -departlowsuit"
+  "-emailbind -emailbindsuccess"
+  # 全屏轨迹与样例轨迹都在首帧后才加载
+  "-recorddetailsample -recordtrackfull"
+  "-recorddetailsample -recorddetailbottom"
 )
 
 shoot() {
