@@ -20,13 +20,16 @@ struct BadgesView: View {
     @State private var deepLinkEntry: BadgeEntry?
 
     var body: some View {
-        content
-            .navigationDestination(item: $deepLinkEntry) { entry in
-                if let store {
-                    BadgeDetailView(entry: entry, store: store)
-                }
+        Group {
+            // 通知深链直接落在详情：再加一层 navigationDestination 会先压入
+            // 「徽章」列表，返回只退到列表，用户得连点两次才回到通知。
+            if let entry = deepLinkEntry, let store {
+                BadgeDetailView(entry: entry, store: store)
+            } else {
+                content
+                    .pageMark((store?.earnedCount ?? 0) == 0 ? 40 : 5)
             }
-            .pageMark((store?.earnedCount ?? 0) == 0 ? 40 : 5)
+        }
             .toolbar(.hidden, for: .navigationBar)
             .hidesAppTabBar()
             .task {
