@@ -1111,7 +1111,7 @@ struct RouteMapFullscreenView: View {
                         .foregroundColor(.black)
                         .frame(width: 200, height: 48)
                         .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(SolidPressStyle())
 

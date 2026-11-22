@@ -279,9 +279,9 @@ struct MyVehiclesView: View {
             .padding(.horizontal, 20)
             .frame(height: 52)
             .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Theme.separator, lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.10), radius: 18, y: 6)

@@ -69,8 +69,7 @@ enum Theme {
     static func cardStyle(_ view: some View) -> some View {
         view
             .background(card)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 

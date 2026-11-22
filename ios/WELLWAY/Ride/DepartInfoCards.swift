@@ -57,7 +57,7 @@ struct MotoRuleCard: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.lightField)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .task(id: city) {
             guard let city else {
                 // 无定位/取不到城市：直接收尾，避免一直停在「正在查询」

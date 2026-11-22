@@ -1347,7 +1347,7 @@ private struct RiderCountSkeleton: View {
         }
         .padding(18)
         .background(Theme.lightField)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 

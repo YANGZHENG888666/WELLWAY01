@@ -591,18 +591,6 @@ struct RecordsView: View {
         return String(format: "%.1f", speed)
     }
 
-    private func chip(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 13, weight: selected ? .bold : .regular))
-                .foregroundColor(selected ? .white : Theme.textSecondary)
-                .frame(width: 88, height: 32)
-                .background(selected ? Color.black : Theme.chipBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-        .buttonStyle(CardPressStyle(scale: 0.96))
-    }
-
     private func formatDate(_ iso: String) -> String {
         guard let date = ISO8601DateFormatter.wellwayDate(from: iso) else { return "" }
         let formatter = DateFormatter()
