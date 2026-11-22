@@ -902,6 +902,16 @@ enum RideDurationText {
         return rest == 0 ? ("\(hours)", "小时") : ("\(hours) 小时 \(rest)", "分")
     }
 
+    /// 指标行用的紧凑时长：把「2 小时 30 分」拆成大字「2」和小字「小时 30 分」，
+    /// 四列 20pt 指标行里不会再被截成「2…」。
+    static func metricParts(minutes: Int) -> (value: String, unit: String?) {
+        let total = max(0, minutes)
+        guard total >= 60 else { return ("\(total)", "分钟") }
+        let hours = total / 60
+        let rest = total % 60
+        return rest == 0 ? ("\(hours)", "小时") : ("\(hours)", "小时 \(rest) 分")
+    }
+
     static func inline(minutes: Int) -> String {
         let part = parts(minutes: minutes)
         return part.unit.map { "\(part.value) \($0)" } ?? part.value

@@ -680,10 +680,13 @@ struct DebugRouteDetailLoader: View {
                 let routes: [Route] = try await auth.client
                     .from("routes")
                     .select("*")
-                    .limit(1)
                     .execute()
                     .value
-                guard let first = routes.first else {
+                // -routename=山路打卡线：直接打开指定路线，便于逐条复核指标行与海拔剖面。
+                let requestedName = ProcessInfo.processInfo.arguments
+                    .first { $0.hasPrefix("-routename=") }
+                    .map { String($0.dropFirst("-routename=".count)) }
+                guard let first = routes.first(where: { $0.name == requestedName }) ?? routes.first else {
                     failed = true
                     return
                 }

@@ -326,7 +326,11 @@ struct RouteDetailView: View {
             statDivider
             statColumn("爬升", value: "\(route.elevationM)", unit: "m")
             statDivider
-            statColumn("预计用时", value: route.durationMin.map { RideDurationText.parts(minutes: $0).value } ?? "-", unit: route.durationMin.flatMap { RideDurationText.parts(minutes: $0).unit })
+            statColumn(
+                "预计用时",
+                value: route.durationMin.map { RideDurationText.metricParts(minutes: $0).value } ?? "-",
+                unit: route.durationMin.flatMap { RideDurationText.metricParts(minutes: $0).unit }
+            )
             statDivider
             statColumn("难度", value: route.difficulty, unit: nil)
         }
@@ -375,21 +379,25 @@ struct RouteDetailView: View {
             Text(label)
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.textSecondary)
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value)
-                    .font(.system(size: 20, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                if let unit {
-                    Text(unit)
-                        .font(.system(size: 11))
-                        .foregroundStyle(Theme.textSecondary)
-                }
-            }
+            // 数值和单位合成一段 Text：minimumScaleFactor 才能把「2 小时 30 分」
+            // 这类长指标整体缩放，而不是只缩数字、把单位挤出列宽。
+            statValue(value, unit: unit)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func statValue(_ value: String, unit: String?) -> Text {
+        let valueText = Text(value)
+            .font(.system(size: 20, weight: .semibold))
+            .monospacedDigit()
+            .foregroundStyle(Theme.textPrimary)
+        guard let unit else { return valueText }
+        return valueText + Text(" \(unit)")
+            .font(.system(size: 11))
+            .monospacedDigit()
+            .foregroundStyle(Theme.textSecondary)
     }
 
     // MARK: - 海拔剖面
