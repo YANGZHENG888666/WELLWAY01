@@ -86,20 +86,15 @@ if (targetBadge && rideId) {
   check('徽章已入库', mine?.length > 0, JSON.stringify(mine));
 }
 
-// 8. 活动列表 + 报名
-const { data: acts } = await client.from('activities_current').select('id, name, current_status');
-check('活动视图可查', Array.isArray(acts), JSON.stringify(acts));
-if (acts?.length) {
-  const { error: regErr } = await client.from('activity_registrations')
-    .insert({ activity_id: acts[0].id, user_id: uid });
-  check('活动报名', !regErr, regErr?.message ?? '');
-  const { error: dupErr } = await client.from('activity_registrations')
-    .insert({ activity_id: acts[0].id, user_id: uid });
-  check('重复报名被拦截(唯一约束)', !!dupErr, '预期冲突');
-  const { data: myRegs } = await client.from('activity_registrations').select('activity_id').eq('user_id', uid);
-  check('我的报名可查', myRegs?.length > 0, JSON.stringify(myRegs));
-} else {
-  check('活动报名', false, '无活动数据(可在管理后台添加)');
+// 8. 账号级社交已下线:活动与报名表不可读写(与 smoke-test 口径一致)
+for (const table of ['activities', 'activity_registrations']) {
+  const { error } = await client.from(table).select('*').limit(1);
+  check(`UGC 表 ${table} 已下线`, !!error, '居然还能读到');
+}
+{
+  const { data: acts, error: actsErr } = await client
+    .from('activities_current').select('id, name, current_status').limit(1);
+  check('活动视图不可用', !!actsErr || !acts?.length, JSON.stringify(acts));
 }
 
 console.log(`\n结果: ${passed} 通过, ${failed} 失败`);
