@@ -99,29 +99,17 @@ struct DesignHomeView: View {
 
     /// 品牌展示：优先英文名
     private func brandText(for vehicle: Vehicle) -> String {
-        garage.displayBrandName(for: vehicle.brandId)
+        garage.resolvedBrandName(for: vehicle.brandId) ?? ""
     }
 
     /// 车型展示：去掉品牌前缀
     private func modelText(for vehicle: Vehicle) -> String {
-        let name = garage.modelName(for: vehicle.modelId)
-        let parts = name.split(separator: " ")
-        if let first = parts.first.map(String.init) {
-            let known = garage.brands.flatMap { [$0.name, $0.nameEn ?? ""] } + ["春风动力", "春风"]
-            if known.contains(where: { $0 == first || first.hasPrefix($0) || $0.hasPrefix(first) }) {
-                return parts.dropFirst().joined(separator: " ")
-            }
-        }
-        return name
+        garage.resolvedModelText(for: vehicle.modelId) ?? ""
     }
 
     private var displayName: String {
         guard let vehicle = currentVehicle else { return "" }
-        let brand = brandText(for: vehicle)
-        let model = modelText(for: vehicle)
-        if brand.isEmpty { return model }
-        if model.isEmpty { return brand }
-        return "\(brand) \(model)"
+        return garage.displayName(for: vehicle)
     }
 
     /// 同一车型有多辆时给出序号（与「我的车辆」列表同一口径）。
@@ -2469,10 +2457,12 @@ private struct VehicleDetailSheet: View {
             .frame(width: 104, height: 78)
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
-                Text(brandText)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.textSecondary)
-                Text(modelText)
+                if !brandText.isEmpty {
+                    Text(brandText)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                Text(headerModel)
                     .font(.system(size: 19, weight: .semibold))
                     .foregroundColor(.black)
                     .lineLimit(2)
@@ -2488,6 +2478,13 @@ private struct VehicleDetailSheet: View {
             }
             Spacer(minLength: 0)
         }
+    }
+
+    /// 目录缺失时首页只传车型空字符串：这里退回昵称，避免详情弹窗出现空标题。
+    private var headerModel: String {
+        if !modelText.isEmpty { return modelText }
+        if let nickname = trimmed(vehicle.nickname) { return nickname }
+        return "我的爱车"
     }
 
     private func infoRow(_ label: String, _ value: String) -> some View {

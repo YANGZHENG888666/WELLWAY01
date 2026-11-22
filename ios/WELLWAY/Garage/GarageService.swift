@@ -381,13 +381,19 @@ final class GarageService {
         brands.first { $0.id == id }?.name ?? "未知品牌"
     }
 
-    /// 品牌展示名：优先中文（与车型库同名），无中文时回退英文
-    func displayBrandName(for id: Int) -> String {
-        guard let brand = brands.first(where: { $0.id == id }) else { return "未知品牌" }
+    /// 品牌展示名；目录还没加载好（首启失败 / 请求未返回）时返回 nil，
+    /// 由调用方回退到昵称，而不是把已经加载出来的车标成「未知品牌」。
+    func resolvedBrandName(for id: Int) -> String? {
+        guard let brand = brands.first(where: { $0.id == id }) else { return nil }
         if brand.name.range(of: "\\p{Han}", options: .regularExpression) != nil {
             return brand.name
         }
         return brand.nameEn ?? brand.name
+    }
+
+    /// 品牌展示名：优先中文（与车型库同名），无中文时回退英文
+    func displayBrandName(for id: Int) -> String {
+        resolvedBrandName(for: id) ?? "未知品牌"
     }
 
     /// 每辆车的骑行统计(该车已完成记录聚合：总里程 / 次数 / 时长)
@@ -431,10 +437,42 @@ final class GarageService {
     }
 
     func modelName(for id: Int) -> String {
+        resolvedModelName(for: id) ?? "未知车型"
+    }
+
+    /// 车型名；目录还没加载好时返回 nil，由调用方回退到昵称。
+    func resolvedModelName(for id: Int) -> String? {
         modelsByBrand.values
             .flatMap { $0 }
             .first { $0.id == id }?
-            .cleanedName ?? "未知车型"
+            .cleanedName
+    }
+
+    /// 去掉车型名里的品牌前缀（「川崎 Z900」→「Z900」）；目录缺失时返回 nil。
+    func resolvedModelText(for id: Int) -> String? {
+        guard let name = resolvedModelName(for: id) else { return nil }
+        let parts = name.split(separator: " ")
+        if let first = parts.first.map(String.init) {
+            let known = brands.flatMap { [$0.name, $0.nameEn ?? ""] } + ["春风动力", "春风"]
+            if known.contains(where: { $0 == first || first.hasPrefix($0) || $0.hasPrefix(first) }) {
+                return parts.dropFirst().joined(separator: " ")
+            }
+        }
+        return name
+    }
+
+    /// 车辆展示名：品牌 + 车型，同样走「去掉品牌前缀」的口径。
+    /// 目录请求失败或尚未返回时不再拼「未知品牌 未知车型」，直接回退昵称。
+    func displayName(for vehicle: Vehicle) -> String {
+        let brand = resolvedBrandName(for: vehicle.brandId)
+        let model = resolvedModelText(for: vehicle.modelId)
+        let composed = [brand, model]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        if !composed.isEmpty { return composed }
+        let nickname = (vehicle.nickname ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return nickname.isEmpty ? "我的爱车" : nickname
     }
 
     /// 车辆对应的车型库条目(取车图/排量/分类插画都走这里)

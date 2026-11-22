@@ -74,6 +74,13 @@ struct GarageView: View {
             async let stats: Void = loadRideStats()
             async let recent: Void = loadRecentRides()
             _ = await (catalog, routes, stats, recent)
+            // 目录请求和车辆请求是并行的，网络抖动时目录可能单独失败。
+            // 车辆已经出来、目录却为空时标题会退回昵称；这里延时补一次，
+            // 避免首屏在整个会话里一直拿不到品牌/车型。
+            if service.brands.isEmpty {
+                try? await Task.sleep(for: .seconds(2))
+                await service.loadCatalog()
+            }
         }
         .onAppear {
             // 每次回到首页刷新统计与最近骑行(骑完一次后返回即可见)

@@ -255,7 +255,7 @@ struct MyVehiclesView: View {
 
     private func vehicleDisplayName(_ vehicle: Vehicle) -> String {
         guard let garage else { return "这辆车" }
-        let base = "\(brandText(garage, vehicle)) \(modelText(garage, vehicle))"
+        let base = garage.displayName(for: vehicle)
         if let ordinal = sameModelOrdinal(garage, vehicle) {
             return "\(base) · 第 \(ordinal) 辆"
         }
@@ -357,7 +357,9 @@ struct MyVehiclesView: View {
     }
 
     private func vehicleRow(_ garage: GarageService, _ vehicle: Vehicle) -> some View {
-        let model = modelText(garage, vehicle)
+        let brand = brandLine(garage, vehicle)
+        let modelName = modelText(garage, vehicle)
+        let model = modelName.isEmpty ? garage.displayName(for: vehicle) : modelName
         return HStack(spacing: 14) {
             Group {
                 if let photo = garage.photos[vehicle.id] {
@@ -376,10 +378,12 @@ struct MyVehiclesView: View {
             .frame(width: 88, height: 58, alignment: .bottom)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(brandLine(garage, vehicle))
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(1)
+                if !brand.isEmpty {
+                    Text(brand)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(1)
+                }
                 HStack(spacing: 6) {
                     Text(model)
                         .font(.system(size: 17, weight: .semibold))
@@ -429,6 +433,7 @@ struct MyVehiclesView: View {
     /// 品牌行：自定义昵称与车型重复时(如自动写入的「春风 800NK」)不再重复展示
     private func brandLine(_ garage: GarageService, _ vehicle: Vehicle) -> String {
         let brand = brandText(garage, vehicle)
+        guard !brand.isEmpty else { return "" }
         guard let raw = vehicle.nickname?.trimmingCharacters(in: .whitespacesAndNewlines),
               !raw.isEmpty else { return brand }
         let model = modelText(garage, vehicle)
@@ -451,20 +456,12 @@ struct MyVehiclesView: View {
 
     /// 品牌展示：优先中文名（与车型库、车库首页一致），无中文时才回退英文名
     private func brandText(_ garage: GarageService, _ vehicle: Vehicle) -> String {
-        garage.displayBrandName(for: vehicle.brandId)
+        garage.resolvedBrandName(for: vehicle.brandId) ?? ""
     }
 
     /// 车型展示：去掉品牌前缀(与首页车库一致)
     private func modelText(_ garage: GarageService, _ vehicle: Vehicle) -> String {
-        let name = garage.modelName(for: vehicle.modelId)
-        let parts = name.split(separator: " ")
-        if let first = parts.first.map(String.init) {
-            let known = garage.brands.flatMap { [$0.name, $0.nameEn ?? ""] } + ["春风动力", "春风"]
-            if known.contains(where: { $0 == first || first.hasPrefix($0) || $0.hasPrefix(first) }) {
-                return parts.dropFirst().joined(separator: " ")
-            }
-        }
-        return name
+        garage.resolvedModelText(for: vehicle.modelId) ?? ""
     }
 }
 

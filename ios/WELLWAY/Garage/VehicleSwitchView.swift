@@ -205,11 +205,13 @@ struct VehicleSwitchView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .center, spacing: 8) {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(brandLine(garage, vehicle))
-                                .font(.system(size: 12))
-                                .foregroundColor(Theme.textSecondary)
+                            if !brandLine(garage, vehicle).isEmpty {
+                                Text(brandLine(garage, vehicle))
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Theme.textSecondary)
+                            }
                             HStack(spacing: 6) {
-                                Text(modelText(garage, vehicle))
+                                Text(vehicleTitle(garage, vehicle))
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.black)
                                     .lineLimit(1)
@@ -340,11 +342,17 @@ struct VehicleSwitchView: View {
     // MARK: - 展示文案(与车库首页一致：品牌英文名 / 去掉品牌前缀的车型)
 
     private func brandText(_ garage: GarageService, _ vehicle: Vehicle) -> String {
-        garage.displayBrandName(for: vehicle.brandId)
+        garage.resolvedBrandName(for: vehicle.brandId) ?? ""
     }
 
     private func brandLine(_ garage: GarageService, _ vehicle: Vehicle) -> String {
         brandText(garage, vehicle)
+    }
+
+    /// 目录缺失时品牌/车型都为空：直接显示昵称或「我的爱车」，不显示空行或「未知」。
+    private func vehicleTitle(_ garage: GarageService, _ vehicle: Vehicle) -> String {
+        let model = modelText(garage, vehicle)
+        return model.isEmpty ? garage.displayName(for: vehicle) : model
     }
 
     /// 同一车型有多辆时给出序号（只在车型名后显示小标记）
@@ -356,15 +364,7 @@ struct VehicleSwitchView: View {
     }
 
     private func modelText(_ garage: GarageService, _ vehicle: Vehicle) -> String {
-        let name = garage.modelName(for: vehicle.modelId)
-        let parts = name.split(separator: " ")
-        if let first = parts.first.map(String.init) {
-            let known = garage.brands.flatMap { [$0.name, $0.nameEn ?? ""] } + ["春风动力", "春风"]
-            if known.contains(where: { $0 == first || first.hasPrefix($0) || $0.hasPrefix(first) }) {
-                return parts.dropFirst().joined(separator: " ")
-            }
-        }
-        return name
+        garage.resolvedModelText(for: vehicle.modelId) ?? ""
     }
 
     /// 该车骑行记录：总里程 / 骑行次数 / 累计时长(与车库首页同一口径)
