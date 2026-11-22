@@ -117,6 +117,9 @@ private struct AuthFieldView: View {
     @Binding var text: String
     var secure = false
     var keyboardType: UIKeyboardType = .default
+    /// 焦点必须绑在真实的 TextField / SecureField 上。
+    /// `.focused` 修饰在外层容器上不会生效：点输入框不会弹键盘。
+    var focused: FocusState<Bool>.Binding
 
     @State private var isRevealed = false
 
@@ -125,12 +128,16 @@ private struct AuthFieldView: View {
             Group {
                 if secure && !isRevealed {
                     SecureField(placeholder, text: $text)
+                        .focused(focused)
                 } else {
                     TextField(placeholder, text: $text)
+                        .focused(focused)
                 }
             }
             .font(.system(size: 14))
             .keyboardType(keyboardType)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
 
             if secure {
                 Button {
@@ -151,6 +158,9 @@ private struct AuthFieldView: View {
         .frame(height: 52)
         .background(Theme.lightField)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        // 整行 52pt 都可点：TextField 本身只有文字高度，点在上下留白会落空。
+        .contentShape(Rectangle())
+        .onTapGesture { focused.wrappedValue = true }
     }
 }
 
@@ -274,21 +284,52 @@ enum CodeCooldown {
     }
 }
 
+/// ScrollView 可视高度：由 `AuthViewportReader` 注入，供 `AuthVerticalFill` 撑满内容。
+private struct AuthViewportHeightKey: EnvironmentKey {
+    static let defaultValue: CGFloat? = nil
+}
+
+private extension EnvironmentValues {
+    var authViewportHeight: CGFloat? {
+        get { self[AuthViewportHeightKey.self] }
+        set { self[AuthViewportHeightKey.self] = newValue }
+    }
+}
+
 /// 认证页是「一两个输入框 + 底部主行动」的短页面：内容贴顶会在下半屏留下整块空白，像套模板。
-/// 只在键盘收起时把内容撑满可视高度做垂直居中；键盘弹起时保持自然高度，避免输入区被压缩。
+/// 只在键盘收起时用顶部留白做垂直居中；键盘弹起时保持自然高度，避免输入区被压缩。
+///
+/// 不能给 ScrollView 内容加高度约束（`containerRelativeFrame(.vertical)` / `frame(minHeight:)`）。
+/// iOS 26 上内容一旦被强制撑高，内部 TextField 就无法成为 first responder，
+/// 点击输入框和代码设置 FocusState 都不会弹键盘。
 private struct AuthVerticalFill: ViewModifier {
     let enabled: Bool
+    @State private var contentHeight: CGFloat = 0
+    @Environment(\.authViewportHeight) private var viewportHeight
 
-    /// 撑满只在内容确实短于可视区时成立；SE 这类小屏内容本来就接近满屏，
-    /// 强行按容器高度排版会把输入框挤出可视区，因此小屏一律保持顶部对齐。
+    /// 小屏内容本来就接近满屏，且旧设备更容易出现键盘遮挡，保持顶部对齐。
     private var fills: Bool { enabled && UIScreen.main.bounds.height >= 800 }
 
+    private var topPadding: CGFloat {
+        guard fills,
+              let viewportHeight,
+              contentHeight > 0,
+              viewportHeight > contentHeight else { return 0 }
+        return (viewportHeight - contentHeight) / 2
+    }
+
     func body(content: Content) -> some View {
-        if fills {
-            content.containerRelativeFrame(.vertical)
-        } else {
-            content
-        }
+        content
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { contentHeight = proxy.size.height }
+                        .onChange(of: proxy.size.height) { _, height in
+                            contentHeight = height
+                        }
+                }
+            )
+            .padding(.top, topPadding)
     }
 }
 
@@ -344,116 +385,119 @@ struct EmailSignupView: View {
             header
 
             ScrollViewReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 0) {
-                    Spacer(minLength: 0)
-                    if !(kbActive && UIScreen.main.bounds.height < 700) {
-                        brand
-                            .transition(.opacity)
-                    }
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(step == 0 ? (codeLoginMode ? "邮箱验证码登录" : "创建新账户") : "验证码已发送")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(Theme.textPrimary)
-                        Text(step == 0 ? (codeLoginMode ? "输入邮箱，验证码会发到这个邮箱" : "输入你的邮箱") : (codeError ? "验证码填写错误" : "请输入验证码"))
-                            .font(.system(size: 13))
-                            .foregroundColor(codeError ? Theme.danger : Theme.textSecondary)
-                    }
-                    .padding(.top, 36)
-
-                    if step == 0 {
-                        AuthFieldView(
-                            placeholder: "请输入邮箱",
-                            text: $email,
-                            keyboardType: .emailAddress
-                        )
-                        .autocapitalization(.none)
-                        .autocorrectionDisabled()
-                        .focused($emailFocused)
-                        .submitLabel(.send)
-                        .onSubmit {
-                            guard EmailValidator.isValid(email.trimmingCharacters(in: .whitespaces)) else { return }
-                            Task { await submit() }
-                        }
-                        .padding(.top, 22)
-
-                        if let errorText {
-                            Text(errorText)
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
-                                .padding(.top, 10)
+                GeometryReader { geometry in
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 0) {
+                        Spacer(minLength: 0)
+                        if !(kbActive && UIScreen.main.bounds.height < 700) {
+                            brand
+                                .transition(.opacity)
                         }
 
-                        // 注册页只有返回箭头，已有账号的用户要退回去再点一次；
-                        // 邮箱输入框下方直接给一条登录入口，和「忘记密码」同级。
-                        Button {
-                            onLogin()
-                        } label: {
-                            // 下划线是网页写法，原生登录页用「灰提示 + 黑动作」表达同一件事
-                            HStack(spacing: 2) {
-                                Text(codeLoginMode ? "想用密码登录？" : "已有账户？")
-                                    .foregroundColor(Theme.textSecondary)
-                                Text(codeLoginMode ? "返回登录" : "直接登录")
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(Theme.textPrimary)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(step == 0 ? (codeLoginMode ? "邮箱验证码登录" : "创建新账户") : "验证码已发送")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundColor(Theme.textPrimary)
+                            Text(step == 0 ? (codeLoginMode ? "输入邮箱，验证码会发到这个邮箱" : "输入你的邮箱") : (codeError ? "验证码填写错误" : "请输入验证码"))
+                                .font(.system(size: 13))
+                                .foregroundColor(codeError ? Theme.danger : Theme.textSecondary)
+                        }
+                        .padding(.top, 36)
+
+                        if step == 0 {
+                            AuthFieldView(
+                                placeholder: "请输入邮箱",
+                                text: $email,
+                                keyboardType: .emailAddress,
+                                focused: $emailFocused
+                            )
+                            .autocapitalization(.none)
+                            .autocorrectionDisabled()
+                            .submitLabel(.send)
+                            .onSubmit {
+                                guard EmailValidator.isValid(email.trimmingCharacters(in: .whitespaces)) else { return }
+                                Task { await submit() }
                             }
-                            .font(.system(size: 13, weight: .medium))
-                            .frame(height: 44)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
-                        .padding(.top, 4)
+                            .padding(.top, 22)
 
-                    } else {
-                        CodeBoxes(code: $code, error: codeError)
-                            .frame(height: 52)
-                            .padding(.top, 26)
+                            if let errorText {
+                                Text(errorText)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.red)
+                                    .padding(.top, 10)
+                            }
 
-                        if let errorText {
-                            Text(errorText)
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
-                                .padding(.top, 10)
-                        }
-
-                        Button {
-                            Task { await resend() }
-                        } label: {
-                            Text(cooldown > 0 ? "\(cooldown) 秒后可重新发送" : "重新发送验证码")
-                                .font(.system(size: 12, weight: cooldown > 0 ? .regular : .medium))
-                                .foregroundColor(cooldown > 0 ? Theme.listGray : .black)
-                                .frame(maxWidth: .infinity)
-                                .frame(minHeight: 44)
+                            // 注册页只有返回箭头，已有账号的用户要退回去再点一次；
+                            // 邮箱输入框下方直接给一条登录入口，和「忘记密码」同级。
+                            Button {
+                                onLogin()
+                            } label: {
+                                // 下划线是网页写法，原生登录页用「灰提示 + 黑动作」表达同一件事
+                                HStack(spacing: 2) {
+                                    Text(codeLoginMode ? "想用密码登录？" : "已有账户？")
+                                        .foregroundColor(Theme.textSecondary)
+                                    Text(codeLoginMode ? "返回登录" : "直接登录")
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(Theme.textPrimary)
+                                }
+                                .font(.system(size: 13, weight: .medium))
+                                .frame(height: 44)
                                 .contentShape(Rectangle())
+                            }
+                            .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
+                            .padding(.top, 4)
+
+                        } else {
+                            CodeBoxes(code: $code, error: codeError)
+                                .frame(height: 52)
+                                .padding(.top, 26)
+
+                            if let errorText {
+                                Text(errorText)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.red)
+                                    .padding(.top, 10)
+                            }
+
+                            Button {
+                                Task { await resend() }
+                            } label: {
+                                Text(cooldown > 0 ? "\(cooldown) 秒后可重新发送" : "重新发送验证码")
+                                    .font(.system(size: 12, weight: cooldown > 0 ? .regular : .medium))
+                                    .foregroundColor(cooldown > 0 ? Theme.listGray : .black)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(minHeight: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
+                            .disabled(cooldown > 0 || isResending)
+                            .padding(.top, 12)
+
                         }
-                        .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
-                        .disabled(cooldown > 0 || isResending)
-                        .padding(.top, 12)
-
+                        Spacer(minLength: 0)
                     }
-                    Spacer(minLength: 0)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 24)
+                    .modifier(AuthVerticalFill(enabled: step == 0 && !kbActive))
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
-                .modifier(AuthVerticalFill(enabled: step == 0 && !kbActive))
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .scrollDisabled(kbActive && UIScreen.main.bounds.height < 700)
-            .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 0) {
-                    primaryAction
-                        .padding(.horizontal, 20)
-                        .padding(.top, 10)
+                .scrollDismissesKeyboard(.interactively)
+                .scrollDisabled(kbActive && UIScreen.main.bounds.height < 700)
+                .safeAreaInset(edge: .bottom) {
+                    VStack(spacing: 0) {
+                        primaryAction
+                            .padding(.horizontal, 20)
+                            .padding(.top, 10)
 
-                    AuthAgreementLine(agreed: $agreed, onAgreement: onAgreement, onPrivacy: onPrivacy)
-                        .modifier(ShakeEffect(shakes: shakeCount))
-                        .padding(.horizontal, 20)
-                        .padding(.top, 8)
-                        .padding(.bottom, 8)
+                        AuthAgreementLine(agreed: $agreed, onAgreement: onAgreement, onPrivacy: onPrivacy)
+                            .modifier(ShakeEffect(shakes: shakeCount))
+                            .padding(.horizontal, 20)
+                            .padding(.top, 8)
+                            .padding(.bottom, 8)
+                    }
+                    .background(Color.white)
                 }
-                .background(Color.white)
-            }
+                .environment(\.authViewportHeight, geometry.size.height)
+                }
         }
         }
         .tracksKeyboardVisibility($kbActive)
@@ -658,140 +702,141 @@ struct PasswordLoginView: View {
     @State private var showForgot = false
     @State private var keyboardVisible = false
 
-    @FocusState private var focusedField: Field?
-
-    private enum Field {
-        case email
-        case password
-    }
+    @FocusState private var emailFocused: Bool
+    @FocusState private var passwordFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
             header
 
             ScrollViewReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Spacer(minLength: 0)
-                        if !(keyboardVisible && UIScreen.main.bounds.height < 700) {
-                            brand
-                                .transition(.opacity)
-                        }
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("登录账户")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(Theme.textPrimary)
-                            if !(keyboardVisible && UIScreen.main.bounds.height < 700) {
-                                Text("使用绑定邮箱和密码登录")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Theme.textSecondary)
+                GeometryReader { geometry in
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Spacer(minLength: 0)
+                            // 键盘态隐藏品牌头图：设计稿键盘态直接从标题开始，
+                            // 保留品牌会把密码框挤到底部操作区下面。
+                            if !keyboardVisible {
+                                brand
+                                    .transition(.opacity)
                             }
-                        }
-                        .padding(.top, keyboardVisible && UIScreen.main.bounds.height < 700 ? 8 : 36)
 
-                        VStack(spacing: 12) {
-                            AuthFieldView(
-                                placeholder: "请输入登录邮箱",
-                                text: $email,
-                                keyboardType: .emailAddress
-                            )
-                            .autocapitalization(.none)
-                            .autocorrectionDisabled()
-                            .focused($focusedField, equals: .email)
-                            .submitLabel(.next)
-                            .onSubmit { focusedField = .password }
-                            .id(Field.email)
-
-                            AuthFieldView(
-                                placeholder: "请输入登录密码",
-                                text: $password,
-                                secure: true
-                            )
-                            .focused($focusedField, equals: .password)
-                            .submitLabel(.go)
-                            .onSubmit { Task { await login() } }
-                            .id(Field.password)
-                        }
-                        .padding(.top, keyboardVisible && UIScreen.main.bounds.height < 700 ? 16 : 22)
-
-                        if let message = auth.errorMessage {
-                            Text(message)
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
-                                .padding(.top, 10)
-                        }
-
-                        if !keyboardVisible {
-                            // 「忘记密码」和「创建新账户」同一行：两个都是离开当前表单的出口，
-                            // 竖着堆两行灰色文字会让人以为其中一个是说明。
-                            HStack(spacing: 12) {
-                                Button {
-                                    showForgot = true
-                                } label: {
-                                    Text("忘记密码")
-                                        .font(.system(size: 13, weight: .medium))
-                                        .foregroundColor(Theme.textSecondary)
-                                        .frame(minHeight: 44)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
-
-                                Spacer(minLength: 12)
-
-                                Button {
-                                    onSignup()
-                                } label: {
-                                    Text("创建新账户")
-                                        .font(.system(size: 13, weight: .medium))
-                                        .foregroundColor(Theme.textPrimary)
-                                        .frame(minHeight: 44)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
-                            }
-                            .frame(height: 44)
-                            .padding(.top, 4)
-
-                            // 「创建新账户」走的是邮箱验证码，注册出来的账号没有密码；
-                            // 只留「忘记密码」等于让这类用户绕一圈才能回来。
-                            Button {
-                                onCodeLogin()
-                            } label: {
-                                Text("用邮箱验证码登录")
-                                    .font(.system(size: 13, weight: .semibold))
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("登录账户")
+                                    .font(.system(size: 22, weight: .bold))
                                     .foregroundColor(Theme.textPrimary)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 44)
-                                    .contentShape(Rectangle())
+                                if !(keyboardVisible && UIScreen.main.bounds.height < 700) {
+                                    Text("使用绑定邮箱和密码登录")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(Theme.textSecondary)
+                                }
                             }
-                            .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
+                            .padding(.top, keyboardVisible ? 8 : 36)
+
+                            VStack(spacing: 12) {
+                                AuthFieldView(
+                                    placeholder: "请输入登录邮箱",
+                                    text: $email,
+                                    keyboardType: .emailAddress,
+                                    focused: $emailFocused
+                                )
+                                .autocapitalization(.none)
+                                .autocorrectionDisabled()
+                                .submitLabel(.next)
+                                .onSubmit { emailFocused = false; passwordFocused = true }
+                                .id("email")
+
+                                AuthFieldView(
+                                    placeholder: "请输入登录密码",
+                                    text: $password,
+                                    secure: true,
+                                    focused: $passwordFocused
+                                )
+                                .submitLabel(.go)
+                                .onSubmit { Task { await login() } }
+                                .id("password")
+                            }
+                            .padding(.top, keyboardVisible ? 16 : 22)
+
+                            if let message = auth.errorMessage {
+                                Text(message)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.red)
+                                    .padding(.top, 10)
+                            }
+
+                            if !keyboardVisible {
+                                // 「忘记密码」和「创建新账户」同一行：两个都是离开当前表单的出口，
+                                // 竖着堆两行灰色文字会让人以为其中一个是说明。
+                                HStack(spacing: 12) {
+                                    Button {
+                                        showForgot = true
+                                    } label: {
+                                        Text("忘记密码")
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundColor(Theme.textSecondary)
+                                            .frame(minHeight: 44)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
+
+                                    Spacer(minLength: 12)
+
+                                    Button {
+                                        onSignup()
+                                    } label: {
+                                        Text("创建新账户")
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundColor(Theme.textPrimary)
+                                            .frame(minHeight: 44)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
+                                }
+                                .frame(height: 44)
+                                .padding(.top, 4)
+
+                                // 「创建新账户」走的是邮箱验证码，注册出来的账号没有密码；
+                                // 只留「忘记密码」等于让这类用户绕一圈才能回来。
+                                Button {
+                                    onCodeLogin()
+                                } label: {
+                                    Text("用邮箱验证码登录")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(Theme.textPrimary)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 44)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
+                            }
+
+                            Spacer(minLength: 0)
                         }
-
-                        Spacer(minLength: 0)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 24)
+                        .modifier(AuthVerticalFill(enabled: !keyboardVisible))
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 24)
-                    .modifier(AuthVerticalFill(enabled: !keyboardVisible))
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .scrollDisabled(keyboardVisible && UIScreen.main.bounds.height < 700)
-                .safeAreaInset(edge: .bottom) {
-                    VStack(spacing: 0) {
-                        if keyboardVisible {
-                            forgotButton
+                    .scrollDismissesKeyboard(.interactively)
+                    .scrollDisabled(keyboardVisible && UIScreen.main.bounds.height < 700)
+                    .safeAreaInset(edge: .bottom) {
+                        VStack(spacing: 0) {
+                            if keyboardVisible {
+                                forgotButton
+                            }
+
+                            loginButton
+                                .padding(.top, keyboardVisible ? 10 : 8)
+
+                            AuthAgreementLine(agreed: $agreed, onAgreement: onAgreement, onPrivacy: onPrivacy)
+                                .modifier(ShakeEffect(shakes: shakeCount))
+                                .padding(.horizontal, 20)
+                                .padding(.top, keyboardVisible ? 8 : 0)
+                                .padding(.bottom, 8)
                         }
-
-                        loginButton
-                            .padding(.top, keyboardVisible ? 10 : 8)
-
-                        AuthAgreementLine(agreed: $agreed, onAgreement: onAgreement, onPrivacy: onPrivacy)
-                            .modifier(ShakeEffect(shakes: shakeCount))
-                            .padding(.horizontal, 20)
-                            .padding(.top, keyboardVisible ? 8 : 0)
-                            .padding(.bottom, 8)
+                        .background(Color.white)
                     }
-                    .background(Color.white)
+                .environment(\.authViewportHeight, geometry.size.height)
                 }
             }
         }
@@ -878,7 +923,7 @@ struct PasswordLoginView: View {
         guard ProcessInfo.processInfo.arguments.contains("-passwordloginfocus") else { return }
         Task {
             try? await Task.sleep(for: .milliseconds(700))
-            focusedField = .email
+            emailFocused = true
         }
     }
 
@@ -902,7 +947,8 @@ struct PasswordLoginView: View {
             return
         }
         isLoading = true
-        focusedField = nil
+        emailFocused = false
+        passwordFocused = false
         // 真实链路：账号密码登录
         await auth.signInWithPassword(email: trimmedEmail, password: password)
         isLoading = false
@@ -941,44 +987,47 @@ struct ForgotPasswordView: View {
             header
 
             ScrollViewReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Spacer(minLength: 0)
-                        if step < 3, !(keyboardVisible && UIScreen.main.bounds.height < 700) {
-                            brand
-                                .transition(.opacity)
-                        }
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(headline)
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(Theme.textPrimary)
-                            if let subhead {
-                                Text(subhead)
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Theme.textSecondary)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
+                GeometryReader { geometry in
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Spacer(minLength: 0)
+                            if step < 3, !(keyboardVisible && UIScreen.main.bounds.height < 700) {
+                                brand
+                                    .transition(.opacity)
                             }
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(headline)
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundColor(Theme.textPrimary)
+                                if let subhead {
+                                    Text(subhead)
+                                        .font(.system(size: 13))
+                                        .foregroundColor(Theme.textSecondary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                }
+                            }
+                            .padding(.top, step < 3 ? (keyboardVisible && UIScreen.main.bounds.height < 700 ? 8 : 36) : 24)
+
+                            stepContent
+
+                            Spacer(minLength: 0)
                         }
-                        .padding(.top, step < 3 ? (keyboardVisible && UIScreen.main.bounds.height < 700 ? 8 : 36) : 24)
-
-                        stepContent
-
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 24)
-                    .modifier(AuthVerticalFill(enabled: step < 3 && !keyboardVisible))
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .scrollDisabled(keyboardVisible && UIScreen.main.bounds.height < 700)
-                .safeAreaInset(edge: .bottom) {
-                    primaryAction
                         .padding(.horizontal, 20)
-                        .padding(.top, 8)
-                        .padding(.bottom, 8)
-                        .background(Color.white)
+                        .padding(.bottom, 24)
+                        .modifier(AuthVerticalFill(enabled: step < 3 && !keyboardVisible))
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .scrollDisabled(keyboardVisible && UIScreen.main.bounds.height < 700)
+                    .safeAreaInset(edge: .bottom) {
+                        primaryAction
+                            .padding(.horizontal, 20)
+                            .padding(.top, 8)
+                            .padding(.bottom, 8)
+                            .background(Color.white)
+                    }
+                .environment(\.authViewportHeight, geometry.size.height)
                 }
             }
         }
@@ -1017,11 +1066,11 @@ struct ForgotPasswordView: View {
             AuthFieldView(
                 placeholder: "请输入邮箱",
                 text: $email,
-                keyboardType: .emailAddress
+                keyboardType: .emailAddress,
+                focused: $emailFocused
             )
             .autocapitalization(.none)
             .autocorrectionDisabled()
-            .focused($emailFocused)
             .submitLabel(.send)
             .onSubmit {
                 guard EmailValidator.isValid(email.trimmingCharacters(in: .whitespaces)) else { return }
@@ -1073,9 +1122,9 @@ struct ForgotPasswordView: View {
                 AuthFieldView(
                     placeholder: "请输入新密码",
                     text: $newPassword,
-                    secure: true
+                    secure: true,
+                    focused: $passwordFocused
                 )
-                .focused($passwordFocused)
                 .submitLabel(.next)
                 .onSubmit { confirmPasswordFocused = true }
                 .id("newPassword")
@@ -1083,9 +1132,9 @@ struct ForgotPasswordView: View {
                 AuthFieldView(
                     placeholder: "再次输入新密码",
                     text: $confirmPassword,
-                    secure: true
+                    secure: true,
+                    focused: $confirmPasswordFocused
                 )
-                .focused($confirmPasswordFocused)
                 .submitLabel(.done)
                 .onSubmit { Task { await submit() } }
                 .id("confirmPassword")
