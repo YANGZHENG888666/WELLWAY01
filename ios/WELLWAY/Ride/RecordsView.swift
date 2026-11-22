@@ -14,6 +14,7 @@ struct RecordsView: View {
     @State private var renamingRecord: RideRecord?
     @State private var filter = "全部"
     @State private var deepLinkRecord: RideRecord?
+    @State private var showStats = false
     @State private var viewportHeight: CGFloat = 0
 
     private var filteredRecords: [RideRecord] {
@@ -119,6 +120,11 @@ struct RecordsView: View {
                 RecordDetailView(store: store, recordId: record.id)
             }
         }
+        .navigationDestination(isPresented: $showStats) {
+            if let store {
+                RideStatsView(store: store)
+            }
+        }
         .background(Color.white)
         .ignoresSafeArea(edges: .top)
         .toolbar(.hidden, for: .navigationBar)
@@ -132,6 +138,12 @@ struct RecordsView: View {
             let arguments = ProcessInfo.processInfo.arguments
             if arguments.contains("-recordridingsample") {
                 service.applyRidingSample()
+                showStats = arguments.contains("-recordstats")
+                return
+            }
+            if arguments.contains("-recordstatssample") {
+                service.applyStatsSample()
+                showStats = arguments.contains("-recordstats")
                 return
             }
             await service.load()
@@ -143,7 +155,9 @@ struct RecordsView: View {
                arguments.contains("-recordcompleted") || arguments.contains("-recordfirst") {
                 service.applyDebugSampleDetail()
             }
-            if let initialRecordId,
+            if arguments.contains("-recordstats") {
+                showStats = true
+            } else if let initialRecordId,
                let record = service.records.first(where: { $0.id == initialRecordId }) {
                 deepLinkRecord = record
             } else if arguments.contains("-recordfirst"),
@@ -164,33 +178,7 @@ struct RecordsView: View {
     }
 
     private var segmentedControl: some View {
-        HStack(spacing: 4) {
-            segment("全部", isSelected: filter == "全部") { filter = "全部" }
-            segment("已完成", isSelected: filter == "已完成") { filter = "已完成" }
-        }
-        .padding(.horizontal, 3)
-        .frame(height: 44)
-        .background {
-            Capsule()
-                .fill(Theme.lightField)
-                .frame(height: 36)
-        }
-    }
-
-    private func segment(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? Color.white : Theme.textSecondary)
-                .frame(width: 76, height: 30)
-                .background(isSelected ? Theme.textPrimary : Color.clear)
-                .clipShape(Capsule())
-                .frame(width: 76, height: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(CardPressStyle(scale: 0.96))
-        // 选中态只靠黑底白字表达时，旁白读不出当前筛选；补上系统选中特征。
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        DesignSegmentedControl(options: ["全部", "已完成"], selection: $filter)
     }
 
     /// 近 30 天概览：只使用已完成记录，和下方列表筛选解耦
@@ -221,28 +209,42 @@ struct RecordsView: View {
             distanceValue = "未记录"
         }
 
-        return VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("近 30 天")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Theme.textSecondary)
-                Spacer()
-                Text("仅统计已完成")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.textSecondary)
-            }
+        return Button {
+            showStats = true
+        } label: {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("近 30 天")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Theme.textSecondary)
+                    Spacer()
+                    HStack(spacing: 3) {
+                        Text("查看统计")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Theme.textPrimary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Theme.chevron)
+                    }
+                }
 
-            MetricRowLayout {
-                summaryMetric("\(recent.count)", unit: "", label: "骑行次数")
-                summaryDivider
-                summaryMetric(distanceValue, unit: recent.isEmpty || hasDistance ? "km" : "", label: "里程")
-                summaryDivider
-                summaryMetric(duration.value, unit: duration.unit, label: "时长")
+                MetricRowLayout {
+                    summaryMetric("\(recent.count)", unit: "", label: "骑行次数")
+                    summaryDivider
+                    summaryMetric(distanceValue, unit: recent.isEmpty || hasDistance ? "km" : "", label: "里程")
+                    summaryDivider
+                    summaryMetric(duration.value, unit: duration.unit, label: "时长")
+                }
+
+                Text("仅统计已完成记录")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.textSecondary)
             }
+            .padding(16)
+            .background(Theme.lightField)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .padding(16)
-        .background(Theme.lightField)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .buttonStyle(CardPressStyle(scale: 0.99))
         // 不合成一句会念成「近 30 天、仅统计已完成、5、次、—、56、秒、骑行、里程、时长」
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
@@ -250,6 +252,7 @@ struct RecordsView: View {
                 + (hasDistance ? "里程 \(distanceValue) 公里" : "里程未记录")
                 + "，时长 \(duration.value) \(duration.unit)"
         )
+        .accessibilityHint("打开本周与本月骑行统计")
     }
 
     private func summaryMetric(_ value: String, unit: String, label: String) -> some View {
@@ -872,6 +875,80 @@ final class RecordsStore {
                 status: "riding"
             )
         ]
+    }
+
+    /// 调试用(-recordstatssample)：以今天为基准铺一组已完成记录，
+    /// 覆盖本周/本月、缺轨迹记录和上月对比，不依赖账号与网络。
+    func applyStatsSample() {
+        let calendar = Calendar(identifier: .gregorian)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+
+        func day(_ offset: Int, hour: Int, minute: Int) -> Date {
+            let base = calendar.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+            return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: base) ?? base
+        }
+
+        func record(
+            _ name: String,
+            _ started: Date,
+            distanceM: Int,
+            durationS: Int,
+            speed: Double?,
+            elevationM: Int
+        ) -> RideRecord {
+            RideRecord(
+                id: UUID(),
+                userId: userId,
+                routeId: nil,
+                vehicleId: nil,
+                name: name,
+                startedAt: formatter.string(from: started),
+                endedAt: formatter.string(from: started.addingTimeInterval(TimeInterval(durationS))),
+                distanceM: distanceM,
+                durationS: durationS,
+                avgSpeedKmh: speed,
+                maxSpeedKmh: speed.map { $0 + 14 },
+                elevationGainM: elevationM,
+                status: "completed"
+            )
+        }
+
+        var sample = [
+            record("环湖夜骑", day(0, hour: 18, minute: 10),
+                   distanceM: 12_400, durationS: 1_800, speed: 24.8, elevationM: 156),
+            record("古城短途", day(-1, hour: 9, minute: 10),
+                   distanceM: 8_200, durationS: 1_260, speed: 23.1, elevationM: 138),
+            record("未记录轨迹的练习", day(-2, hour: 15, minute: 10),
+                   distanceM: 0, durationS: 900, speed: nil, elevationM: 0)
+        ]
+
+        if let lastMonth = calendar.date(byAdding: .month, value: -1, to: Date()),
+           let lastMonthStart = calendar.dateInterval(of: .month, for: lastMonth)?.start,
+           let lastMonthRide = calendar.date(byAdding: .day, value: 4, to: lastMonthStart) {
+            sample.append(
+                record("上月长距离", calendar.date(bySettingHour: 8, minute: 10, second: 0, of: lastMonthRide) ?? lastMonthRide,
+                       distanceM: 20_100, durationS: 2_880, speed: 25.1, elevationM: 240)
+            )
+        }
+
+        if let monthStart = calendar.dateInterval(of: .month, for: Date())?.start,
+           let earlyRide = calendar.date(byAdding: .day, value: 2, to: monthStart),
+           let earlyStarted = calendar.date(bySettingHour: 8, minute: 10, second: 0, of: earlyRide),
+           earlyStarted < (calendar.date(byAdding: .day, value: -3, to: Date()) ?? Date()) {
+            sample.append(
+                record("月初耐力骑行", earlyStarted,
+                       distanceM: 32_000, durationS: 4_500, speed: 25.6, elevationM: 410)
+            )
+        }
+
+        records = sample.sorted {
+            (ISO8601DateFormatter.wellwayDate(from: $0.startedAt) ?? .distantPast)
+                > (ISO8601DateFormatter.wellwayDate(from: $1.startedAt) ?? .distantPast)
+        }
+        errorMessage = nil
+        isLoading = false
+        isSampleData = true
     }
 
     func loadRecords() async {

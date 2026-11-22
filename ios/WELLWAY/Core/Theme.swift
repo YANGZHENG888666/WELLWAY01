@@ -993,6 +993,46 @@ extension View {
     }
 }
 
+// MARK: - 分段控件
+
+/// v6 分段控件：浅灰胶囊底 + 黑色选中片，44pt 热区。
+/// 记录页的「全部 / 已完成」与统计页的「本周 / 本月」共用同一套比例，
+/// 避免同一个 App 里出现两种高度或两种选中样式。
+struct DesignSegmentedControl: View {
+    let options: [String]
+    @Binding var selection: String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(options, id: \.self) { option in
+                let isSelected = option == selection
+                Button {
+                    selection = option
+                } label: {
+                    Text(option)
+                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? Color.white : Theme.textSecondary)
+                        .frame(width: 76, height: 30)
+                        .background(isSelected ? Theme.textPrimary : Color.clear)
+                        .clipShape(Capsule())
+                        .frame(width: 76, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(CardPressStyle(scale: 0.96))
+                // 选中态只靠黑底白字表达时，旁白读不出当前筛选；补上系统选中特征。
+                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            }
+        }
+        .padding(.horizontal, 3)
+        .frame(height: 44)
+        .background {
+            Capsule()
+                .fill(Theme.lightField)
+                .frame(height: 36)
+        }
+    }
+}
+
 // MARK: - 等宽指标行
 
 /// 指标行里「不参与等分」的子视图（分隔线）标记：宽度按自身固定，其余列严格等分。
