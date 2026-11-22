@@ -642,11 +642,12 @@ struct DesignHomeView: View {
             if let photo = garage.photos[vehicle.id] {
                 TiltBike {
                     // 自选车照是矩形照片，压成透明抠图会像贴纸浮在白色里；
-                    // 收 14pt 圆角并给一层很浅的投影，读起来才是一张「车辆照片」。
+                    // 按 v6 媒体主视觉取 18pt 圆角，并给一层很浅的投影，
+                    // 读起来才是一张「车辆照片」。
                     Image(uiImage: photo)
                         .resizable()
                         .scaledToFit()
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                         .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 6)
                 }
             } else if hasModelImage(for: vehicle) {

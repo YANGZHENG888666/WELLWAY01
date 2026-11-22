@@ -519,7 +519,10 @@ struct VehiclePickerView: View {
                     searchText = ""
                     typeFilter = "全部"
                     displacementFilter = "全部"
-                }
+                },
+                // 已选车型时底部还有「完成选择」主行动。此时「清除筛选」只是恢复
+                // 列表的辅助操作，不能再给一颗同规格黑按钮，否则一屏出现两个主行动。
+                primaryAsText: selectedModelId != nil
             )
         }
     }
@@ -531,6 +534,7 @@ struct VehiclePickerView: View {
         primaryAction: @escaping () -> Void,
         primaryLoading: Bool = false,
         primaryDisabled: Bool = false,
+        primaryAsText: Bool = false,
         secondaryTitle: String? = nil,
         secondaryAction: (() -> Void)? = nil
     ) -> some View {
@@ -547,26 +551,39 @@ struct VehiclePickerView: View {
             }
             Spacer(minLength: 0)
             VStack(spacing: 10) {
-                Button(action: primaryAction) {
-                    Group {
-                        if primaryLoading {
-                            HStack(spacing: 8) {
-                                ProgressView().tint(primaryDisabled ? Theme.listGray : .white)
-                                Text("提交中…")
-                            }
-                        } else {
-                            Text(primaryTitle)
-                        }
+                if primaryAsText {
+                    Button(action: primaryAction) {
+                        Text(primaryTitle)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Theme.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .contentShape(Rectangle())
                     }
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(primaryDisabled ? Theme.listGray : Color.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(primaryDisabled ? Theme.lightField : Color.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .buttonStyle(IconPressStyle(pressedOpacity: 0.5))
+                    .allowsHitTesting(!primaryDisabled && !primaryLoading)
+                } else {
+                    Button(action: primaryAction) {
+                        Group {
+                            if primaryLoading {
+                                HStack(spacing: 8) {
+                                    ProgressView().tint(primaryDisabled ? Theme.listGray : .white)
+                                    Text("提交中…")
+                                }
+                            } else {
+                                Text(primaryTitle)
+                            }
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(primaryDisabled ? Theme.listGray : Color.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(primaryDisabled ? Theme.lightField : Color.black)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                    .buttonStyle(SolidPressStyle())
+                    .allowsHitTesting(!primaryDisabled && !primaryLoading)
                 }
-                .buttonStyle(SolidPressStyle())
-                .allowsHitTesting(!primaryDisabled && !primaryLoading)
 
                 if let secondaryTitle, let secondaryAction {
                     Button(action: secondaryAction) {
