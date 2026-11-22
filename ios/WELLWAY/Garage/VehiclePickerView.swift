@@ -198,6 +198,7 @@ struct VehiclePickerView: View {
                 .font(.system(size: 14))
                 .focused($searchFocused)
                 .autocorrectionDisabled()
+                .foregroundStyle(Theme.textPrimary)
                 .submitLabel(.search)
                 .onSubmit { searchFocused = false }
             if !searchText.isEmpty {
@@ -214,10 +215,7 @@ struct VehiclePickerView: View {
                 .accessibilityLabel("清除搜索")
             }
         }
-        .padding(.horizontal, 12)
-        .frame(height: 44)
-        .background(Theme.lightField)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .wellwaySearchFieldStyle()
         .padding(.horizontal, 20)
         .padding(.top, 8)
         .padding(.bottom, 10)

@@ -73,6 +73,24 @@ enum Theme {
     }
 }
 
+/// 全站搜索框共用外观：44pt 高、14pt 内边距、浅灰全圆角胶囊（v6）。
+/// 焦点、提交和清除按钮仍由页面自己处理，避免各页复制出不同的内边距或圆角。
+private struct WellwaySearchFieldStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, 14)
+            .frame(height: 44)
+            .background(Theme.lightField)
+            .clipShape(Capsule())
+    }
+}
+
+extension View {
+    func wellwaySearchFieldStyle() -> some View {
+        modifier(WellwaySearchFieldStyle())
+    }
+}
+
 /// 通用空态：裸图标 + 16 semibold 标题 + 13 说明(全站统一，不用系统 ContentUnavailableView)
 struct DesignEmptyState: View {
     let icon: String

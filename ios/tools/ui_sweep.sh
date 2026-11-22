@@ -76,7 +76,6 @@ COMBOS=(
   "-team -teamfailed"
   "-routes -routesempty"
   "-routes -routeserror"
-  "-routes -routesfilterempty"
   "-picker -pickerbrandempty"
   "-picker -pickerpinyin"
   "-pickermodels -pickermodelempty"
@@ -108,10 +107,15 @@ COMBOS=(
   "-riding -ridingending"
 )
 
-SLOW=( -vehicledetail -fuel -weathersheet -trafficsheet -arrival )
+SLOW=( -arrival )
 SLOW_COMBOS=(
-  "-fuel -fuelerror"
-  "-weathersheet -weathererror"
+  "-garagesample -vehicledetail"
+  "-garagesample -fuel"
+  "-garagesample -weathersheet"
+  "-garagesample -trafficsheet"
+  "-garagesample -fuel -fuelerror"
+  "-garagesample -weathersheet -weathererror"
+  "-routes -routesfilterempty"
 )
 
 shoot() {

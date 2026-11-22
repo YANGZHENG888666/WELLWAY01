@@ -348,9 +348,7 @@ struct RoutesView: View {
         .background(Color.white)
     }
 
-    /// 与车型库搜索框共用同一套参数：14pt 文字、8pt 图标间距、14pt 内边距、
-    /// theme.textSecondary 图标。两处写不同(13pt / 6pt / listGray)时，
-    /// 同样一个搜索框在路线页和选车页看起来是两个控件。
+    /// 外观交给 `wellwaySearchFieldStyle()`，与车型库搜索框共用同一套高度、胶囊和内边距。
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
@@ -360,7 +358,7 @@ struct RoutesView: View {
             TextField("搜索路线 / 城市", text: $searchText)
                 .font(.system(size: 14))
                 .autocorrectionDisabled()
-                .foregroundStyle(Theme.ink)
+                .foregroundStyle(Theme.textPrimary)
             if !searchText.isEmpty {
                 Button {
                     searchText = ""
@@ -375,10 +373,7 @@ struct RoutesView: View {
                 .accessibilityLabel("清除搜索")
             }
         }
-        .padding(.horizontal, 14)
-        .frame(height: 44)
-        .background(Theme.lightField)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .wellwaySearchFieldStyle()
         .padding(.horizontal, 20)
     }
 
