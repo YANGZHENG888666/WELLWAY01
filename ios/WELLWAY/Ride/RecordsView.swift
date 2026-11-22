@@ -129,15 +129,24 @@ struct RecordsView: View {
             }
             let service = store ?? RecordsStore(client: auth.client, userId: auth.user?.id ?? UUID())
             store = service
-            if ProcessInfo.processInfo.arguments.contains("-recordridingsample") {
+            let arguments = ProcessInfo.processInfo.arguments
+            if arguments.contains("-recordridingsample") {
                 service.applyRidingSample()
                 return
             }
             await service.load()
+            // 本机/模拟器的测试账号通常没有云端记录，-recordcompleted 会落到
+            // 筛选空态、-recordfirst 则没有可进入的第一条。仅在调试参数下补一条
+            // 已完成的样例记录，让这两个入口始终能复拍到目标页面；真实数据存在时
+            // 不覆盖，生产路径也不受影响。
+            if service.records.isEmpty,
+               arguments.contains("-recordcompleted") || arguments.contains("-recordfirst") {
+                service.applyDebugSampleDetail()
+            }
             if let initialRecordId,
                let record = service.records.first(where: { $0.id == initialRecordId }) {
                 deepLinkRecord = record
-            } else if ProcessInfo.processInfo.arguments.contains("-recordfirst"),
+            } else if arguments.contains("-recordfirst"),
                       let first = service.records.first {
                 deepLinkRecord = first
             }

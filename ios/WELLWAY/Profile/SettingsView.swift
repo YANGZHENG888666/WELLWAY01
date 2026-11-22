@@ -15,6 +15,9 @@ struct SettingsView: View {
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var locationStatus: CLAuthorizationStatus = CLLocationManager().authorizationStatus
     @State private var showNotifyBlocked = ProcessInfo.processInfo.arguments.contains("-settingsnotifydialog")
+    /// 内容滚到固定页头下方时补一条发丝线：页头是实底白色，不画线时
+    /// 第一行会像直接粘在标题下面，SE 等刚好能滚动一屏的机型最明显。
+    @State private var isScrolled = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -110,6 +113,15 @@ struct SettingsView: View {
                 // 调试：-settingsbottom 滚到页尾，锚点放在底部留白之后，
                 // 确认「关于与反馈」不贴屏幕底边、完整可见
                 .id("settings-bottom")
+            }
+            // iOS 18 起直接读滚动几何；iOS 17 上不画这条线，保持原样。
+            .modifier(SettingsScrollEdgeModifier(isScrolled: $isScrolled))
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(Theme.separator)
+                    .frame(height: 1)
+                    .opacity(isScrolled ? 1 : 0)
+                    .animation(.easeOut(duration: 0.15), value: isScrolled)
             }
             .task {
                 guard ProcessInfo.processInfo.arguments.contains("-settingsbottom") else { return }
@@ -343,6 +355,23 @@ struct SettingsView: View {
     private func openSettings() {
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
+        }
+    }
+}
+
+private struct SettingsScrollEdgeModifier: ViewModifier {
+    @Binding var isScrolled: Bool
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) {
+            content.onScrollGeometryChange(for: CGFloat.self) { geometry in
+                geometry.contentOffset.y
+            } action: { _, offsetY in
+                let scrolled = offsetY > 1
+                if scrolled != isScrolled { isScrolled = scrolled }
+            }
+        } else {
+            content
         }
     }
 }

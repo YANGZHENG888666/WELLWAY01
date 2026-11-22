@@ -256,11 +256,14 @@ struct ProfileView: View {
             }
             .task {
                 guard ProcessInfo.processInfo.arguments.contains("-profilebottom") else { return }
-                try? await Task.sleep(nanoseconds: 600_000_000)
+                // 首屏骑行合计是异步加载的，内容高度会在 1 秒内再变一次；
+                // 先等布局稳定，再连做两次兜底滚动，保证无论快速组还是 8 秒
+                // 慢速组都停在真正的页尾，而不是第一次滚动的中间态。
+                try? await Task.sleep(nanoseconds: 800_000_000)
                 proxy.scrollTo("profile-bottom", anchor: .bottom)
-                try? await Task.sleep(nanoseconds: 2_200_000_000)
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
                 proxy.scrollTo("profile-bottom", anchor: .bottom)
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
                 proxy.scrollTo("profile-bottom", anchor: .bottom)
             }
             }

@@ -94,9 +94,7 @@ COMBOS=(
   "-records -recordsempty"
   "-records -recordtrackpreview"
   "-records -recordsbottom"
-  "-profile -profilebottom"
   "-profile -accountdeleting"
-  "-guest -profile -profilebottom"
   "-summary -summaryfailed"
   "-summary -summarynotrack"
   "-summary -summarylost"
@@ -116,6 +114,9 @@ SLOW_COMBOS=(
   "-garagesample -fuel -fuelerror"
   "-garagesample -weathersheet -weathererror"
   "-routes -routesfilterempty"
+  # 「我的」页尾依赖骑行合计异步加载后再定位，3.2 秒会截到第一次滚动的中间态
+  "-profile -profilebottom"
+  "-guest -profile -profilebottom"
 )
 
 shoot() {
