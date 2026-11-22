@@ -27,6 +27,9 @@
 #      -ridingpaused / -ridingending → -riding
 #      -profilebottom            → -profile
 #      -recordsbottom / -notificationsbottom 同理，分别必须带父级入口
+#      -ridersloading            → -team（骑手统计 Tab；-riders 是路线内的骑手页）
+#      -routemapfull             → -routedetail
+#      -vehicledeleting          → -vehicles -vehiclesample
 # 2. 车库四个底部弹窗（车辆详情 / 油价 / 天气 / 路况）是代码里 4.5s 后才展开的，
 #    油价/天气失败态也必须带父级入口（-fuel -fuelerror / -weathersheet -weathererror）；
 #    这段用 8s 等待，否则只能截到首页。
@@ -57,8 +60,11 @@ COMBOS=(
   "-navchoice -navchoice-far"
   "-navchoice -navchoice-confirm"
   "-navchoice -navchoice-locationerror"
+  "-team -ridersloading"
+  "-routedetail -routemapfull"
   "-vehicles -vehiclesample -vehicleactions"
   "-vehicles -vehiclesample -vehiclephoto"
+  "-vehicles -vehiclesample -vehicledeleting"
   "-vehicles -vehiclesample -vehiclephoto -vehiclephotopicked"
   "-vehicles -vehiclesample -vehiclephoto -vehiclephotosaving"
   "-notifications -notificationsempty"

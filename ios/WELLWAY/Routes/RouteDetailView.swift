@@ -116,6 +116,12 @@ struct RouteDetailView: View {
         .task { await loadDefaultVehicle() }
         .task { await loadActiveRiders() }
         .task { await loadElevationProfile() }
+        .task {
+            // 调试入口：-routemapfull 直接打开全屏地图，复核「返回路线详情」按钮
+            guard ProcessInfo.processInfo.arguments.contains("-routemapfull") else { return }
+            try? await Task.sleep(for: .milliseconds(600))
+            showFullscreenMap = true
+        }
         .wellwayDialog(
             isPresented: $showNoVehicleGuide,
             title: "请先添加车辆",

@@ -218,6 +218,12 @@ struct MyVehiclesView: View {
                 if ProcessInfo.processInfo.arguments.contains("-vehiclephoto") {
                     editVehicle = service.vehicles.first
                 }
+                if ProcessInfo.processInfo.arguments.contains("-vehicledeleting") {
+                    // 调试入口：-vehicledeleting 停在删除中浮层，复核 12pt 圆角与遮罩
+                    isDeletingVehicle = true
+                    try? await Task.sleep(for: .seconds(25))
+                    isDeletingVehicle = false
+                }
                 return
             }
             await service.loadCatalog()

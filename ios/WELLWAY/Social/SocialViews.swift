@@ -889,6 +889,10 @@ struct TeamRidersView: View {
                 isLoading = false
                 return
             }
+            if debugArgs.contains("-ridersloading") {
+                // 调试入口：-ridersloading 停在骨架屏，复核骨架的尺寸、圆角与位置
+                try? await Task.sleep(for: .seconds(25))
+            }
             if ProcessInfo.processInfo.arguments.contains("-teamrows") {
                 counts = RiderNearbyCounts(
                     total: 7,
