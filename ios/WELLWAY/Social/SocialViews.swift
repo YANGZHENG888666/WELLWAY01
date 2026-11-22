@@ -791,12 +791,7 @@ struct TeamRidersView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 16) {
                         if isLoading {
-                            VStack(spacing: 12) {
-                                RiderCountSkeleton()
-                                Text("正在获取位置，并统计附近骑手…")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(Theme.textSecondary)
-                            }
+                            RiderPageSkeleton(compact: isShort)
                             .padding(.horizontal, 20)
                             .padding(.top, 16)
                         } else if loadFailed {
@@ -1352,6 +1347,44 @@ private struct RiderCountSkeleton: View {
         .padding(18)
         .background(Theme.lightField)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+/// 对向页整屏骨架：只画汇总卡时，下方近半屏留白，
+/// 地图随后整块弹出，加载态和内容态像两个页面。
+/// 这里按真实布局补出「统计范围」两行文字与地图占位。
+private struct RiderPageSkeleton: View {
+    let compact: Bool
+    private let block = Theme.cardStroke
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            RiderCountSkeleton()
+            Text("正在获取位置，并统计附近骑手…")
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.textSecondary)
+                .padding(.top, 12)
+                .padding(.horizontal, 2)
+
+            VStack(alignment: .leading, spacing: 10) {
+                Capsule().fill(block).frame(width: 52, height: 12)
+                Capsule().fill(block).frame(width: 168, height: 10)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Theme.lightField)
+                    // 真实地图在常规屏是 280pt、SE 是 140pt；骨架卡比汇总卡略矮，
+                    // 这里各加 20pt，让加载态底边与内容态基本对齐。
+                    .frame(height: compact ? 160 : 300)
+                    .overlay {
+                        Image(systemName: "map")
+                            .font(.system(size: 22, weight: .regular))
+                            .foregroundStyle(Theme.dotIdle)
+                    }
+            }
+            .padding(.top, 18)
+            .accessibilityHidden(true)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("正在获取位置，并统计附近骑手")
     }
 }
 
