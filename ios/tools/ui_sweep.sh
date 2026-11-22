@@ -26,6 +26,7 @@
 #      -mapchoice                → -riding
 #      -ridingpaused / -ridingending → -riding
 #      -profilebottom            → -profile
+#      -accountdeleting          → -profile
 #      -recordsbottom / -notificationsbottom 同理，分别必须带父级入口
 #      -ridersloading            → -team（骑手统计 Tab；-riders 是路线内的骑手页）
 #      -routemapfull             → -routedetail
@@ -95,6 +96,7 @@ COMBOS=(
   "-records -recordtrackpreview"
   "-records -recordsbottom"
   "-profile -profilebottom"
+  "-profile -accountdeleting"
   "-guest -profile -profilebottom"
   "-summary -summaryfailed"
   "-summary -summarynotrack"

@@ -937,9 +937,9 @@ struct RidingView: View {
                 }
                 .padding(.vertical, 18)
                 .background(Theme.darkCard)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .stroke(.white.opacity(0.08), lineWidth: 1)
                 }
                 .padding(.horizontal, 16)
@@ -967,7 +967,7 @@ struct RidingView: View {
                         .frame(height: 52)
                         .background(.white)
                         .foregroundStyle(Theme.darkBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(SolidPressStyle())
 
@@ -980,9 +980,9 @@ struct RidingView: View {
                         .frame(height: 52)
                         .background(.white.opacity(0.06))
                         .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
                                 .stroke(.white.opacity(0.12), lineWidth: 1)
                         }
                 }
@@ -1018,9 +1018,9 @@ struct RidingView: View {
             .padding(.horizontal, 32)
             .padding(.vertical, 26)
             .background(Theme.darkCard)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(.white.opacity(0.10), lineWidth: 1)
             }
             // 保存期间整块遮罩只作为一个元素，读屏一句话说清状态
@@ -1101,9 +1101,9 @@ struct RidingView: View {
         // 留 6pt 安全区后标注完整可见，深色底和地图边缘几乎无缝。
         .padding(.bottom, 6)
         .background(Theme.darkBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(.white.opacity(0.08), lineWidth: 1)
         }
         .padding(.horizontal, 16)
@@ -1327,9 +1327,9 @@ struct RidingView: View {
         .padding(.vertical, compact && hasArrived ? 14 : 18)
         .frame(maxWidth: .infinity)
         .background(Color.white.opacity(0.07))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(.white.opacity(0.08), lineWidth: 1)
         }
         .padding(.horizontal, 16)
@@ -1358,7 +1358,7 @@ struct RidingView: View {
                         .foregroundColor(Theme.darkBackground)
                         .frame(width: 52, height: 52)
                         .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(SolidPressStyle())
                 .accessibilityLabel(ride?.phase == .paused ? "继续骑行" : "暂停骑行")
@@ -1375,10 +1375,10 @@ struct RidingView: View {
                     .frame(height: 52)
                     .foregroundColor(hasArrived ? Theme.darkBackground : .white)
                     .background(hasArrived ? Color.white : Color.white.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay {
                         if !hasArrived {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
                                 .stroke(.white.opacity(0.12), lineWidth: 1)
                         }
                     }
@@ -1540,9 +1540,9 @@ struct RidingView: View {
         }
         .padding(.horizontal, 14)
         .background(Color.white.opacity(0.07))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(.white.opacity(0.08), lineWidth: 1)
         }
         .padding(.horizontal, 16)

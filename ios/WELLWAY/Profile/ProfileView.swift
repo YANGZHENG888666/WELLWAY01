@@ -240,7 +240,14 @@ struct ProfileView: View {
                 await loadRideTotals()
             }
             // Tab 切回来时重新取一次，避免刚结束骑行后摘要还是上一次的数字。
-            .onAppear { Task { await loadRideTotals() } }
+            .onAppear {
+                // 调试：-accountdeleting 停在注销中浮层，复核 12pt 圆角与遮罩；
+                // 真实注销仍只从「永久删除」确认后进入。
+                if ProcessInfo.processInfo.arguments.contains("-accountdeleting") {
+                    isDeletingAccount = true
+                }
+                Task { await loadRideTotals() }
+            }
             .onAppear {
                 // 从子页返回时 ScrollView 会停在错误的偏移上（头像被页头裁掉），
                 // 回到这一页时把位置拉回顶部，保证头像与昵称完整可见。
@@ -404,12 +411,12 @@ struct ProfileView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, 22)
             .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Theme.separator, lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.12), radius: 22, y: 8)
+            .shadow(color: .black.opacity(0.10), radius: 18, y: 6)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("正在注销账号，请稍候")
