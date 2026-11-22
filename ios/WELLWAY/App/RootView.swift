@@ -161,7 +161,6 @@ struct RootView: View {
                     .zIndex(10)
                 }
             }
-            .ignoresSafeArea(.keyboard)
             .tint(Theme.primary)
             .animation(.easeInOut(duration: 0.28), value: auth.state)
             .animation(.easeInOut(duration: 0.28), value: auth.pendingLoginSuccess)
