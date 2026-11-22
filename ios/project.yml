@@ -24,6 +24,9 @@ targets:
   WELLWAY:
     type: application
     platform: iOS
+    settings:
+      base:
+        TARGETED_DEVICE_FAMILY: "1"
     sources:
       - WELLWAY
     dependencies:

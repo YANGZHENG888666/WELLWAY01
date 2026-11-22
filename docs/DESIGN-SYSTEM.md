@@ -2333,9 +2333,9 @@ v3 的目标不是再加视觉元素，而是**让五个页面拥有五种不同
 ## 目标设备收敛为 iPhone（iPad 未做适配就不要宣称支持）
 
 - 判定标准：工程声明支持的每一种设备形态，界面上都必须成立；没有为大屏做过布局的页面宁可走兼容窗口，也不能把 375pt 的固定坐标直接拉成 1000pt。
-- 现状：`TARGETED_DEVICE_FAMILY = "1,2"`，但全仓库没有任何 `horizontalSizeClass` / `userInterfaceIdiom` 分支。iPad Pro 13 上登录页主按钮被拉到约 984pt 宽，车库首页用 `geo.size.width` 绝对定位，宽屏会把车辆、圆点和底栏全部拉散。
-- 实现：`ios/WELLWAY.xcodeproj/project.pbxproj` 两处 `TARGETED_DEVICE_FAMILY = "1,2"` 改为 `1`（Debug / Release）。iPad 以 iPhone 兼容窗口运行，比例与字号保持设计稿。
-- 证据：改前 `/tmp/ipad_home_s.png`（通栏拉宽的登录页）、改后 `/tmp/ipad2_s.png`（iPad 上居中兼容窗口）、`/tmp/se_after_s.png`（iPhone 首页逐像素无变化）。构建后 `Info.plist` 的 `UIDeviceFamily` 为 `[1]`。
+- 历史问题：早期工程是 `TARGETED_DEVICE_FAMILY = "1,2"`，但全仓库没有任何 `horizontalSizeClass` / `userInterfaceIdiom` 分支。iPad Pro 13 上登录页主按钮被拉到约 984pt 宽，车库首页用 `geo.size.width` 绝对定位，宽屏会把车辆、圆点和底栏全部拉散。
+- 实现：在 `ios/project.yml` 的 WELLWAY target 下持久化 `TARGETED_DEVICE_FAMILY: "1"`，再执行 `xcodegen generate`。不要只改 `project.pbxproj`，否则下次生成工程会回退到 `"1,2"`。iPad 以 iPhone 兼容窗口运行，比例与字号保持设计稿。
+- 证据：改前 `/tmp/ipad_home_s.png`（通栏拉宽的登录页）、改后 `/tmp/ipad2_s.png`（iPad 上居中兼容窗口）、`/tmp/se_after_s.png`（iPhone 首页逐像素无变化）。重新生成后 `project.pbxproj` 两处均为 `TARGETED_DEVICE_FAMILY = 1;`，构建产物 `Info.plist` 的 `UIDeviceFamily` 为 `[1]`。
 - 后续：如果确实要上 iPad，需要先给所有页面加最大内容宽度（建议 560pt 居中）与分栏，再把 `TARGETED_DEVICE_FAMILY` 改回 `"1,2"`。
 
 
