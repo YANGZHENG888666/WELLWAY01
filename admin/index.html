@@ -182,14 +182,15 @@
       var LEGAL_CONTENT = {
         privacy: `
           <h1>WELL WAY 隐私政策</h1>
-          <p class="meta">版本：v2.0　生效日期：2026-08-25</p>
+          <p class="meta">版本：v2.3　生效日期：2026-11-14</p>
           <p>欢迎使用 WELL WAY（以下简称"本应用"）。我们深知个人信息对您的重要性，将尽全力保护您的个人信息安全。本政策说明我们如何收集、使用、存储与共享您的信息。您注册、登录或使用本应用，即视为已阅读并同意本政策。</p>
           <h2>一、我们收集的信息</h2>
           <ul>
             <li><b>账号信息</b>：您可匿名使用本应用；若您选择绑定邮箱，我们会保存您的邮箱地址，用于换设备恢复数据与账号安全。</li>
             <li><b>位置信息</b>：仅在您主动开始骑行并选择"WELL WAY 骑行模式"时，在骑行过程中记录位置以生成骑行轨迹、里程与打卡数据。骑行结束后不再持续获取位置。您可随时在系统设置中关闭定位权限。</li>
-            <li><b>车辆信息</b>：您自行录入的车辆品牌、车型、昵称、车牌、颜色与照片，用于车库展示与骑行关联。</li>
+            <li><b>车辆信息</b>：您自行录入的车辆品牌、车型、昵称、颜色与照片，用于车库展示与骑行关联。<b>我们不收集车牌号</b>。</li>
             <li><b>骑行数据</b>：骑行轨迹、里程、时长、打卡点、徽章与路线收藏，用于记录与成就功能。</li>
+            <li><b>事故现场记录</b>：仅当您主动提交时，保存事故类型、经过、时间、路线名称、当时的真实坐标与应用版本，用于本人留存及客服 / 运营只读核对。<b>该功能不用于救援调度，不会自动报警或通知任何第三方</b>；无定位时也可提交，此时不保存坐标。</li>
             <li><b>设备与网络信息</b>：为保障功能正常运行，应用会读取必要的设备信息（如系统版本）与网络状态。</li>
           </ul>
           <h2>二、我们如何使用信息</h2>
@@ -205,6 +206,8 @@
           <p>为提供服务，我们仅与以下第三方共享必要信息：</p>
           <ul>
             <li><b>云服务商 Supabase</b>：账号、骑行、车辆等数据存储与同步；</li>
+            <li><b>天气服务商 和风天气（QWeather）</b>：仅在展示天气时发送查询地点的经纬度，用于获取实时天气、逐小时预报与气象预警（不发送账号、邮箱等身份信息）。</li>
+            <li><b>天气服务商 Open-Meteo</b>：和风不可用时的天气备用来源；空气质量与路线海拔也由该服务提供。仅在上述场景发送查询地点（或路线采样点）的经纬度，不发送账号、邮箱等身份信息。</li>
             <li><b>地图应用</b>：当您选择跳转高德地图或苹果地图导航时，将把路线终点名称或坐标传递给对应地图应用（仅本次跳转使用，不存储于我方服务器）。</li>
           </ul>
           <p>除上述情形及法律法规要求外，我们不会向任何第三方提供您的个人信息。</p>
@@ -212,18 +215,17 @@
           <ul>
             <li><b>定位（使用期间/后台）</b>：骑行轨迹记录必需；未骑行时不获取。</li>
             <li><b>通知</b>：用于同路提示与打卡完成提醒。</li>
-            <li><b>相册</b>：仅用于您主动上传车辆照片或保存骑行分享卡。</li>
-            <li><b>蓝牙/本地网络</b>：用于后续车机连接功能（当前未使用）。</li>
+            <li><b>相册</b>：仅用于您主动选择头像、车辆照片，或通过系统分享面板保存骑行分享卡。</li>
           </ul>
-          <p>我们仅在功能直接相关时请求权限，您可拒绝或随时在系统设置中关闭。</p>
+          <p>我们仅在功能直接相关时请求权限，您可拒绝或随时在系统设置中关闭。当前版本不请求蓝牙或本地网络权限。</p>
           <h2>六、注销与删除</h2>
-          <p>您可随时在应用内「个人中心 → 注销账号」永久删除您的账号及全部数据（包括骑行记录、徽章、车辆、收藏等），删除后不可恢复。您也可通过下方联系方式联系我们协助处理数据删除、导出或更正。</p>
+          <p>您可随时在应用内「我的 → 注销账号」永久删除您的账号及全部数据（包括骑行记录、徽章、车辆、收藏与事故现场记录等），删除后不可恢复。您也可通过下方联系方式联系我们协助处理数据删除、导出或更正。</p>
           <h2>七、未成年人保护</h2>
           <p>本应用面向成年摩托车爱好者。若您未满 18 周岁，请在监护人指导下使用。</p>
           <h2>八、政策更新</h2>
           <p>我们可能适时更新本政策，更新后会通过本页面或应用内公告发布，重大变更会显著提示。</p>
           <h2>九、联系我们</h2>
-          <p>应用内路径：个人中心 → 设置 → 关于与反馈</p>
+          <p>应用内路径：我的 → 设置 → 关于与反馈</p>
           <p>联系邮箱：<a href="mailto:contact@wellway.app">contact@wellway.app</a>（请替换为您的真实邮箱）</p>`,
         terms: `
           <h1>WELL WAY 用户协议</h1>
@@ -245,7 +247,7 @@
             <li>路线、打卡点、徽章等运营内容由运营方提供与维护，可能随时调整或下线。</li>
           </ul>
           <h2>五、数据与隐私</h2>
-          <p>我们处理您的个人信息遵循《<a href="./?page=privacy">WELL WAY 隐私政策</a>》。骑行轨迹、位置等敏感信息仅在您主动开启骑行时采集，用途限于生成轨迹与打卡记录。您可在「个人中心 → 注销账号」永久删除账号及全部数据。</p>
+          <p>我们处理您的个人信息遵循《<a href="./?page=privacy">WELL WAY 隐私政策</a>》。骑行轨迹、位置等敏感信息仅在您主动开启骑行时采集，用途限于生成轨迹与打卡记录。您可在「我的 → 注销账号」永久删除账号及全部数据。</p>
           <h2>六、免责声明</h2>
           <ul>
             <li>本应用按"现状"提供，不对服务的持续可用性、无中断、无错误作绝对保证。</li>
@@ -368,7 +370,7 @@
         { k: 'brand_id', l: '品牌', type: 'select', ref: 'brands', refLabel: 'name', req: true, g: 'base' },
         { k: 'name', l: '名称', req: true, g: 'base' },
         { k: 'series', l: '系列', g: 'base' },
-        { k: 'model_type', l: '类型', type: 'select', options: ['跑车','街车','ADV','复古','踏板'], req: true, g: 'base' },
+        { k: 'model_type', l: '类型', type: 'select', options: ['跑车','街车','踏板','巡航','复古','ADV','越野','旅行','MINI'], req: true, g: 'base' },
         { k: 'image_url', l: '图片', type: 'image', bucket: 'catalog-images', g: 'media' },
         { k: 'displacement_cc', l: '排量(cc)', type: 'number', g: 'detail' },
         { k: 'price_min', l: '价格下限 ¥', type: 'number', g: 'detail' },
@@ -380,6 +382,9 @@
       ]},
       routes: { label: '路线', icon: '🛣️', order: 'id', cols: [
         { k: 'name', l: '名称', req: true, g: 'base' },
+        { k: 'province', l: '省份', g: 'base', hint: '如「北京」「云南」,用于列表卡片副标题与地区筛选' },
+        { k: 'city', l: '城市', g: 'base', hint: '如「北京」「大理」' },
+        { k: 'cover_image_url', l: '封面缩略图', type: 'image', bucket: 'route-images', g: 'media', hint: '列表卡片 16:9 封面,建议 ≥1600×900;留空时自动用下方路线图兜底' },
         { k: 'map_url', l: '路线图', type: 'image', bucket: 'route-images', g: 'media', hint: 'SVG 或 ≥2048px 高清图;支持透明背景;SVG 自动转 4096px 高清 PNG,放大更清晰' },
         { k: 'start_name', l: '起点', g: 'base' },
         { k: 'end_name', l: '终点', g: 'base' },
@@ -410,6 +415,7 @@
       { key: 'dashboard', label: '数据监测', icon: '📊', group: '概览' },
       { key: 'logs', label: '操作日志', icon: '🧾', group: '概览' },
       { key: 'feedback', label: '用户反馈', icon: '💬', group: '概览' },
+      { key: 'incidents', label: '事故记录', icon: '🛡️', group: '概览' },
       { key: 'admins', label: '管理员', icon: '👥', group: '系统' },
     ];
 
@@ -538,10 +544,12 @@
         : key === 'dashboard' ? '📊 数据监测'
         : key === 'logs' ? '🧾 操作日志'
         : key === 'feedback' ? '💬 用户反馈'
+        : key === 'incidents' ? '🛡️ 事故记录'
         : key === 'admins' ? '👥 管理员' : '';
       if (key === 'dashboard') { await loadDashboard(); return; }
       if (key === 'logs') { await loadLogs(); return; }
       if (key === 'feedback') { await loadFeedback(); return; }
+      if (key === 'incidents') { await loadIncidents(); return; }
       if (key === 'admins') { await loadAdmins(); return; }
       await loadTable();
     };
@@ -1086,6 +1094,65 @@
     }
     window.fbSearch = (v) => { fbState.q = v.trim(); fbState.page = 1; loadFeedback(); };
     window.fbGoPage = (p) => { fbState.page = p; loadFeedback(); };
+
+    // ============ 事故现场记录(只读) ============
+    const INCIDENT_LABELS = { fall: '摔车', collision: '碰撞', breakdown: '车辆故障', other: '其他' };
+    let irState = { q: '', page: 1 };
+    let irEmailMap = {};
+
+    async function loadIncidents() {
+      document.getElementById('tools').innerHTML = `
+        <input type="search" id="irSearch" placeholder="搜索路线/经过/版本…" value="${esc(irState.q)}" oninput="irSearch(this.value)">
+        <button class="btn-ghost btn-sm" onclick="loadIncidents()">刷新</button>`;
+      const view = document.getElementById('view');
+      const { data: users } = await supabase.rpc('admin_list');
+      if (users) irEmailMap = Object.fromEntries(users.map(u => [u.id, u.email]));
+      let query = supabase.from('incident_reports').select('*', { count: 'exact' }).order('occurred_at', { ascending: false });
+      if (irState.q) {
+        const q = irState.q.replace(/[%,()']/g, '');
+        query = query.or(`route_name.ilike.%${q}%,note.ilike.%${q}%,app_version.ilike.%${q}%`);
+      }
+      query = query.range((irState.page - 1) * PAGE_SIZE, irState.page * PAGE_SIZE - 1);
+      const { data, error, count } = await query;
+      if (error) {
+        const hint = error.code === 'PGRST205'
+          ? `<br>请先在 Supabase SQL Editor 执行 <code>backend/supabase/migrations/0026_incident_reports.sql</code>`
+          : '';
+        view.innerHTML = `<div class="empty">${esc(error.message)}${hint}</div>`;
+        return;
+      }
+      const rows = (data || []).map(r => {
+        const email = r.user_id ? (irEmailMap[r.user_id] || '') : '';
+        const userTxt = email ? esc(email)
+          : (r.user_id ? `<span style="color:#B6BEC9">${String(r.user_id).slice(0, 8)}…</span>`
+            : '<span class="tag off">未知</span>');
+        const loc = (r.latitude != null && r.longitude != null)
+          ? `<a href="https://maps.apple.com/?ll=${r.latitude},${r.longitude}&q=${r.latitude},${r.longitude}" target="_blank" rel="noopener">${Number(r.latitude).toFixed(5)}, ${Number(r.longitude).toFixed(5)}</a>`
+          : '<span class="tag off">无定位</span>';
+        return `<tr>
+          <td style="white-space:nowrap">${new Date(r.occurred_at).toLocaleString('zh-CN', { hour12: false })}</td>
+          <td>${userTxt}</td>
+          <td>${esc(INCIDENT_LABELS[r.incident_type] || r.incident_type)}</td>
+          <td>${esc(r.route_name || '—')}</td>
+          <td style="white-space:nowrap">${loc}</td>
+          <td style="max-width:360px">${esc(r.note || '—')}</td>
+          <td>${esc(r.app_version || '—')}</td>
+        </tr>`;
+      }).join('') || `<tr><td colspan="7"><div class="empty">还没有事故记录</div></td></tr>`;
+      const pages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
+      view.innerHTML = `<div class="filters"><span class="readonly-badge">🔒 只读 · 用户主动提交的事故现场记录；仅用于留存与客服核对，不触发报警或救援调度，不可修改/删除</span></div>
+        <div class="card" style="overflow-x:auto"><table><thead><tr>
+          <th>时间</th><th>用户</th><th>类型</th><th>路线</th><th>位置</th><th>经过</th><th>版本</th>
+        </tr></thead><tbody>${rows}</tbody></table></div>
+        <div class="pager">
+          <span>共 ${count || 0} 条</span>
+          <button class="btn-ghost btn-sm" ${irState.page <= 1 ? 'disabled' : ''} onclick="irGoPage(${irState.page - 1})">上一页</button>
+          <span>${irState.page} / ${pages}</span>
+          <button class="btn-ghost btn-sm" ${irState.page >= pages ? 'disabled' : ''} onclick="irGoPage(${irState.page + 1})">下一页</button>
+        </div>`;
+    }
+    window.irSearch = (v) => { irState.q = v.trim(); irState.page = 1; loadIncidents(); };
+    window.irGoPage = (p) => { irState.page = p; loadIncidents(); };
 
     // ============ 管理员管理 ============
     async function loadAdmins() {
